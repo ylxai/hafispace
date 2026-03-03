@@ -283,7 +283,7 @@ export async function getPhotoFromCloudinary(
 
     return {
       publicId: result.public_id,
-      url: `http://res.cloudinary.com/${vendorConfig.cloudName}/image/upload/${result.public_id}.${result.format}`,
+      url: `https://res.cloudinary.com/${vendorConfig.cloudName}/image/upload/${result.public_id}.${result.format}`,
       secureUrl: `https://res.cloudinary.com/${vendorConfig.cloudName}/image/upload/${result.public_id}.${result.format}`,
       originalFilename: result.original_filename,
       format: result.format,

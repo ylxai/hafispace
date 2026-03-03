@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { DEFAULT_MAX_SELECTION, GALLERY_VIEW_COOKIE_TTL_SECONDS } from "@/lib/constants";
 
 export async function GET(
   _request: Request,
@@ -93,7 +94,7 @@ export async function GET(
       viewCount: gallery.viewCount,
       vendor: gallery.vendor,
       settings: {
-        maxSelection: gallery.booking?.maxSelection ?? 40,
+        maxSelection: gallery.booking?.maxSelection ?? DEFAULT_MAX_SELECTION,
         enableDownload: gallery.settings?.enableDownload ?? true,
         welcomeMessage: gallery.settings?.welcomeMessage ?? null,
         thankYouMessage: gallery.settings?.thankYouMessage ?? null,
@@ -111,7 +112,7 @@ export async function GET(
   if (!alreadyViewed) {
     response.cookies.set(viewedCookieKey, "1", {
       httpOnly: true,
-      maxAge: 60 * 60 * 24, // 24 jam
+      maxAge: GALLERY_VIEW_COOKIE_TTL_SECONDS,
       sameSite: "lax",
       path: "/",
     });

@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback, useState, useRef } from "react";
 import Image from "next/image";
+import { MIN_SWIPE_DISTANCE_PX } from "@/lib/constants";
 
 interface Photo {
   id: string;
@@ -63,7 +64,7 @@ export function Lightbox({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const currentPhoto = photos?.[currentIndex];
-  const minSwipeDistance = 50;
+  const minSwipeDistance = MIN_SWIPE_DISTANCE_PX;
 
   // Reset index when opening
   useEffect(() => {
