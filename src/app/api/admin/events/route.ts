@@ -34,6 +34,8 @@ export async function GET() {
     lokasiSesi: booking.lokasiSesi,
     status: booking.status,
     dpAmount: booking.dpAmount?.toString() ?? "0",
+    dpStatus: booking.dpStatus ?? "UNPAID",
+    hargaPaket: booking.hargaPaket?.toString() ?? "0",
     galleryCount: booking.galleries.length,
     createdAt: booking.createdAt.toISOString(),
   }));

@@ -1,0 +1,172 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { auth } from "@/lib/auth/options";
+import { prisma } from "@/lib/db";
+import { unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
+import { z } from "zod";
+
+const paymentSchema = z.object({
+  jumlah: z.coerce.number().positive("Jumlah harus lebih dari 0"),
+  tipe: z.enum(["DP", "PELUNASAN", "LAINNYA"]).default("DP"),
+  keterangan: z.string().optional(),
+  buktiBayar: z.string().url().optional().nullable(),
+});
+
+// GET — list payments per booking
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user?.id) return unauthorizedResponse();
+
+  const { id: bookingId } = await params;
+
+  // Verifikasi booking milik vendor
+  const booking = await prisma.booking.findFirst({
+    where: { id: bookingId, vendorId: session.user.id },
+    select: {
+      id: true,
+      namaClient: true,
+      kodeBooking: true,
+      hargaPaket: true,
+      status: true,
+    },
+  });
+
+  if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+
+  // Query payments terpisah (relasi baru, perlu migration ke DB dulu)
+  const payments = await prisma.payment.findMany({
+    where: { bookingId },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      jumlah: true,
+      tipe: true,
+      keterangan: true,
+      buktiBayar: true,
+      createdAt: true,
+    },
+  });
+
+  const totalBayar = payments.reduce((sum, p) => sum + Number(p.jumlah), 0);
+  const hargaPaket = Number(booking.hargaPaket ?? 0);
+  const sisaTagihan = Math.max(0, hargaPaket - totalBayar);
+
+  return NextResponse.json({
+    booking: {
+      id: booking.id,
+      namaClient: booking.namaClient,
+      kodeBooking: booking.kodeBooking,
+      hargaPaket,
+    },
+    payments,
+    summary: {
+      totalBayar,
+      sisaTagihan,
+      lunas: sisaTagihan === 0 && hargaPaket > 0,
+    },
+  });
+}
+
+// POST — catat pembayaran baru
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user?.id) return unauthorizedResponse();
+
+  const { id: bookingId } = await params;
+
+  const booking = await prisma.booking.findFirst({
+    where: { id: bookingId, vendorId: session.user.id },
+    select: { id: true, hargaPaket: true },
+  });
+  if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+
+  const body = await request.json();
+  const parsed = paymentSchema.safeParse(body);
+  if (!parsed.success) return validationErrorResponse(parsed.error.format());
+
+  const { jumlah, tipe, keterangan, buktiBayar } = parsed.data;
+
+  const payment = await prisma.payment.create({
+    data: {
+      bookingId,
+      vendorId: session.user.id,
+      jumlah,
+      tipe,
+      keterangan,
+      buktiBayar,
+    },
+  });
+
+  // Hitung total dari semua payments yang sudah ada + yang baru
+  const existingPayments = await prisma.payment.findMany({
+    where: { bookingId },
+    select: { jumlah: true },
+  });
+  const totalBayar = existingPayments.reduce((sum, p) => sum + Number(p.jumlah), 0);
+  const hargaPaket = Number(booking.hargaPaket ?? 0);
+
+  let dpStatus: "UNPAID" | "PAID" | "PARTIAL" = "UNPAID";
+  if (totalBayar >= hargaPaket && hargaPaket > 0) {
+    dpStatus = "PAID";
+  } else if (totalBayar > 0) {
+    dpStatus = "PARTIAL";
+  }
+
+  await prisma.booking.update({
+    where: { id: bookingId },
+    data: { dpStatus, dpAmount: totalBayar },
+  });
+
+  return NextResponse.json(payment, { status: 201 });
+}
+
+// DELETE — hapus payment
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user?.id) return unauthorizedResponse();
+
+  const { id: bookingId } = await params;
+  const { searchParams } = new URL(request.url);
+  const paymentId = searchParams.get("paymentId");
+  if (!paymentId) return NextResponse.json({ error: "Payment ID required" }, { status: 400 });
+
+  // Verifikasi payment milik vendor
+  const payment = await prisma.payment.findFirst({
+    where: { id: paymentId, bookingId, vendorId: session.user.id },
+  });
+  if (!payment) return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+
+  await prisma.payment.delete({ where: { id: paymentId } });
+
+  // Recalculate dpStatus
+  const remaining = await prisma.payment.findMany({
+    where: { bookingId },
+    select: { jumlah: true },
+  });
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    select: { hargaPaket: true },
+  });
+
+  const totalBayar = remaining.reduce((sum, p) => sum + Number(p.jumlah), 0);
+  const hargaPaket = Number(booking?.hargaPaket ?? 0);
+
+  let dpStatus: "UNPAID" | "PAID" | "PARTIAL" = "UNPAID";
+  if (totalBayar >= hargaPaket && hargaPaket > 0) dpStatus = "PAID";
+  else if (totalBayar > 0) dpStatus = "PARTIAL";
+
+  await prisma.booking.update({
+    where: { id: bookingId },
+    data: { dpStatus, dpAmount: totalBayar },
+  });
+
+  return NextResponse.json({ success: true });
+}

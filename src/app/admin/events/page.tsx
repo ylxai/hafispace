@@ -1,11 +1,236 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { StatusBadge } from "@/components/admin";
 import { useAdminEvents } from "@/hooks/use-admin-events";
 import { useToast } from "@/components/ui/toast";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface Payment {
+  id: string;
+  jumlah: number;
+  tipe: "DP" | "PELUNASAN" | "LAINNYA";
+  keterangan?: string | null;
+  buktiBayar?: string | null;
+  createdAt: string;
+}
+
+interface PaymentSummary {
+  totalBayar: number;
+  sisaTagihan: number;
+  lunas: boolean;
+}
+
+interface PaymentData {
+  booking: { id: string; namaClient: string; kodeBooking: string; hargaPaket: number };
+  payments: Payment[];
+  summary: PaymentSummary;
+}
+
+// ─── Format helpers ───────────────────────────────────────────────────────────
+
+function formatRupiah(amount: number) {
+  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(amount);
+}
+
+// ─── Payment Modal ────────────────────────────────────────────────────────────
+
+function PaymentModal({ bookingId, onClose }: { bookingId: string; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [form, setForm] = useState({ jumlah: "", tipe: "DP" as "DP" | "PELUNASAN" | "LAINNYA", keterangan: "" });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const { data, isLoading } = useQuery<PaymentData>({
+    queryKey: ["booking-payments", bookingId],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/bookings/${bookingId}/payments`);
+      if (!res.ok) throw new Error("Gagal memuat data pembayaran");
+      return res.json() as Promise<PaymentData>;
+    },
+  });
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.jumlah || Number(form.jumlah) <= 0) {
+      toast.error("Jumlah harus lebih dari 0");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/admin/bookings/${bookingId}/payments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, jumlah: Number(form.jumlah) }),
+      });
+      if (!res.ok) {
+        const err = await res.json() as { error?: string };
+        toast.error(err.error ?? "Gagal menyimpan pembayaran");
+        return;
+      }
+      toast.success("Pembayaran berhasil dicatat!");
+      setForm({ jumlah: "", tipe: "DP", keterangan: "" });
+      await queryClient.invalidateQueries({ queryKey: ["booking-payments", bookingId] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+    } catch {
+      toast.error("Gagal menyimpan pembayaran");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDelete(paymentId: string) {
+    if (!confirm("Hapus catatan pembayaran ini?")) return;
+    try {
+      const res = await fetch(`/api/admin/bookings/${bookingId}/payments?paymentId=${paymentId}`, { method: "DELETE" });
+      if (!res.ok) {
+        toast.error("Gagal menghapus pembayaran");
+        return;
+      }
+      toast.success("Pembayaran dihapus");
+      await queryClient.invalidateQueries({ queryKey: ["booking-payments", bookingId] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+    } catch {
+      toast.error("Gagal menghapus pembayaran");
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">Riwayat Pembayaran</h2>
+            {data && <p className="text-xs text-slate-500">{data.booking.namaClient} · {data.booking.kodeBooking}</p>}
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="p-6 space-y-5">
+          {/* Summary */}
+          {data && (
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-xl bg-slate-50 p-3 text-center">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">Total Tagihan</p>
+                <p className="mt-1 text-sm font-bold text-slate-900">{formatRupiah(data.booking.hargaPaket)}</p>
+              </div>
+              <div className="rounded-xl bg-green-50 p-3 text-center">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-green-500">Terbayar</p>
+                <p className="mt-1 text-sm font-bold text-green-700">{formatRupiah(data.summary.totalBayar)}</p>
+              </div>
+              <div className={`rounded-xl p-3 text-center ${data.summary.lunas ? "bg-green-50" : "bg-red-50"}`}>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">Sisa Tagihan</p>
+                <p className={`mt-1 text-sm font-bold ${data.summary.lunas ? "text-green-700" : "text-red-600"}`}>
+                  {data.summary.lunas ? "LUNAS ✓" : formatRupiah(data.summary.sisaTagihan)}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* History */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Riwayat</p>
+            {isLoading ? (
+              <div className="space-y-2">
+                {[1, 2].map((i) => <div key={i} className="h-12 animate-pulse rounded-xl bg-slate-100" />)}
+              </div>
+            ) : data?.payments.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-4">Belum ada pembayaran dicatat</p>
+            ) : (
+              <ul className="space-y-2">
+                {data?.payments.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                          p.tipe === "DP" ? "bg-sky-100 text-sky-700" :
+                          p.tipe === "PELUNASAN" ? "bg-green-100 text-green-700" :
+                          "bg-slate-100 text-slate-600"
+                        }`}>{p.tipe}</span>
+                        <span className="text-sm font-semibold text-slate-900">{formatRupiah(Number(p.jumlah))}</span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {new Date(p.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
+                        {p.keterangan && ` · ${p.keterangan}`}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(p.id)}
+                      className="text-red-400 hover:text-red-600 p-1 rounded-lg hover:bg-red-50"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Form Catat Pembayaran */}
+          <div className="border-t border-slate-100 pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">+ Catat Pembayaran</p>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Jumlah (Rp) *</label>
+                  <input
+                    type="number"
+                    value={form.jumlah}
+                    onChange={(e) => setForm((f) => ({ ...f, jumlah: e.target.value }))}
+                    placeholder="0"
+                    min={1}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Tipe *</label>
+                  <select
+                    value={form.tipe}
+                    onChange={(e) => setForm((f) => ({ ...f, tipe: e.target.value as "DP" | "PELUNASAN" | "LAINNYA" }))}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400 bg-white"
+                  >
+                    <option value="DP">DP</option>
+                    <option value="PELUNASAN">Pelunasan</option>
+                    <option value="LAINNYA">Lainnya</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Keterangan</label>
+                <input
+                  type="text"
+                  value={form.keterangan}
+                  onChange={(e) => setForm((f) => ({ ...f, keterangan: e.target.value }))}
+                  placeholder="Transfer BCA, tunai, dll."
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 transition"
+              >
+                {isSaving ? "Menyimpan..." : "Catat Pembayaran"}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function CreateBookingModal({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
@@ -236,6 +461,7 @@ export default function AdminEventsPage() {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [bulkActionStatus, setBulkActionStatus] = useState<"PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "">("");
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [paymentBookingId, setPaymentBookingId] = useState<string | null>(null);
   const toast = useToast();
   const queryClient = useQueryClient();
 
@@ -362,6 +588,9 @@ export default function AdminEventsPage() {
   return (
     <section className="space-y-8">
       {showModal && <CreateBookingModal onClose={() => setShowModal(false)} />}
+      {paymentBookingId && (
+        <PaymentModal bookingId={paymentBookingId} onClose={() => setPaymentBookingId(null)} />
+      )}
       
       {/* Bulk Actions Bar */}
       {showBulkActions && (
@@ -482,13 +711,15 @@ export default function AdminEventsPage() {
               <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Package</th>
               <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Session Date</th>
               <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Dana Masuk</th>
               <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Galleries</th>
+              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
               <tr>
-                <td className="px-6 py-8 text-sm text-slate-500" colSpan={6}>
+                <td className="px-6 py-8 text-sm text-slate-500" colSpan={9}>
                   <div className="flex items-center gap-3">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900" />
                     Loading bookings...
@@ -497,7 +728,7 @@ export default function AdminEventsPage() {
               </tr>
             ) : bookings.length === 0 ? (
               <tr>
-                <td className="px-6 py-12 text-center text-sm text-slate-500" colSpan={6}>
+                <td className="px-6 py-12 text-center text-sm text-slate-500" colSpan={9}>
                   <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100/80">
                     <svg className="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -527,7 +758,22 @@ export default function AdminEventsPage() {
                     <p className="font-semibold text-slate-900 tracking-tight">
                       {booking.clientName}
                     </p>
-                    <p className="text-xs text-slate-500 font-mono">{booking.kodeBooking}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-xs text-slate-500 font-mono">{booking.kodeBooking}</p>
+                      {booking.hpClient && (
+                        <a
+                          href={`https://wa.me/${booking.hpClient.replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-green-500 hover:text-green-600"
+                          title="WhatsApp"
+                        >
+                          <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                          </svg>
+                        </a>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className="rounded-xl bg-slate-100/80 px-3 py-1.5 text-xs font-medium text-slate-700">
@@ -545,12 +791,37 @@ export default function AdminEventsPage() {
                     <StatusBadge label={booking.status} />
                   </td>
                   <td className="px-6 py-4">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {booking.dpAmount ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(booking.dpAmount)) : "-"}
+                      </p>
+                      {booking.dpStatus && (
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                          booking.dpStatus === "PAID" ? "bg-green-100 text-green-700" :
+                          booking.dpStatus === "PARTIAL" ? "bg-amber-100 text-amber-700" :
+                          "bg-slate-100 text-slate-500"
+                        }`}>
+                          {booking.dpStatus === "PAID" ? "Lunas" : booking.dpStatus === "PARTIAL" ? "Partial" : "Belum Bayar"}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
                     <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100/80 px-3 py-1.5 text-xs font-medium text-slate-700">
                       <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                       {booking.galleryCount}
                     </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentBookingId(booking.id)}
+                      className="rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition whitespace-nowrap"
+                    >
+                      💰 Bayar
+                    </button>
                   </td>
                 </tr>
               ))
