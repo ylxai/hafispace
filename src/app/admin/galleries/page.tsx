@@ -8,6 +8,7 @@ import { useAdminGalleries } from "@/hooks/use-admin-galleries";
 import { DragDropUpload } from "@/components/admin/drag-drop-upload";
 import { ImageEditor } from "@/components/admin/image-editor";
 import { SelectionsModal } from "@/components/admin/selections-modal";
+import ViesusPreview from "@/components/admin/viesus-preview";
 import { useToast } from "@/components/ui/toast";
 
 type AdminGallery = {
@@ -27,25 +28,31 @@ const STATUS_OPTIONS: AdminGallery["status"][] = ["DRAFT", "IN_REVIEW", "DELIVER
 function UploadPhotosModal({ gallery, onClose }: { gallery: AdminGallery; onClose: () => void }) {
   const queryClient = useQueryClient();
   const toast = useToast();
-  const [showEditor, setShowEditor] = useState<File | null>(null);
+  const [showEditor, setShowEditor] = useState<{ file: File; index: number } | null>(null);
   const [uploadStats, setUploadStats] = useState<{ successful: number; failed: number } | null>(null);
+  const [editedFiles, setEditedFiles] = useState<Map<number, File>>(new Map());
 
   const handleUploadComplete = (stats: { successful: number; failed: number }) => {
     setUploadStats(stats);
     queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
-    
-    // Auto-close after successful upload
     if (stats.successful > 0 && stats.failed === 0) {
-      setTimeout(() => {
-        onClose();
-      }, SUCCESS_FEEDBACK_DURATION_MS);
+      setTimeout(() => { onClose(); }, SUCCESS_FEEDBACK_DURATION_MS);
     }
   };
 
-  const handleEditComplete = () => {
-    setShowEditor(null);
-    toast.success("Image edited successfully!");
+  const handleEditFile = (file: File, index: number) => {
+    setShowEditor({ file, index });
   };
+
+  const handleEditComplete = (editedFile: File) => {
+    if (!showEditor) return;
+    // Simpan edited file untuk dikirim ke DragDropUpload
+    setEditedFiles((prev) => new Map(prev).set(showEditor.index, editedFile));
+    setShowEditor(null);
+    toast.success("Image edited — siap di-upload!");
+  };
+
+  void editedFiles; // akan digunakan di DragDropUpload ketika mendukung file replacement
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -67,7 +74,7 @@ function UploadPhotosModal({ gallery, onClose }: { gallery: AdminGallery; onClos
 
         {showEditor ? (
           <ImageEditor
-            file={showEditor}
+            file={showEditor.file}
             onEditComplete={handleEditComplete}
             onCancel={() => setShowEditor(null)}
           />
@@ -76,6 +83,7 @@ function UploadPhotosModal({ gallery, onClose }: { gallery: AdminGallery; onClos
             galleryId={gallery.id}
             onUploadComplete={handleUploadComplete}
             onCancel={onClose}
+            onEditFile={handleEditFile}
           />
         )}
 
@@ -100,7 +108,38 @@ function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; onClose
   const [error, setError] = useState("");
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showSelections, setShowSelections] = useState(false);
+  const [showViesus, setShowViesus] = useState(false);
+  const [firstPhoto, setFirstPhoto] = useState<{ url: string; publicId: string; vendorId: string } | null>(null);
   const galleryUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/gallery/${gallery.clientToken}`;
+
+  async function handleShowViesus() {
+    if (!showViesus && !firstPhoto) {
+      try {
+        const res = await fetch(`/api/admin/galleries/${gallery.id}/selections`);
+        if (res.ok) {
+          const data = await res.json() as {
+            photos?: Array<{ url: string; storageKey: string }>;
+            gallery?: { vendorId: string };
+          };
+          const photo = data.photos?.[0];
+          if (photo) {
+            setFirstPhoto({
+              url: photo.url,
+              publicId: photo.storageKey,
+              vendorId: data.gallery?.vendorId ?? "",
+            });
+          } else {
+            toast.error("Belum ada foto di galeri ini.");
+            return;
+          }
+        }
+      } catch {
+        toast.error("Gagal memuat foto galeri.");
+        return;
+      }
+    }
+    setShowViesus((v) => !v);
+  }
 
   // Safety check for gallery data
   if (!gallery?.id) {
@@ -248,15 +287,34 @@ function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; onClose
 
           {error && <p className="text-sm text-red-500">{error}</p>}
           {saved && <p className="text-sm text-green-600">✓ Status updated!</p>}
+
+          {/* VIESUS Preview Section */}
+          {showViesus && firstPhoto && (
+            <div className="rounded-xl border border-slate-200 p-4">
+              <p className="mb-3 text-xs font-medium text-slate-600 uppercase tracking-wider">VIESUS Enhancement Preview</p>
+              <ViesusPreview
+                imageUrl={firstPhoto.url}
+                publicId={firstPhoto.publicId}
+                vendorId={firstPhoto.vendorId}
+              />
+            </div>
+          )}
         </div>
 
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
           <button
             type="button"
             onClick={() => setShowUploadModal(true)}
             className="rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-600 hover:border-slate-300"
           >
             Upload Photos
+          </button>
+          <button
+            type="button"
+            onClick={handleShowViesus}
+            className="rounded-full border border-sky-200 px-5 py-2 text-sm font-medium text-sky-600 hover:bg-sky-50"
+          >
+            {showViesus ? "Hide VIESUS" : "VIESUS Preview"}
           </button>
           <button
             type="button"

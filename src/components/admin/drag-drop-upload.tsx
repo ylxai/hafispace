@@ -25,9 +25,10 @@ interface DragDropUploadProps {
   galleryId: string;
   onUploadComplete: (stats: { successful: number; failed: number }) => void;
   onCancel: () => void;
+  onEditFile?: (file: File, index: number) => void;
 }
 
-export function DragDropUpload({ galleryId, onUploadComplete, onCancel }: DragDropUploadProps) {
+export function DragDropUpload({ galleryId, onUploadComplete, onCancel, onEditFile }: DragDropUploadProps) {
   const toast = useToast();
   const [files, setFiles] = useState<UploadProgress[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -339,15 +340,29 @@ export function DragDropUpload({ galleryId, onUploadComplete, onCancel }: DragDr
                    </button>
                  )}
                  {!isUploading && file.status === "pending" && (
-                   <button
-                     type="button"
-                     onClick={() => removeFile(index)}
-                     className="rounded-full p-1 text-slate-400 hover:text-red-500"
-                   >
-                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                     </svg>
-                   </button>
+                   <div className="flex items-center gap-1">
+                     {onEditFile && (
+                       <button
+                         type="button"
+                         onClick={() => onEditFile(file.file, index)}
+                         className="rounded-full p-1 text-slate-400 hover:text-sky-500"
+                         title="Edit before upload"
+                       >
+                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                         </svg>
+                       </button>
+                     )}
+                     <button
+                       type="button"
+                       onClick={() => removeFile(index)}
+                       className="rounded-full p-1 text-slate-400 hover:text-red-500"
+                     >
+                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                       </svg>
+                     </button>
+                   </div>
                  )}
 
                 {/* Status Icon */}
