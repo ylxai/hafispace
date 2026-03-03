@@ -11,6 +11,13 @@ const settingsSchema = z.object({
   phone: z.string().min(6).optional(),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   enableViesusEnhancement: z.boolean().optional(),
+  // Booking form settings
+  dpPercentage: z.coerce.number().int().min(0).max(100).optional(),
+  rekeningPembayaran: z.string().optional().nullable(),
+  syaratKetentuan: z.string().optional().nullable(),
+  themeColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Format warna tidak valid").optional(),
+  successMessage: z.string().optional().nullable(),
+  bookingFormActive: z.boolean().optional(),
 });
 
 export async function GET() {
@@ -31,6 +38,12 @@ export async function GET() {
       subscriptionExpired: true,
       enableViesusEnhancement: true,
       createdAt: true,
+      dpPercentage: true,
+      rekeningPembayaran: true,
+      syaratKetentuan: true,
+      themeColor: true,
+      successMessage: true,
+      bookingFormActive: true,
     },
   });
 
@@ -58,27 +71,23 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const { namaStudio, phone, email, enableViesusEnhancement } = parsed.data;
+  const { namaStudio, phone, email, enableViesusEnhancement, dpPercentage, rekeningPembayaran, syaratKetentuan, themeColor, successMessage, bookingFormActive } = parsed.data;
 
-  // Update profile settings if provided
-  if (namaStudio !== undefined || phone !== undefined || email !== undefined) {
-    await prisma.vendor.update({
-      where: { id: session.user.id },
-      data: {
-        ...(namaStudio !== undefined && { namaStudio }),
-        ...(phone !== undefined && { phone }),
-        ...(email !== undefined && email !== "" && { email }),
-      },
-    });
-  }
-
-  // Update VIESUS enhancement setting if provided
-  if (enableViesusEnhancement !== undefined) {
-    await prisma.vendor.update({
-      where: { id: session.user.id },
-      data: { enableViesusEnhancement },
-    });
-  }
+  await prisma.vendor.update({
+    where: { id: session.user.id },
+    data: {
+      ...(namaStudio !== undefined && { namaStudio }),
+      ...(phone !== undefined && { phone }),
+      ...(email !== undefined && email !== "" && { email }),
+      ...(enableViesusEnhancement !== undefined && { enableViesusEnhancement }),
+      ...(dpPercentage !== undefined && { dpPercentage }),
+      ...(rekeningPembayaran !== undefined && { rekeningPembayaran }),
+      ...(syaratKetentuan !== undefined && { syaratKetentuan }),
+      ...(themeColor !== undefined && { themeColor }),
+      ...(successMessage !== undefined && { successMessage }),
+      ...(bookingFormActive !== undefined && { bookingFormActive }),
+    },
+  });
 
   // Return updated vendor data with VIESUS setting
   const updated = await prisma.vendor.findUnique({
@@ -90,6 +99,12 @@ export async function PATCH(request: Request) {
       namaStudio: true,
       phone: true,
       enableViesusEnhancement: true,
+      dpPercentage: true,
+      rekeningPembayaran: true,
+      syaratKetentuan: true,
+      themeColor: true,
+      successMessage: true,
+      bookingFormActive: true,
     },
   });
 

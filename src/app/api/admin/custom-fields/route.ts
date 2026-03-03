@@ -1,0 +1,119 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { auth } from "@/lib/auth/options";
+import { prisma } from "@/lib/db";
+import { unauthorizedResponse } from "@/lib/api/response";
+import { z } from "zod";
+
+const customFieldSchema = z.object({
+  label: z.string().min(1, "Label wajib diisi"),
+  tipe: z.enum(["TEXT", "TEXTAREA", "DATE", "NUMBER", "SELECT"]).default("TEXT"),
+  isRequired: z.boolean().default(false),
+  options: z.array(z.string()).optional().nullable(),
+});
+
+// GET — list semua custom fields milik vendor
+export async function GET() {
+  const session = await auth();
+  if (!session?.user?.id) return unauthorizedResponse();
+
+  const fields = await prisma.customField.findMany({
+    where: { vendorId: session.user.id },
+    orderBy: { urutan: "asc" },
+    select: {
+      id: true,
+      label: true,
+      namaField: true,
+      tipe: true,
+      isRequired: true,
+      isActive: true,
+      urutan: true,
+      options: true,
+      createdAt: true,
+    },
+  });
+
+  return NextResponse.json({ fields });
+}
+
+// POST — buat custom field baru
+export async function POST(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) return unauthorizedResponse();
+
+  const body = await request.json();
+  const parsed = customFieldSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Validasi gagal", details: parsed.error.format() }, { status: 400 });
+  }
+
+  const { label, tipe, isRequired, options } = parsed.data;
+
+  // Hitung urutan berikutnya
+  const lastField = await prisma.customField.findFirst({
+    where: { vendorId: session.user.id },
+    orderBy: { urutan: "desc" },
+    select: { urutan: true },
+  });
+  const urutan = (lastField?.urutan ?? -1) + 1;
+
+  const field = await prisma.customField.create({
+    data: {
+      vendorId: session.user.id,
+      label,
+      namaField: label, // sama dengan label
+      tipe,
+      isRequired,
+      wajib: isRequired,
+      isActive: true,
+      urutan,
+      options: options ?? undefined,
+    },
+  });
+
+  return NextResponse.json(field, { status: 201 });
+}
+
+// PATCH — update urutan / isActive
+export async function PATCH(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) return unauthorizedResponse();
+
+  const body = await request.json() as { id?: string; urutan?: number; isActive?: boolean; label?: string };
+  const { id } = body;
+  if (!id) return NextResponse.json({ error: "Field ID required" }, { status: 400 });
+
+  const existing = await prisma.customField.findFirst({
+    where: { id, vendorId: session.user.id },
+  });
+  if (!existing) return NextResponse.json({ error: "Field not found" }, { status: 404 });
+
+  const updated = await prisma.customField.update({
+    where: { id },
+    data: {
+      ...(body.urutan !== undefined && { urutan: body.urutan }),
+      ...(body.isActive !== undefined && { isActive: body.isActive }),
+      ...(body.label !== undefined && { label: body.label, namaField: body.label }),
+    },
+  });
+
+  return NextResponse.json(updated);
+}
+
+// DELETE — hapus custom field
+export async function DELETE(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) return unauthorizedResponse();
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Field ID required" }, { status: 400 });
+
+  const existing = await prisma.customField.findFirst({
+    where: { id, vendorId: session.user.id },
+  });
+  if (!existing) return NextResponse.json({ error: "Field not found" }, { status: 404 });
+
+  await prisma.customField.delete({ where: { id } });
+
+  return NextResponse.json({ success: true });
+}
