@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { DEFAULT_MAX_SELECTION } from "@/lib/constants";
 import { getAblyRest, ABLY_CHANNEL_SELECTION } from "@/lib/ably";
 import {
   getSelectionCount,
@@ -46,7 +47,7 @@ export async function POST(
     );
   }
 
-  const maxSelection = gallery.booking?.maxSelection ?? 40;
+  const maxSelection = gallery.booking?.maxSelection ?? DEFAULT_MAX_SELECTION;
 
   const body = await request.json();
   const parsed = selectSchema.safeParse(body);

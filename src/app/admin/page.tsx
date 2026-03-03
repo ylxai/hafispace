@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DASHBOARD_UPCOMING_BOOKINGS_LIMIT } from "@/lib/constants";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
@@ -27,7 +28,7 @@ async function getDashboardData(vendorId: string) {
     prisma.booking.findMany({
       where: { vendorId, status: { in: ["PENDING", "CONFIRMED"] } },
       orderBy: { tanggalSesi: "asc" },
-      take: 5,
+      take: DASHBOARD_UPCOMING_BOOKINGS_LIMIT,
       select: {
         id: true,
         namaClient: true,

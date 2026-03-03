@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SAVED_FEEDBACK_DURATION_MS } from "@/lib/constants";
 import { CloudinaryAccountsPanel } from "@/components/admin/cloudinary-accounts";
 
 function StudioProfilePanel() {
@@ -41,7 +42,7 @@ function StudioProfilePanel() {
       const data = await res.json() as { vendor: typeof payload };
       setProfile(data.vendor);
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      setTimeout(() => setSaved(false), SAVED_FEEDBACK_DURATION_MS);
     } catch {
       setError("Failed to save changes. Please try again.");
     } finally {
@@ -153,12 +154,12 @@ function AccessControlPanel() {
             <div className="mt-3 flex items-center gap-2">
               <input
                 readOnly
-                value="https://hafiportrait.com/invite/abc123"
+                value={`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/invite`}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 outline-none"
               />
               <button
                 type="button"
-                onClick={() => navigator.clipboard.writeText("https://hafiportrait.com/invite/abc123")}
+                onClick={() => navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/invite`)}
                 className="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:border-slate-300"
               >
                 Copy
@@ -277,7 +278,7 @@ function ViesusEnhancementPanel() {
 
       setEnableViesus(!enableViesus); // Toggle the state after successful save
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      setTimeout(() => setSaved(false), SAVED_FEEDBACK_DURATION_MS);
     } catch (err) {
       setError("Failed to save VIESUS enhancement settings");
       console.error(err);

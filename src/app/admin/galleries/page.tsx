@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { SUCCESS_FEEDBACK_DURATION_MS, UPLOAD_COMPLETE_FEEDBACK_MS } from "@/lib/constants";
 import { StatusBadge } from "@/components/admin";
 import { useAdminGalleries } from "@/hooks/use-admin-galleries";
 import { DragDropUpload } from "@/components/admin/drag-drop-upload";
@@ -37,7 +38,7 @@ function UploadPhotosModal({ gallery, onClose }: { gallery: AdminGallery; onClos
     if (stats.successful > 0 && stats.failed === 0) {
       setTimeout(() => {
         onClose();
-      }, 2000);
+      }, SUCCESS_FEEDBACK_DURATION_MS);
     }
   };
 
@@ -131,7 +132,7 @@ function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; onClose
       setTimeout(() => { 
         setSaved(false); 
         onClose(); 
-      }, 1200);
+      }, UPLOAD_COMPLETE_FEEDBACK_MS);
     } catch {
       setError("Failed to save. Please try again.");
       toast.error("Failed to update gallery status");

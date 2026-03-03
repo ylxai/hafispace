@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { TOAST_DEFAULT_DURATION_MS } from "@/lib/constants";
 
 type ToastType = "success" | "error" | "info" | "warning";
 
@@ -55,7 +56,7 @@ const toastColors: Record<ToastType, string> = {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = useCallback((type: ToastType, message: string, duration = 5000) => {
+  const showToast = useCallback((type: ToastType, message: string, duration = TOAST_DEFAULT_DURATION_MS) => {
     const id = Math.random().toString(36).slice(2);
     const toast: Toast = { id, type, message, duration };
 

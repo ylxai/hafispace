@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEFAULT_MAX_SELECTION, MAX_SELECTION_LIMIT } from "@/lib/constants";
 
 export const bookingSchema = z.object({
   namaClient: z.string().min(2, "Client name must be at least 2 characters"),
@@ -9,7 +10,7 @@ export const bookingSchema = z.object({
   hargaPaket: z.coerce.number().nonnegative().optional(),
   tanggalSesi: z.string().min(1, "Session date is required"),
   lokasiSesi: z.string().min(2, "Location must be at least 2 characters"),
-  maxSelection: z.coerce.number().int().positive().min(1).max(200).default(40),
+  maxSelection: z.coerce.number().int().positive().min(1).max(MAX_SELECTION_LIMIT).default(DEFAULT_MAX_SELECTION),
   notes: z.string().optional(),
 });
 
