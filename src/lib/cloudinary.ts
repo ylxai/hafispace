@@ -605,8 +605,8 @@ export async function applyViesusEnhancement(
 
 // Generate an upload signature for client-side uploads (if needed)
 export function generateUploadSignature(vendorId: string, paramsToSign: Record<string, string | number | boolean>): string {
-  const signature = cloudinary.utils.api_sign_request(paramsToSign, 
-    process.env.CLOUDINARY_API_SECRET!);
+  const secret = process.env.CLOUDINARY_API_SECRET ?? "";
+  const signature = cloudinary.utils.api_sign_request(paramsToSign, secret);
   return signature;
 }
 
@@ -700,7 +700,7 @@ export async function uploadPhotoToCloudinaryWithViesus(
     });
 
     // Determine if VIESUS should be applied
-    const applyViesus = options.applyViesus !== undefined ? options.applyViesus : await isViesusEnhancementEnabled(vendorId);
+    const applyViesus = options.applyViesus ?? await isViesusEnhancementEnabled(vendorId);
     
     let viesusEnhancedUrl: string | undefined;
     if (applyViesus && result.resource_type === 'image') {

@@ -38,7 +38,7 @@ export function CloudinaryAccountsPanel() {
       const res = await fetch("/api/admin/settings/cloudinary/accounts");
       if (res.ok) {
         const data = await res.json();
-        setAccounts(data.accounts || []);
+        setAccounts(data.accounts ?? []);
       }
     } catch (error) {
       console.error("Failed to fetch accounts:", error);
@@ -61,7 +61,7 @@ export function CloudinaryAccountsPanel() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Failed to add account");
+        toast.error(data.error ?? "Failed to add account");
         return;
       }
 
@@ -85,7 +85,7 @@ export function CloudinaryAccountsPanel() {
 
       if (!res.ok) {
         const data = await res.json();
-        toast.error(data.error || "Failed to set as default");
+        toast.error(data.error ?? "Failed to set as default");
         return;
       }
 
@@ -107,7 +107,7 @@ export function CloudinaryAccountsPanel() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Failed to delete account");
+        toast.error(data.error ?? "Failed to delete account");
         return;
       }
 
@@ -128,7 +128,7 @@ export function CloudinaryAccountsPanel() {
 
       if (!res.ok) {
         const data = await res.json();
-        toast.error(data.error || "Failed to update account");
+        toast.error(data.error ?? "Failed to update account");
         return;
       }
 

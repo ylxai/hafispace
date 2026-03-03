@@ -50,10 +50,11 @@ export async function POST(request: Request) {
       });
     } 
     else if (action === "delete") {
+      const { bookingIds } = bulkDeleteSchema.parse(data);
       // First check if bookings have associated galleries
       const bookingsWithGalleries = await prisma.booking.findMany({
         where: {
-          id: { in: data.bookingIds },
+          id: { in: bookingIds },
           vendorId: session.user.id,
         },
         include: {
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
       // Delete bookings
       const deletedCount = await prisma.booking.deleteMany({
         where: {
-          id: { in: data.bookingIds },
+          id: { in: bookingIds },
           vendorId: session.user.id,
         },
       });

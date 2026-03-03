@@ -346,7 +346,7 @@ export default function AdminGalleriesPage() {
             console.warn(`Gallery "${g.namaProject}" has ${g.photoCount} photo(s)`);
           });
         } else {
-          toast.error(result.message || "Failed to delete galleries");
+          toast.error(result.message ?? "Failed to delete galleries");
         }
         return;
       }
@@ -355,7 +355,7 @@ export default function AdminGalleriesPage() {
       setSelectedGalleryIds(new Set());
       setShowBulkActions(false);
       await queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete galleries");
     } finally {
       setIsBulkProcessing(false);
@@ -380,7 +380,7 @@ export default function AdminGalleriesPage() {
       const result = await res.json();
       
       if (!res.ok) {
-        toast.error(result.message || "Failed to update galleries");
+        toast.error(result.message ?? "Failed to update galleries");
         return;
       }
 
@@ -389,7 +389,7 @@ export default function AdminGalleriesPage() {
       setShowBulkActions(false);
       setBulkActionStatus("");
       await queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
-    } catch (error) {
+    } catch {
       toast.error("Failed to update galleries");
     } finally {
       setIsBulkProcessing(false);

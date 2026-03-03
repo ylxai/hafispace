@@ -143,7 +143,7 @@ export function DragDropUpload({ galleryId, onUploadComplete, onCancel }: DragDr
             });
           }, 1000);
         } else {
-          throw new Error(result.error || "Upload failed");
+          throw new Error(result.error ?? "Upload failed");
         }
       } catch (error: unknown) {
         if (error instanceof Error && error.name === "AbortError") {

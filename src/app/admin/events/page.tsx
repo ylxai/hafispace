@@ -299,7 +299,7 @@ export default function AdminEventsPage() {
       const result = await res.json();
       
       if (!res.ok) {
-        toast.error(result.message || "Failed to update bookings");
+        toast.error(result.message ?? "Failed to update bookings");
         return;
       }
 
@@ -308,7 +308,7 @@ export default function AdminEventsPage() {
       setShowBulkActions(false);
       setBulkActionStatus("");
       await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
-    } catch (error) {
+    } catch {
       toast.error("Failed to update bookings");
     } finally {
       setIsBulkProcessing(false);
@@ -343,7 +343,7 @@ export default function AdminEventsPage() {
             console.warn(`Booking "${b.namaClient}" has ${b.galleryCount} gallery(ies)`);
           });
         } else {
-          toast.error(result.message || "Failed to delete bookings");
+          toast.error(result.message ?? "Failed to delete bookings");
         }
         return;
       }
@@ -352,7 +352,7 @@ export default function AdminEventsPage() {
       setSelectedBookingIds(new Set());
       setShowBulkActions(false);
       await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete bookings");
     } finally {
       setIsBulkProcessing(false);
