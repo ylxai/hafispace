@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { uploadPhotoToCloudinary, listPhotosFromCloudinary } from "@/lib/cloudinary";
+import { CLOUDINARY_FOLDERS } from "@/lib/cloudinary-upload";
 import { unauthorizedResponse } from "@/lib/api/response";
 
 export async function POST(
@@ -60,7 +61,7 @@ export async function POST(
       buffer,
       file.name,
       {
-        folder: `galleries/${session.user.id}/${galleryId}`,
+        folder: `${CLOUDINARY_FOLDERS.GALLERIES}/${session.user.id}/${galleryId}`,
         resourceType: 'image',
       }
     );
@@ -137,7 +138,7 @@ export async function PUT(
     const cloudinaryResult = await listPhotosFromCloudinary(
       session.user.id,
       {
-        folder: `galleries/${session.user.id}/${galleryId}`,
+        folder: `${CLOUDINARY_FOLDERS.GALLERIES}/${session.user.id}/${galleryId}`,
       }
     );
 

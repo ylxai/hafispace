@@ -91,7 +91,7 @@ export async function getVendorCloudinaryClient(vendorId: string) {
     cloudName: account.cloudName,
     apiKey: account.apiKey,
     apiSecret: account.apiSecret,
-    uploadPreset: `bizspace_${vendorId}`,
+    uploadPreset: `hafispace_${vendorId}`,
     accountId: account.id,
   };
 }
@@ -108,7 +108,7 @@ export async function uploadPhotoToCloudinary(
     overwrite?: boolean;  // Whether to overwrite if asset exists
     resourceType?: 'image' | 'video' | 'raw' | 'auto';
   } = {
-    folder: `galleries/${vendorId}`,
+    folder: `hafispace/galleries/${vendorId}`,
     resourceType: 'image',
     overwrite: false
   }
@@ -206,7 +206,7 @@ export async function uploadPhotosToCloudinary(
     folder?: string;
     resourceType?: 'image' | 'video' | 'raw' | 'auto';
   } = {
-    folder: `galleries/${vendorId}`,
+    folder: `hafispace/galleries/${vendorId}`,
     resourceType: 'image'
   }
 ): Promise<Array<{
@@ -393,7 +393,7 @@ export async function listPhotosFromCloudinary(
     maxResults?: number;
     nextCursor?: string;
   } = {
-    folder: `galleries/${vendorId}`,
+    folder: `hafispace/galleries/${vendorId}`,
     resourceType: 'image',
     maxResults: 500,
   }
@@ -622,7 +622,7 @@ export async function uploadPhotoToCloudinaryWithViesus(
     resourceType?: 'image' | 'video' | 'raw' | 'auto';
     applyViesus?: boolean; // Whether to apply VIESUS enhancement
   } = {
-    folder: `galleries/${vendorId}`,
+    folder: `hafispace/galleries/${vendorId}`,
     resourceType: 'image',
     overwrite: false,
     applyViesus: true, // Default to true
