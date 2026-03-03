@@ -1,5 +1,4 @@
-// Prisma Schema for Bizspace - Photography Studio Management System
-// Based on SPEC_Bizspace_Pickspace_REVISED.md
+// Prisma Schema for Hafispace - Photography Studio Management System
 
 generator client {
   provider = "prisma-client-js"
@@ -40,12 +39,14 @@ model Vendor {
   namaStudio String? @map("nama_studio")
   logoUrl   String?  @map("logo_url")
   phone     String?
+  // Legacy Google/R2 fields — tidak digunakan, pertahankan untuk kompatibilitas DB
   googleRefreshToken String? @map("google_refresh_token")
   googleFolderId String? @map("google_folder_id")
   r2AccessKeyId String? @map("r2_access_key_id")
   r2SecretAccessKey String? @map("r2_secret_access_key")
   r2BucketName String? @map("r2_bucket_name")
   r2Endpoint String? @map("r2_endpoint")
+  // Legacy single Cloudinary config — gunakan VendorCloudinary untuk multi-account
   cloudinaryCloudName String? @map("cloudinary_cloud_name")
   cloudinaryApiKey String? @map("cloudinary_api_key")
   cloudinaryApiSecret String? @map("cloudinary_api_secret")
@@ -298,11 +299,11 @@ model PhotoSelection {
   lockedAt      DateTime? @map("locked_at")
   isLocked      Boolean  @default(false) @map("is_locked")
 
-  @@index([galleryId])
+  @@unique([galleryId, fileId])  // Satu foto hanya bisa dipilih sekali per gallery
+  @@index([galleryId, isLocked]) // Query paling umum: count unlocked per gallery
   @@index([fileId])
   @@index([selectionType])
   @@index([selectedAt])
-  @@index([isLocked])
   @@map("photo_selections")
 }
 
@@ -356,6 +357,8 @@ model Notification {
   isRead    Boolean  @default(false) @map("is_read")
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@index([vendorId, isRead]) // Query paling umum: unread notifications per vendor
+  @@index([createdAt])
   @@map("notifications")
 }
 
@@ -373,5 +376,7 @@ model ActivityLog {
   ipAddress String?  @map("ip_address")
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@index([vendorId])
+  @@index([createdAt])
   @@map("activity_logs")
 }

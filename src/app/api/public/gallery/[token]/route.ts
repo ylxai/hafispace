@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getSelectionCount } from "@/lib/redis";
 
 export async function GET(
   _request: Request,
@@ -73,10 +72,7 @@ export async function GET(
     });
   }
 
-  // Get current selection count from database
-  const selectionCount = await getSelectionCount(gallery.id);
-
-  // Get locked selections for display
+  // Ambil selections sekaligus — count dihitung dari hasil query (1 query, bukan 2)
   const selections = await prisma.photoSelection.findMany({
     where: { galleryId: gallery.id },
     select: {
@@ -85,6 +81,8 @@ export async function GET(
       isLocked: true,
     },
   });
+
+  const selectionCount = selections.filter((s) => !s.isLocked).length;
 
   const response = NextResponse.json({
     gallery: {
