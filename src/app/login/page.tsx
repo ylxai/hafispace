@@ -104,20 +104,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Remember & Forgot */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-slate-200 text-slate-900 focus:ring-slate-900"
-                />
-                <span className="text-xs text-slate-600">Remember me</span>
-              </label>
-              <button type="button" className="text-xs font-medium text-slate-900 hover:text-slate-700 transition-colors">
-                Forgot password?
-              </button>
-            </div>
-
             {/* Error Message */}
             {error && (
               <div className="rounded-xl border border-red-200 bg-red-50 p-3">

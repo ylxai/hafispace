@@ -1,23 +1,63 @@
-"use client";
-
-import { useAdminMetrics } from "@/hooks/use-admin-metrics";
+import Link from "next/link";
+import { auth } from "@/lib/auth/options";
+import { prisma } from "@/lib/db";
+import { redirect } from "next/navigation";
 
 const quickActions = [
-  "Create event",
-  "Upload gallery",
-  "Send invite",
-  "Review comments",
+  { label: "Create Event", href: "/admin/events" },
+  { label: "Manage Galleries", href: "/admin/galleries" },
+  { label: "View Clients", href: "/admin/clients" },
+  { label: "Settings", href: "/admin/settings" },
 ];
 
-export default function AdminHomePage() {
-  const { data, isLoading } = useAdminMetrics();
+async function getDashboardData(vendorId: string) {
+  const [
+    clientCount,
+    bookingCount,
+    activeBookingCount,
+    galleryCount,
+    upcomingBookings,
+  ] = await Promise.all([
+    prisma.client.count({ where: { vendorId } }),
+    prisma.booking.count({ where: { vendorId } }),
+    prisma.booking.count({
+      where: { vendorId, status: { in: ["PENDING", "CONFIRMED"] } },
+    }),
+    prisma.gallery.count({ where: { vendorId } }),
+    prisma.booking.findMany({
+      where: { vendorId, status: { in: ["PENDING", "CONFIRMED"] } },
+      orderBy: { tanggalSesi: "asc" },
+      take: 5,
+      select: {
+        id: true,
+        namaClient: true,
+        status: true,
+        tanggalSesi: true,
+        galleries: {
+          select: { id: true, status: true },
+          take: 1,
+        },
+      },
+    }),
+  ]);
+
+  return { clientCount, bookingCount, activeBookingCount, galleryCount, upcomingBookings };
+}
+
+export default async function AdminHomePage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const { clientCount, bookingCount, activeBookingCount, galleryCount, upcomingBookings } =
+    await getDashboardData(session.user.id);
 
   const overviewCards = [
-    { label: "Active Bookings", value: data?.activeBookingCount ?? 0 },
-    { label: "Total Bookings", value: data?.bookingCount ?? 0 },
-    { label: "Galleries", value: data?.galleryCount ?? 0 },
-    { label: "Clients", value: data?.clientCount ?? 0 },
+    { label: "Active Bookings", value: activeBookingCount },
+    { label: "Total Bookings", value: bookingCount },
+    { label: "Galleries", value: galleryCount },
+    { label: "Clients", value: clientCount },
   ];
+
   return (
     <section className="space-y-8">
       {/* Header */}
@@ -49,11 +89,7 @@ export default function AdminHomePage() {
               {card.label}
             </p>
             <p className="mt-3 text-3xl font-semibold text-slate-900 tracking-tight">
-              {isLoading ? (
-                <span className="inline-block h-8 w-16 animate-pulse rounded-lg bg-slate-200/60" />
-              ) : (
-                card.value
-              )}
+              {card.value}
             </p>
           </div>
         ))}
@@ -61,32 +97,62 @@ export default function AdminHomePage() {
 
       {/* Content Grid */}
       <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
+        {/* Upcoming Bookings */}
         <div className="rounded-3xl border border-slate-200 bg-white/70 backdrop-blur-xl p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900 tracking-tight">
-            Upcoming Workflows
+            Upcoming Bookings
           </h2>
-          <ul className="mt-4 space-y-3">
-            {["Review curation list for Lestari Wedding", "Send gallery access for Studio Session", "Prepare highlights for Ridwan & Maya"].map((item, i) => (
-              <li key={i} className="flex items-start gap-3 text-sm text-slate-600">
-                <svg className="mt-0.5 h-4 w-4 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                {item}
-              </li>
-            ))}
-          </ul>
+          {upcomingBookings.length === 0 ? (
+            <p className="mt-4 text-sm text-slate-500">No upcoming bookings.</p>
+          ) : (
+            <ul className="mt-4 space-y-3">
+              {upcomingBookings.map((booking) => (
+                <li key={booking.id} className="flex items-start gap-3 text-sm text-slate-600">
+                  <svg className="mt-0.5 h-4 w-4 text-sky-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <div>
+                    <span className="font-medium text-slate-800">{booking.namaClient}</span>
+                    {booking.tanggalSesi && (
+                      <span className="ml-2 text-xs text-slate-400">
+                        {new Date(booking.tanggalSesi).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                    )}
+                    <span className={`ml-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                      booking.status === "CONFIRMED"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-yellow-100 text-yellow-700"
+                    }`}>
+                      {booking.status}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-4">
+            <Link href="/admin/events" className="text-xs font-medium text-sky-600 hover:text-sky-700 transition-colors">
+              View all events →
+            </Link>
+          </div>
         </div>
+
+        {/* Quick Actions */}
         <div className="rounded-3xl border border-slate-200 bg-white/70 backdrop-blur-xl p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900 tracking-tight">Quick Actions</h2>
           <div className="mt-4 flex flex-col gap-3">
             {quickActions.map((action) => (
-              <button
-                key={action}
+              <Link
+                key={action.label}
+                href={action.href}
                 className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-3 text-left text-sm font-medium text-slate-700 backdrop-blur-sm transition-all duration-200 hover:border-slate-300 hover:bg-white hover:text-slate-900 hover:shadow-sm"
-                type="button"
               >
-                {action}
-              </button>
+                {action.label}
+              </Link>
             ))}
           </div>
         </div>
