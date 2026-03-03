@@ -14,9 +14,15 @@ export async function GET() {
 
   const clients = await prisma.client.findMany({
     where: { vendorId: session.user.id },
-    include: {
-      bookings: {
-        select: { id: true, tanggalSesi: true, status: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      instagram: true,
+      createdAt: true,
+      _count: {
+        select: { bookings: true },
       },
     },
     orderBy: { createdAt: "desc" },
@@ -28,7 +34,7 @@ export async function GET() {
     email: client.email,
     phone: client.phone,
     instagram: client.instagram,
-    totalBooking: client.bookings.length,
+    totalBooking: client._count.bookings,
     createdAt: client.createdAt.toISOString(),
   }));
 

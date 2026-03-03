@@ -12,7 +12,7 @@ export async function POST(
 
     const gallery = await prisma.gallery.findUnique({
       where: { clientToken: token },
-      include: { vendor: true },
+      select: { id: true, vendorId: true, namaProject: true },
     });
 
     if (!gallery) {
