@@ -91,7 +91,7 @@ export async function getVendorCloudinaryClient(vendorId: string) {
     cloudName: account.cloudName,
     apiKey: account.apiKey,
     apiSecret: account.apiSecret,
-    uploadPreset: `bizspace_${vendorId}`,
+    uploadPreset: `hafispace_${vendorId}`,
     accountId: account.id,
   };
 }

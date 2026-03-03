@@ -12,9 +12,9 @@ cloudinary.config({
 
 // Cloudinary upload folder structure
 export const CLOUDINARY_FOLDERS = {
-  GALLERIES: 'bizspace/galleries',
-  PROFILES: 'bizspace/profiles',
-  LOGOS: 'bizspace/logos',
+  GALLERIES: 'hafispace/galleries',
+  PROFILES: 'hafispace/profiles',
+  LOGOS: 'hafispace/logos',
 };
 
 // Image transformation presets

@@ -1,5 +1,5 @@
 /**
- * Bizspace Design System
+ * Hafispace Design System
  * Professional Photography Platform UI/UX Guide
  * 
  * Color Palette: Clean, minimal, photography-focused
