@@ -1,0 +1,32 @@
+import { useQuery } from "@tanstack/react-query";
+
+type AdminClient = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  instagram: string | null;
+  totalBooking: number;
+  createdAt: string;
+};
+
+type AdminClientsResponse = {
+  items: AdminClient[];
+};
+
+async function fetchAdminClients(): Promise<AdminClientsResponse> {
+  const response = await fetch("/api/admin/clients");
+
+  if (!response.ok) {
+    throw new Error("Failed to load clients");
+  }
+
+  return response.json() as Promise<AdminClientsResponse>;
+}
+
+export function useAdminClients() {
+  return useQuery({
+    queryKey: ["admin-clients"],
+    queryFn: fetchAdminClients,
+  });
+}

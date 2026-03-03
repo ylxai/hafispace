@@ -1,0 +1,22 @@
+{
+  "status": "init",
+  "scope": "codebase",
+  "type": "frontend",
+  "localEndpoint": "http://localhost:3000/",
+  "serverPort": 45773,
+  "needLogin": true,
+  "username": "user nandika",
+  "password": "klp123",
+  "authType": "basic",
+  "executionArgs": {
+    "projectName": "my-platform",
+    "projectPath": "/home/eouser/scrapper/my-platform",
+    "testIds": [],
+    "additionalInstruction": "Use username 'nandika' and password 'klp123' for login tests. The app runs on port 3000.",
+    "serverMode": "production",
+    "envs": {
+      "API_KEY": "sk-user-WobCJOZfVhICewJoASmkfoqH7gTejWWkLFNhV-Ehz4tEs6gUI4lHTfulIKeeQ-yMUUwkg9A-4-qcMcLt1lI0R7kyU54XkXmn2xLDPoepiBxd1cwkE76uwqNlUO4pqM9H094"
+    }
+  },
+  "proxy": "http://dd81eddb-1b3e-4a96-a214-8d853b354a02:K2IvdAGS6EVTDsuKUm778weGFJ29PGhE@tun.testsprite.com:8080"
+}

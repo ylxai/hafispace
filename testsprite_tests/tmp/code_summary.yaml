@@ -1,0 +1,177 @@
+version: "2"
+type: frontend
+tech_stack:
+  - language: TypeScript
+  - framework: Next.js 15 (App Router)
+  - ui_library: Tailwind CSS v4
+  - other: NextAuth v5, Prisma ORM, TanStack Query, Zod, React Hook Form, bcryptjs, Lucide React
+
+routes:
+  - path: /
+    file: src/app/page.tsx
+    auth_required: false
+    description: Home/landing page with Next.js default template
+  - path: /login
+    file: src/app/login/page.tsx
+    auth_required: false
+    description: Admin/client login page with username and password
+  - path: /admin
+    file: src/app/admin/page.tsx
+    auth_required: true
+    description: Admin dashboard home with studio overview metrics
+  - path: /admin/events
+    file: src/app/admin/events/page.tsx
+    auth_required: true
+    description: Booking/events manager page with list and status summary
+  - path: /admin/galleries
+    file: src/app/admin/galleries/page.tsx
+    auth_required: true
+    description: Gallery manager page showing all galleries with status and photo counts
+  - path: /admin/clients
+    file: src/app/admin/clients/page.tsx
+    auth_required: true
+    description: Client manager page showing all clients with contact and booking info
+  - path: /admin/settings
+    file: src/app/admin/settings/page.tsx
+    auth_required: true
+    description: Settings page with studio profile, access control, and notifications
+
+features:
+  - name: User Login
+    description: Admin/client login with username and password credentials via NextAuth
+    files:
+      - src/app/login/page.tsx
+      - src/lib/auth/options.ts
+      - src/app/api/auth/[...nextauth]/route.ts
+    entry_route: /login
+    user_interactions:
+      - Fill username input field
+      - Fill password input field
+      - Click Sign in button to submit form
+      - See error message "Username atau password salah." on invalid credentials
+      - See loading state "Signing in..." while request is in progress
+      - Get redirected to /admin on successful login
+    api_calls:
+      - method: POST
+        endpoint: /api/auth/callback/credentials
+    auth_required: false
+
+  - name: Admin Dashboard Overview
+    description: Admin home page showing key metrics - active bookings, total bookings, galleries, and clients
+    files:
+      - src/app/admin/page.tsx
+      - src/hooks/use-admin-metrics.ts
+      - src/app/api/admin/metrics/route.ts
+    entry_route: /admin
+    user_interactions:
+      - View overview cards with metrics (Active Bookings, Total Bookings, Galleries, Clients)
+      - See loading state with "—" placeholders while data loads
+      - View upcoming workflows list
+      - Click quick action buttons (Create event, Upload gallery, Send invite, Review comments)
+    api_calls:
+      - method: GET
+        endpoint: /api/admin/metrics
+    auth_required: true
+
+  - name: Bookings / Events Management
+    description: View and manage photography session bookings with status tracking
+    files:
+      - src/app/admin/events/page.tsx
+      - src/hooks/use-admin-events.ts
+      - src/app/api/admin/events/route.ts
+    entry_route: /admin/events
+    user_interactions:
+      - View summary cards (Total Bookings, Active, Pending, Completed)
+      - View bookings table with Client, Package, Session Date, Status, and Galleries columns
+      - See status badges (PENDING, CONFIRMED, COMPLETED)
+      - Click "+ Create event" button to create a new booking
+      - See "Loading bookings..." while data loads
+      - See "No bookings yet. Create your first booking." when empty
+    api_calls:
+      - method: GET
+        endpoint: /api/admin/events
+      - method: POST
+        endpoint: /api/admin/events
+    auth_required: true
+
+  - name: Gallery Management
+    description: View and manage photo galleries for clients with token-based access
+    files:
+      - src/app/admin/galleries/page.tsx
+      - src/hooks/use-admin-galleries.ts
+      - src/app/api/admin/galleries/route.ts
+    entry_route: /admin/galleries
+    user_interactions:
+      - View gallery cards in a grid layout
+      - See gallery name, status badge, photo count, and client name
+      - See client token and selection count
+      - Click "Manage" button on a gallery card
+      - See "Loading galleries..." while data loads
+      - See "No galleries yet. Upload a new gallery to start." when empty
+    api_calls:
+      - method: GET
+        endpoint: /api/admin/galleries
+      - method: POST
+        endpoint: /api/admin/galleries
+    auth_required: true
+
+  - name: Client Management
+    description: View and manage photography clients with contact info and booking history
+    files:
+      - src/app/admin/clients/page.tsx
+      - src/hooks/use-admin-clients.ts
+      - src/app/api/admin/clients/route.ts
+    entry_route: /admin/clients
+    user_interactions:
+      - View client list with name, contact info (email/phone/instagram), and booking count
+      - See join date for each client
+      - Click "View" button to view client details
+      - See "Loading clients..." while data loads
+      - See "No clients yet. Invite your first client." when empty
+    api_calls:
+      - method: GET
+        endpoint: /api/admin/clients
+      - method: POST
+        endpoint: /api/admin/clients
+    auth_required: true
+
+  - name: Admin Settings
+    description: Configure studio profile, access control, and notification preferences
+    files:
+      - src/app/admin/settings/page.tsx
+    entry_route: /admin/settings
+    user_interactions:
+      - View settings groups (Studio Profile, Access Control, Notifications)
+      - Click "Configure" button on each settings group
+    api_calls: []
+    auth_required: true
+
+  - name: Admin Navigation
+    description: Sidebar/header navigation for the admin panel
+    files:
+      - src/components/admin/navigation.tsx
+      - src/components/admin/layout/header.tsx
+      - src/app/admin/layout.tsx
+    entry_route: /admin
+    user_interactions:
+      - Click navigation links to switch between admin sections
+      - View current page highlighted in navigation
+    api_calls: []
+    auth_required: true
+
+known_limitations:
+  - issue: Quick action buttons on Admin Dashboard are UI-only placeholders with no functionality
+    location: src/app/admin/page.tsx
+    impact: Clicking Create event, Upload gallery, Send invite, Review comments buttons does nothing
+  - issue: Settings Configure buttons are UI-only with no connected forms or backend
+    location: src/app/admin/settings/page.tsx
+    impact: No actual settings can be saved
+  - issue: Client "View" button has no navigation or modal connected
+    location: src/app/admin/clients/page.tsx
+    impact: Cannot view individual client details
+  - issue: Gallery "Manage" button has no navigation or modal connected
+    location: src/app/admin/galleries/page.tsx
+    impact: Cannot manage individual gallery details
+  - issue: Forgot password button has no functionality
+    location: src/app/login/page.tsx
+    impact: Password reset is not available

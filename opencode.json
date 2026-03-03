@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "Neon": {
+      "type": "remote",
+      "url": "https://mcp.neon.tech/mcp",
+      "headers": {
+      "Authorization": "Bearer napi_1rax6lwxhgxdf4e491mjfsl1w177b4qwrcskmfx6qf7qy2d5jp36q0ec0pwbsak9"
+}
+    }
+  }
+}

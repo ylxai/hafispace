@@ -1,0 +1,331 @@
+// Prisma Schema for Bizspace - Photography Studio Management System
+// Based on SPEC_Bizspace_Pickspace_REVISED.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ================================================================================
+// USER & AUTH
+// ================================================================================
+
+enum UserRole {
+  ADMIN
+  CLIENT
+  GUEST
+}
+
+enum VendorStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum SubscriptionType {
+  VIEWSPACE
+  PICKSPACE
+  BIZSPACE
+  OMNISPACE
+}
+
+model Vendor {
+  id        String   @id @default(uuid()) @db.Uuid
+  username  String   @unique
+  email     String   @unique
+  password  String
+  namaStudio String? @map("nama_studio")
+  logoUrl   String?  @map("logo_url")
+  phone     String?
+  googleRefreshToken String? @map("google_refresh_token")
+  googleFolderId String? @map("google_folder_id")
+  r2AccessKeyId String? @map("r2_access_key_id")
+  r2SecretAccessKey String? @map("r2_secret_access_key")
+  r2BucketName String? @map("r2_bucket_name")
+  r2Endpoint String? @map("r2_endpoint")
+  cloudinaryCloudName String? @map("cloudinary_cloud_name")
+  cloudinaryApiKey String? @map("cloudinary_api_key")
+  cloudinaryApiSecret String? @map("cloudinary_api_secret")
+  enableViesusEnhancement Boolean @default(false) @map("enable_viesus_enhancement")
+  status    VendorStatus @default(ACTIVE)
+  subscriptionType SubscriptionType @default(VIEWSPACE) @map("subscription_type")
+  subscriptionExpired DateTime? @map("subscription_expired")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  packages     Package[]
+  clients      Client[]
+  bookings     Booking[]
+  galleries    Gallery[]
+  customFields CustomField[]
+  notifications Notification[]
+  activityLogs ActivityLog[]
+
+  @@map("vendors")
+}
+
+// ================================================================================
+// PACKAGES
+// ================================================================================
+
+model Package {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendorId    String   @map("vendor_id") @db.Uuid
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  namaPaket  String   @map("nama_paket")
+  harga       Decimal  @db.Decimal(15, 0) @default(0)
+  deskripsi   String?
+  fitur       Json?    // JSON array of features
+  isCustomable Boolean @default(false) @map("is_customable")
+  urutan      Int      @default(0)
+  status      String   @default("active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  bookings    Booking[]
+
+  @@map("packages")
+}
+
+// ================================================================================
+// CLIENTS
+// ================================================================================
+
+model Client {
+  id        String   @id @default(uuid()) @db.Uuid
+  vendorId  String   @map("vendor_id") @db.Uuid
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  name      String
+  email     String?
+  phone     String?
+  instagram String?
+  customFields Json?  @map("custom_fields")
+  totalBooking Int    @default(0) @map("total_booking")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  bookings Booking[]
+
+  @@map("clients")
+}
+
+// ================================================================================
+// BOOKINGS (Events)
+// ================================================================================
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum DpStatus {
+  UNPAID
+  PAID
+  PARTIAL
+}
+
+model Booking {
+  id            String   @id @default(uuid()) @db.Uuid
+  vendorId      String   @map("vendor_id") @db.Uuid
+  vendor        Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  clientId      String?  @map("client_id") @db.Uuid
+  client        Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  kodeBooking   String   @unique @map("kode_booking")
+  namaClient    String   @map("nama_client")
+  hpClient      String   @map("hp_client")
+  emailClient   String?  @map("email_client")
+  paketId       String?  @map("paket_id") @db.Uuid
+  paket         Package? @relation(fields: [paketId], references: [id], onDelete: SetNull)
+  paketCustom   String?  @map("paket_custom")
+  hargaPaket    Decimal? @map("harga_paket") @db.Decimal(15, 0)
+  tanggalSesi   DateTime @map("tanggal_sesi")
+  lokasiSesi    String?  @map("lokasi_sesi")
+  status        BookingStatus @default(PENDING)
+  dpAmount      Decimal? @map("dp_amount") @db.Decimal(15, 0)
+  dpStatus      DpStatus @default(UNPAID) @map("dp_status")
+  invoiceUrl   String?  @map("invoice_url")
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  galleries Gallery[]
+
+  @@map("bookings")
+}
+
+// ================================================================================
+// GALLERIES
+// ================================================================================
+
+enum GalleryStatus {
+  DRAFT
+  IN_REVIEW
+  DELIVERED
+}
+
+model Gallery {
+  id              String   @id @default(uuid()) @db.Uuid
+  vendorId        String   @map("vendor_id") @db.Uuid
+  vendor          Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  bookingId       String?  @map("booking_id") @db.Uuid
+  booking         Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  namaProject     String   @map("nama_project")
+  clientToken     String   @unique @map("client_token")
+  cloudinaryFolderId  String?  @map("cloudinary_folder_id")  // Cloudinary folder for this gallery
+  storageProvider String @default("Cloudinary") @map("storage_provider") // Storage provider: Cloudinary, R2, GoogleDrive, etc.
+  viewCount       Int      @default(0) @map("view_count")
+  status          GalleryStatus @default(DRAFT)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  settings    GallerySetting?
+  photos      Photo[]
+  selections  PhotoSelection[]
+
+  @@map("galleries")
+}
+
+// ================================================================================
+// GALLERY SETTINGS
+// ================================================================================
+
+model GallerySetting {
+  id                  String   @id @default(uuid()) @db.Uuid
+  galleryId           String   @unique @map("gallery_id") @db.Uuid
+  gallery             Gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  maxSelection       Int      @default(20) @map("max_selection")
+  enableDownload     Boolean  @default(true) @map("enable_download")
+  downloadExpired    DateTime? @map("download_expired")
+  enablePrint        Boolean  @default(false) @map("enable_print")
+  printSpecs         Json?    @map("print_specs")
+  watermarkEnabled   Boolean  @default(false) @map("watermark_enabled")
+  watermarkText      String?  @map("watermark_text")
+  bannerClientName   String?  @map("banner_client_name")
+  bannerEventDate    DateTime? @map("banner_event_date")
+  bannerMessage      String?  @map("banner_message")
+  welcomeMessage     String?  @map("welcome_message")
+  thankYouMessage    String?  @map("thank_you_message")
+
+  @@map("gallery_settings")
+}
+
+// ================================================================================
+// PHOTOS
+// ================================================================================
+
+model Photo {
+  id          String   @id @default(uuid()) @db.Uuid
+  galleryId   String   @map("gallery_id") @db.Uuid
+  gallery     Gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  storageKey  String   @map("storage_key")     // Cloudinary public ID or storage identifier
+  filename    String
+  url         String                            // Direct view URL
+  thumbnailUrl String?  @map("thumbnail_url")
+  width       Int?
+  height      Int?
+  size        Int?                              // bytes
+  mimeType    String?  @map("mime_type") @default("image/jpeg")
+  urutan      Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([galleryId, storageKey])
+  @@map("photos")
+}
+
+// ================================================================================
+// PHOTO SELECTIONS
+// ================================================================================
+
+enum SelectionType {
+  EDIT
+  PRINT
+}
+
+model PhotoSelection {
+  id            String   @id @default(uuid()) @db.Uuid
+  galleryId     String   @map("gallery_id") @db.Uuid
+  gallery       Gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  fileId        String   @map("file_id")
+  filename      String
+  filePath      String?  @map("file_path")
+  selectionType SelectionType @default(EDIT) @map("selection_type")
+  printSize     String?  @map("print_size")
+  selectedAt    DateTime @default(now()) @map("selected_at")
+  lockedAt      DateTime? @map("locked_at")
+  isLocked      Boolean  @default(false) @map("is_locked")
+
+  @@map("photo_selections")
+}
+
+// ================================================================================
+// CUSTOM FIELDS
+// ================================================================================
+
+enum FieldType {
+  TEXT
+  NUMBER
+  DATE
+  SELECT
+  TEXTAREA
+}
+
+model CustomField {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendorId    String   @map("vendor_id") @db.Uuid
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  namaField   String   @map("nama_field")
+  tipe        FieldType @default(TEXT)
+  options     Json?    // For select type: ["option1", "option2"]
+  wajib       Boolean  @default(false)
+  urutan      Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("custom_fields")
+}
+
+// ================================================================================
+// NOTIFICATIONS
+// ================================================================================
+
+enum NotificationType {
+  BOOKING_NEW
+  BOOKING_CONFIRMED
+  DP_RECEIVED
+  SELECTION_DONE
+  PRINT_LOCKED
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  vendorId  String   @map("vendor_id") @db.Uuid
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String?
+  data      Json?
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("notifications")
+}
+
+// ================================================================================
+// ACTIVITY LOGS
+// ================================================================================
+
+model ActivityLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  vendorId  String?  @map("vendor_id") @db.Uuid
+  vendor    Vendor?  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  galleryId String?  @map("gallery_id") @db.Uuid
+  action    String
+  details   String?
+  ipAddress String?  @map("ip_address")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("activity_logs")
+}
