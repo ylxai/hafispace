@@ -63,7 +63,11 @@ export async function GET(request: Request) {
   }
 
   // Create Ably token with the appropriate client ID
-  const ably = new Ably.Rest({ key: process.env.ABLY_API_KEY! });
+  const ablyKey = process.env.ABLY_API_KEY;
+  if (!ablyKey) {
+    return NextResponse.json({ error: "Ably not configured" }, { status: 503 });
+  }
+  const ably = new Ably.Rest({ key: ablyKey });
   const tokenRequest = await ably.auth.createTokenRequest({
     clientId,
     // Restrict capabilities to only subscribe to the gallery channel

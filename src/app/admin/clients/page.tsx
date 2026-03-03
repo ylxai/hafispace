@@ -156,7 +156,7 @@ export default function AdminClientsPage() {
             console.warn(`Client "${c.name}" has ${c.bookingCount} booking(s)`);
           });
         } else {
-          toast.error(result.message || "Failed to delete clients");
+          toast.error(result.message ?? "Failed to delete clients");
         }
         return;
       }
@@ -165,7 +165,7 @@ export default function AdminClientsPage() {
       setSelectedClientIds(new Set());
       setShowBulkActions(false);
       await queryClient.invalidateQueries({ queryKey: ["admin-clients"] });
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete clients");
     } finally {
       setIsBulkProcessing(false);

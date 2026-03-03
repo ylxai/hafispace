@@ -111,7 +111,7 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
 
     setIsBulkProcessing(true);
     try {
-      let actionData: {
+      const actionData: {
         selectionIds: string[];
         isLocked?: boolean;
         selectionType?: string;
@@ -139,7 +139,7 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
       const result = await res.json();
       
       if (!res.ok) {
-        toast.error(result.message || `Failed to ${bulkActionType} selections`);
+        toast.error(result.message ?? `Failed to ${bulkActionType} selections`);
         return;
       }
 
@@ -149,7 +149,7 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
       setBulkActionType(null);
       setBulkSelectionType("");
       await fetchSelections(); // Refresh data
-    } catch (error) {
+    } catch {
       toast.error("Failed to perform bulk action");
     } finally {
       setIsBulkProcessing(false);
@@ -256,7 +256,7 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <select
-                value={bulkActionType || ""}
+                value={bulkActionType ?? ""}
                 onChange={(e) => setBulkActionType(e.target.value as "delete" | "lock" | "unlock" | "changeType" | null)}
                 className="rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 text-sm text-amber-900 outline-none focus:border-amber-400"
               >

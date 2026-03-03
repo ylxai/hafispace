@@ -277,7 +277,7 @@ export default function ViewspacePage() {
       </header>
 
       {/* Welcome Banner */}
-      {(gallery.settings.welcomeMessage || gallery.settings.bannerClientName) && (
+      {(gallery.settings.welcomeMessage ?? gallery.settings.bannerClientName) && (
         <div className="border-b border-white/5 bg-gradient-to-r from-slate-900 to-slate-800 py-6 text-center px-4">
           {gallery.settings.bannerClientName && (
             <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
