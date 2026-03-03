@@ -68,17 +68,17 @@
   _Files: `src/lib/auth/options.ts`, `src/lib/cloudinary.ts`, `src/lib/ably.ts`_  
   Dibuat `src/lib/env.ts` yang memvalidasi semua env kritis. Di-import di `db.ts` agar dijalankan saat startup.
 
-- [ ] **M4** — `AdminHomePage` adalah `"use client"` padahal hanya fetch data  
+- [x] **M4** — `AdminHomePage` adalah `"use client"` padahal hanya fetch data  
   _File: `src/app/admin/page.tsx`_  
-  Bisa diubah ke Server Component + child client untuk interaktivitas, mengurangi client bundle.
+  Dikonversi ke Server Component — fetch data langsung via Prisma, hapus `useAdminMetrics` hook.
 
-- [ ] **M5** — `Upcoming Workflows` di dashboard menggunakan data hardcoded  
-  _File: `src/app/admin/page.tsx` (line 68)_  
-  List item adalah string statis, bukan data dari DB. Perlu disambungkan ke data nyata atau diberi keterangan placeholder.
+- [x] **M5** — `Upcoming Workflows` di dashboard menggunakan data hardcoded  
+  _File: `src/app/admin/page.tsx`_  
+  Diganti dengan "Upcoming Bookings" — data nyata dari DB (booking status PENDING/CONFIRMED, limit 5, sort by tanggalSesi).
 
-- [ ] **M6** — `Quick Actions` buttons tidak melakukan apa-apa  
-  _File: `src/app/admin/page.tsx` (line 82)_  
-  Semua tombol Quick Actions tidak memiliki handler/navigasi. UI-only tanpa fungsi.
+- [x] **M6** — `Quick Actions` buttons tidak melakukan apa-apa  
+  _File: `src/app/admin/page.tsx`_  
+  Diubah dari `<button>` menjadi `<Link>` dengan navigasi ke halaman yang sesuai.
 
 ---
 
@@ -88,17 +88,17 @@
   _File: `src/lib/auth/password.ts` (line 3)_  
   `bcrypt.genSalt(10)` → ditingkatkan ke `12`.
 
-- [ ] **L2** — "Remember me" checkbox tidak berfungsi  
-  _File: `src/app/login/page.tsx` (line 126-132)_  
-  Checkbox ada di UI tapi tidak terhubung ke state/logic apapun.
+- [x] **L2** — "Remember me" checkbox tidak berfungsi  
+  _File: `src/app/login/page.tsx`_  
+  Dihapus dari UI — fitur belum diimplementasi.
 
-- [ ] **L3** — "Forgot password?" button tidak berfungsi  
-  _File: `src/app/login/page.tsx` (line 133)_  
-  Button ada di UI tapi tidak ada handler/navigasi.
+- [x] **L3** — "Forgot password?" button tidak berfungsi  
+  _File: `src/app/login/page.tsx`_  
+  Dihapus dari UI — fitur belum diimplementasi.
 
-- [ ] **L4** — `googleapis` dependency ada tapi tidak terlihat digunakan  
+- [x] **L4** — `googleapis` dependency ada tapi tidak terlihat digunakan  
   _File: `package.json`_  
-  `googleapis: ^140.0.1` ada di dependencies. Perlu diaudit apakah benar-benar digunakan.
+  Dihapus dari dependencies — tidak ada usage di codebase.
 
 ---
 
