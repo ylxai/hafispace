@@ -12,6 +12,8 @@ export type AdminBooking = {
   lokasiSesi: string | null;
   status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
   dpAmount: string;
+  dpStatus: "UNPAID" | "PARTIAL" | "PAID";
+  hargaPaket: string;
   galleryCount: number;
   createdAt: string;
 };
