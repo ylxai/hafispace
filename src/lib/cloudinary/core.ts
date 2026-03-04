@@ -1,6 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary';
 import type { UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
-import { prisma } from './db';
+import { prisma } from '../db';
 import type { CloudinaryResource, CloudinaryResourceResult, CloudinaryDeletionResult, CloudinaryPingResult } from '@/types/cloudinary';
 
 // Configure Cloudinary with environment variables

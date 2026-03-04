@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { PrintButton } from "./print-button";
+import { formatDate, formatRupiah } from "@/lib/format";
+
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -54,22 +56,6 @@ interface InvoiceData {
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-
-function formatRupiah(amount: number) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Menunggu Konfirmasi",

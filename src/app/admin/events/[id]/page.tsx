@@ -7,6 +7,8 @@ import Link from "next/link";
 import { StatusBadge } from "@/components/admin";
 import { useToast } from "@/components/ui/toast";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
+import { formatDate, formatDateTime, formatRupiah } from "@/lib/format";
+
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -81,33 +83,6 @@ interface BookingDetailResponse {
 }
 
 // ─── Format helpers ───────────────────────────────────────────────────────────
-
-function formatRupiah(amount: number) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-function formatDate(dateString: string | null) {
-  if (!dateString) return "-";
-  return new Date(dateString).toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(dateString: string) {
-  return new Date(dateString).toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 

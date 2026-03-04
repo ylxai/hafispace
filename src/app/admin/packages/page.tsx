@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast";
+import { formatRupiah } from "@/lib/format";
+
 
 type PackageCategory = "PREWED" | "WEDDING" | "PERSONAL" | "EVENT" | "LAINNYA";
 
@@ -49,10 +51,6 @@ const FILTER_TABS: { label: string; value: PackageCategory | "ALL" }[] = [
   { label: "Event", value: "EVENT" },
   { label: "Lainnya", value: "LAINNYA" },
 ];
-
-function formatRupiah(amount: number) {
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(amount);
-}
 
 const emptyForm = {
   namaPaket: "",
