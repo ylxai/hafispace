@@ -412,7 +412,7 @@ export default function ViewspacePage() {
           </div>
         ) : isAllTab ? (
           /* All Photos - Grid */
-          <div className="grid grid-cols-2 gap-0.5 sm:grid-cols-3 sm:gap-1 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 sm:gap-1.5 lg:grid-cols-4">
             {gallery.photos.map((photo, index) => {
               const isSelected = gallery.selections.includes(photo.storageKey);
               return (

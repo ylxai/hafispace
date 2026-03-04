@@ -316,8 +316,20 @@ export default function PickspacePage() {
 
   const handleSubmit = async () => {
     if (selectedIds.size === 0) return;
-    setIsLocked(true);
-    setShowSuccess(true);
+    try {
+      const res = await fetch(`/api/public/gallery/${token}/submit`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error ?? "Gagal mengirim seleksi. Coba lagi.");
+        return;
+      }
+      setIsLocked(true);
+      setShowSuccess(true);
+    } catch {
+      alert("Terjadi kesalahan. Periksa koneksi internet Anda.");
+    }
   };
 
   if (isLoading) {
