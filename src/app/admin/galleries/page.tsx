@@ -140,27 +140,29 @@ export default function AdminGalleriesPage() {
       
       {/* Bulk Actions Bar */}
       {showBulkActions && (
-        <div className="fixed top-16 left-0 right-0 z-40 bg-amber-50 border-b border-amber-200 p-4 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="fixed top-16 left-0 right-0 z-40 bg-amber-50 border-b border-amber-200 px-4 py-3 backdrop-blur-sm shadow-sm">
+          <div className="max-w-7xl mx-auto flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* Info + Clear */}
             <div className="flex items-center gap-3">
-              <span className="text-amber-800 font-medium">
-                {selectedGalleryIds.size} gallery(ies) selected
+              <span className="text-amber-800 font-medium text-sm">
+                {selectedGalleryIds.size} gallery dipilih
               </span>
               <button
                 type="button"
-                onClick={() => setSelectedGalleryIds(new Set())}
-                className="text-amber-600 hover:text-amber-800 text-sm font-medium"
+                onClick={() => { setSelectedGalleryIds(new Set()); setShowBulkActions(false); }}
+                className="text-amber-600 hover:text-amber-800 text-sm font-medium underline underline-offset-2"
               >
-                Clear selection
+                Batal
               </button>
             </div>
-            <div className="flex items-center gap-3">
+            {/* Actions */}
+            <div className="flex flex-wrap items-center gap-2">
               <select
                 value={bulkActionStatus}
                 onChange={(e) => setBulkActionStatus(e.target.value as AdminGallery["status"])}
-                className="rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 text-sm text-amber-900 outline-none focus:border-amber-400"
+                className="flex-1 min-w-0 rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 text-sm text-amber-900 outline-none focus:border-amber-400"
               >
-                <option value="">Select status</option>
+                <option value="">Ubah status...</option>
                 <option value="DRAFT">Draft</option>
                 <option value="IN_REVIEW">In Review</option>
                 <option value="DELIVERED">Delivered</option>
@@ -169,17 +171,17 @@ export default function AdminGalleriesPage() {
                 type="button"
                 onClick={handleBulkUpdate}
                 disabled={!bulkActionStatus || isBulkProcessing}
-                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+                className="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
               >
-                Update Status
+                Update
               </button>
               <button
                 type="button"
                 onClick={handleBulkDelete}
                 disabled={isBulkProcessing}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                className="shrink-0 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
               >
-                Delete Selected
+                {isBulkProcessing ? "Menghapus..." : "Hapus"}
               </button>
             </div>
           </div>
@@ -203,6 +205,21 @@ export default function AdminGalleriesPage() {
           Curate and publish professional photo galleries for your clients.
         </p>
       </header>
+
+      {/* Select All Header — hanya tampil jika ada lebih dari 1 gallery */}
+      {!isLoading && galleries.length > 1 && (
+        <div className="flex items-center justify-between px-1 -mb-3">
+          <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={selectedGalleryIds.size > 0 && selectedGalleryIds.size === galleries.length}
+              onChange={handleSelectAll}
+              className="h-4 w-4 rounded border-slate-300 text-slate-600 focus:ring-slate-500"
+            />
+            <span>Pilih semua {galleries.length} gallery</span>
+          </label>
+        </div>
+      )}
 
       {/* Gallery Grid */}
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -236,108 +253,97 @@ export default function AdminGalleriesPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-slate-900">No galleries yet</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Belum ada gallery</h3>
               <p className="mt-2 text-sm text-slate-600 max-w-md mx-auto">
-                Create your first gallery to start sharing professional photo collections with your clients.
+                Buat gallery pertama untuk mulai berbagi koleksi foto profesional dengan klien Anda.
               </p>
             </div>
           </div>
-         ) : (
-           <div className="space-y-5">
-             {/* Select All Header */}
-             {galleries.length > 1 && (
-               <div className="flex items-center justify-between px-1">
-                 <label className="flex items-center gap-2 text-sm text-slate-600">
-                   <input
-                     type="checkbox"
-                     checked={selectedGalleryIds.size > 0 && selectedGalleryIds.size === galleries.length}
-                     onChange={handleSelectAll}
-                     className="h-4 w-4 rounded border-slate-300 text-slate-600 focus:ring-slate-500"
-                   />
-                   <span>Select all {galleries.length} galleries</span>
-                 </label>
-               </div>
-             )}
-             
-             {galleries.map((gallery) => (
-               <div
-                 key={gallery.id}
-                 className={`group relative rounded-3xl border bg-white/70 backdrop-blur-xl p-6 pr-12 shadow-sm transition-all duration-300 hover:shadow-glass hover:-translate-y-1 cursor-pointer ${
-                   selectedGalleryIds.has(gallery.id)
-                     ? "border-sky-400 ring-2 ring-sky-100"
-                     : "border-slate-200 hover:border-white/40"
-                 }`}
-                 onClick={() => setSelectedGallery(gallery)}
-               >
-                 {/* Checkbox overlay */}
-                 <div 
-                   className="absolute top-4 right-4 z-10"
-                   onClick={(e) => {
-                     e.stopPropagation();
-                     handleSelectGallery(gallery.id);
-                   }}
-                 >
-                   <input
-                     type="checkbox"
-                     checked={selectedGalleryIds.has(gallery.id)}
-                     onChange={() => handleSelectGallery(gallery.id)}
-                     className="h-5 w-5 rounded border-slate-300 text-slate-600 focus:ring-slate-500"
-                   />
-                 </div>
-                 
-                 {/* Subtle gradient overlay on hover — pointer-events-none agar tidak block checkbox */}
-                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/0 via-white/0 to-sky-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                 
-                 {/* Content */}
-                 <div className="relative">
-                   <div className="flex items-start justify-between">
-                     <div className="flex-1 min-w-0">
-                       <p className="text-lg font-semibold text-slate-900 truncate tracking-tight">
-                         {gallery.namaProject}
-                       </p>
-                       <p className="mt-1.5 text-sm text-slate-600 truncate">
-                         {gallery.clientName}
-                       </p>
-                     </div>
-                     <StatusBadge label={gallery.status} />
-                   </div>
+        ) : (
+          <>
+            {galleries.map((gallery) => (
+              <div
+                key={gallery.id}
+                className={`group relative rounded-3xl border bg-white/70 backdrop-blur-xl p-6 shadow-sm transition-all duration-300 hover:shadow-glass hover:-translate-y-1 cursor-pointer ${
+                  selectedGalleryIds.has(gallery.id)
+                    ? "border-sky-400 ring-2 ring-sky-100"
+                    : "border-slate-200 hover:border-white/40"
+                }`}
+                onClick={() => setSelectedGallery(gallery)}
+              >
+                {/* Checkbox — pojok kiri atas */}
+                <div
+                  className="absolute top-5 left-5 z-10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSelectGallery(gallery.id);
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedGalleryIds.has(gallery.id)}
+                    onChange={() => handleSelectGallery(gallery.id)}
+                    className="h-5 w-5 rounded border-slate-300 text-sky-500 focus:ring-sky-400 cursor-pointer"
+                  />
+                </div>
 
-                   {/* Stats */}
-                   <div className="mt-5 flex items-center gap-3">
-                     <div className="flex items-center gap-2 rounded-xl bg-slate-100/80 px-3 py-2">
-                       <svg className="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                       </svg>
-                       <span className="text-xs font-medium text-slate-700">{gallery.photoCount}</span>
-                     </div>
-                     <div className="flex items-center gap-2 rounded-xl bg-slate-100/80 px-3 py-2">
-                       <svg className="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                       </svg>
-                       <span className="text-xs font-medium text-slate-700">{gallery.viewCount}</span>
-                     </div>
-                     <div className="flex items-center gap-2 rounded-xl bg-slate-100/80 px-3 py-2">
-                       <svg className="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                       </svg>
-                       <span className="text-xs font-medium text-slate-700">{gallery.selectionCount}</span>
-                     </div>
-                   </div>
+                {/* Gradient overlay hover — pointer-events-none agar tidak block interaksi */}
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/0 via-white/0 to-sky-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
-                   {/* Action Button */}
-                   <button
-                     type="button"
-                     className="mt-5 w-full rounded-full border border-slate-200 bg-white/50 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-600 backdrop-blur-sm transition-all duration-200 hover:border-slate-300 hover:bg-white hover:text-slate-900 hover:shadow-sm"
-                   >
-                     Manage Gallery
-                   </button>
-                 </div>
-               </div>
-             ))}
-           </div>
-         )}
-       </div>
+                {/* Content — pl-10 agar tidak tertimpa checkbox */}
+                <div className="relative pl-10">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-lg font-semibold text-slate-900 truncate tracking-tight">
+                        {gallery.namaProject}
+                      </p>
+                      <p className="mt-1.5 text-sm text-slate-600 truncate">
+                        {gallery.clientName}
+                      </p>
+                    </div>
+                    <StatusBadge label={gallery.status} />
+                  </div>
+
+                  {/* Stats */}
+                  <div className="mt-5 flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 rounded-xl bg-slate-100/80 px-3 py-2">
+                      <svg className="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-xs font-medium text-slate-700">{gallery.photoCount}</span>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-xl bg-slate-100/80 px-3 py-2">
+                      <svg className="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <span className="text-xs font-medium text-slate-700">{gallery.viewCount}</span>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-xl bg-slate-100/80 px-3 py-2">
+                      <svg className="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                      <span className="text-xs font-medium text-slate-700">{gallery.selectionCount}</span>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  <button
+                    type="button"
+                    className="mt-5 w-full rounded-full border border-slate-200 bg-white/50 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-600 backdrop-blur-sm transition-all duration-200 hover:border-slate-300 hover:bg-white hover:text-slate-900 hover:shadow-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedGallery(gallery);
+                    }}
+                  >
+                    Kelola Gallery
+                  </button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
      </section>
    );
  }
