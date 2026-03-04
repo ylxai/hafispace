@@ -177,7 +177,7 @@ function BookingFormContent() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Gagal membuat booking');
+        throw new Error(errorData.error ?? 'Gagal membuat booking');
       }
 
       const data = await response.json();
@@ -228,7 +228,7 @@ function BookingFormContent() {
             {vendorData.logoUrl && (
               <img
                 src={vendorData.logoUrl}
-                alt={vendorData.namaStudio || 'Studio'}
+                alt={vendorData.namaStudio ?? 'Studio'}
                 className="h-16 mx-auto mb-4 object-contain"
               />
             )}
@@ -256,7 +256,7 @@ function BookingFormContent() {
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Berhasil!</h2>
               <p className="text-gray-600">
-                {vendorData.successMessage || 'Terima kasih telah melakukan booking. Kami akan segera menghubungi Anda.'}
+                {vendorData.successMessage ?? 'Terima kasih telah melakukan booking. Kami akan segera menghubungi Anda.'}
               </p>
             </div>
 
@@ -329,7 +329,7 @@ function BookingFormContent() {
           {vendorData.logoUrl && (
             <img
               src={vendorData.logoUrl}
-              alt={vendorData.namaStudio || 'Studio'}
+              alt={vendorData.namaStudio ?? 'Studio'}
               className="h-16 mx-auto mb-4 object-contain"
             />
           )}
@@ -507,7 +507,7 @@ function BookingFormContent() {
                       {field.tipe === 'TEXT' && (
                         <input
                           type="text"
-                          value={customFields[field.id] || ''}
+                          value={customFields[field.id] ?? ''}
                           onChange={(e) =>
                             setCustomFields((prev) => ({ ...prev, [field.id]: e.target.value }))
                           }
@@ -517,7 +517,7 @@ function BookingFormContent() {
                       )}
                       {field.tipe === 'TEXTAREA' && (
                         <textarea
-                          value={customFields[field.id] || ''}
+                          value={customFields[field.id] ?? ''}
                           onChange={(e) =>
                             setCustomFields((prev) => ({ ...prev, [field.id]: e.target.value }))
                           }
@@ -529,7 +529,7 @@ function BookingFormContent() {
                       {field.tipe === 'DATE' && (
                         <input
                           type="date"
-                          value={customFields[field.id] || ''}
+                          value={customFields[field.id] ?? ''}
                           onChange={(e) =>
                             setCustomFields((prev) => ({ ...prev, [field.id]: e.target.value }))
                           }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
+import { useQuery } from "@tanstack/react-query";
 
 interface NavItem {
   label: string;
@@ -97,6 +98,21 @@ interface SidebarContentProps {
 function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
   const { data: session } = useSession();
 
+  // Fetch namaStudio dari settings API
+  const { data: settingsData } = useQuery<{ vendor: { namaStudio?: string; email?: string } }>({
+    queryKey: ["sidebar-vendor-info"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/settings");
+      if (!res.ok) throw new Error("Failed");
+      return res.json() as Promise<{ vendor: { namaStudio?: string; email?: string } }>;
+    },
+    staleTime: 5 * 60_000, // 5 menit
+  });
+
+  const namaStudio = settingsData?.vendor?.namaStudio ?? session?.user?.name ?? "Admin";
+  const email = settingsData?.vendor?.email ?? session?.user?.email ?? "";
+  const initial = namaStudio.charAt(0).toUpperCase();
+
   return (
     <div className="flex h-full flex-col">
       {/* Logo */}
@@ -155,15 +171,15 @@ function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
       <div className="border-t border-slate-100 px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600">
-              {(session?.user?.name ?? "A").charAt(0).toUpperCase()}
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
+              {initial}
             </div>
             <div className="min-w-0">
               <p className="truncate text-xs font-semibold text-slate-800">
-                {session?.user?.name ?? "Admin"}
+                {namaStudio}
               </p>
               <p className="truncate text-[10px] text-slate-400">
-                {session?.user?.email ?? ""}
+                {email}
               </p>
             </div>
           </div>
