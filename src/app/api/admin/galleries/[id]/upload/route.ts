@@ -92,13 +92,10 @@ export async function POST(
       );
     }
 
-    // Validate each file and convert to buffer
-    const validatedFiles: Array<{ file: Buffer; filename: string; mimeType: string }> = [];
-    
+    // Validasi metadata dulu (tanpa load ke memory)
     for (const file of files) {
       if (!file) continue;
 
-      // Validate file size
       if (file.size > MAX_FILE_SIZE) {
         return NextResponse.json(
           {
@@ -111,7 +108,6 @@ export async function POST(
         );
       }
 
-      // Validate file type
       if (!ALLOWED_MIME_TYPES.includes(file.type)) {
         return NextResponse.json(
           {
@@ -123,34 +119,48 @@ export async function POST(
           { status: 400 }
         );
       }
-
-      // Convert File to Buffer for upload
-      const buffer = Buffer.from(await file.arrayBuffer());
-      validatedFiles.push({ 
-        file: buffer, 
-        filename: file.name,
-        mimeType: file.type || 'image/jpeg'
-      });
     }
 
     // Prepare Cloudinary folder path
     const folderPath = `${CLOUDINARY_FOLDERS.GALLERIES}/${session.user.id}/${galleryId}`;
+    const uploadedAt = new Date().toISOString();
 
-    // Upload to Cloudinary with progress tracking
-    const uploadResults = await uploadMultipleImages(
-      session.user.id,
-      validatedFiles,
-      {
-        accountId: accountId ?? undefined,
-        folder: folderPath,
-        tags: ['gallery', galleryId, session.user.id],
-        context: {
-          gallery_id: galleryId,
-          vendor_id: session.user.id,
-          uploaded_at: new Date().toISOString(),
-        },
+    // Upload dalam batch kecil (5 files per batch) untuk hindari OOM
+    const BATCH_SIZE = 5;
+    const uploadResults: Awaited<ReturnType<typeof uploadMultipleImages>> = [];
+
+    for (let i = 0; i < files.length; i += BATCH_SIZE) {
+      const batch = files.slice(i, i + BATCH_SIZE);
+
+      // Load buffer satu batch saja, lalu GC bisa reclaim setelah batch selesai
+      const batchFiles: Array<{ file: Buffer; filename: string; mimeType: string }> = [];
+      for (const file of batch) {
+        if (!file) continue;
+        const buffer = Buffer.from(await file.arrayBuffer());
+        batchFiles.push({
+          file: buffer,
+          filename: file.name,
+          mimeType: file.type || 'image/jpeg',
+        });
       }
-    );
+
+      const batchResults = await uploadMultipleImages(
+        session.user.id,
+        batchFiles,
+        {
+          accountId: accountId ?? undefined,
+          folder: folderPath,
+          tags: ['gallery', galleryId, session.user.id],
+          context: {
+            gallery_id: galleryId,
+            vendor_id: session.user.id,
+            uploaded_at: uploadedAt,
+          },
+        }
+      );
+
+      uploadResults.push(...batchResults);
+    }
 
     // Save successful uploads to database
     const savedPhotos = [];
@@ -169,7 +179,7 @@ export async function POST(
               width: result.data.width,
               height: result.data.height,
               size: result.data.size,
-              mimeType: validatedFiles.find(f => f.filename === result.filename)?.mimeType ?? 'image/jpeg',
+              mimeType: files.find(f => f?.name === result.filename)?.type ?? 'image/jpeg',
               urutan: 0, // Will be sorted later if needed
             },
           });

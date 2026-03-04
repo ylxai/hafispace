@@ -5,8 +5,16 @@
  */
 
 export {
+  extractCloudName,
+  extractPublicId,
+  generateThumbnailUrl,
+  generateThumbnailUrlFromUrl,
+} from './utils';
+
+export {
   isViesusEnhancementEnabled,
   getCloudinaryAccount,
+  getCloudinaryConfig,
   configureCloudinary,
   getVendorCloudinaryClient,
   uploadPhotoToCloudinary,

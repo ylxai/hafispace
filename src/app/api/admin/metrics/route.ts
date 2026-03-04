@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { unauthorizedResponse } from "@/lib/api/response";
@@ -79,12 +80,17 @@ export async function GET() {
     }),
   ]);
 
-  // Hitung total
-  const totalOmset = allPayments.reduce((sum, p) => sum + Number(p.jumlah), 0);
-  const pemasukanBulanIni = paymentsBulanIni.reduce((sum, p) => sum + Number(p.jumlah), 0);
+  // Hitung total menggunakan Prisma.Decimal untuk menghindari floating point error
+  const totalOmset = allPayments
+    .reduce((sum, p) => sum.add(p.jumlah), new Prisma.Decimal(0))
+    .toNumber();
+  const pemasukanBulanIni = paymentsBulanIni
+    .reduce((sum, p) => sum.add(p.jumlah), new Prisma.Decimal(0))
+    .toNumber();
   const dpBulanIni = paymentsBulanIni
     .filter((p) => p.tipe === "DP")
-    .reduce((sum, p) => sum + Number(p.jumlah), 0);
+    .reduce((sum, p) => sum.add(p.jumlah), new Prisma.Decimal(0))
+    .toNumber();
 
   // Resolve nama paket
   const packageIds = topPackages.map((p) => p.paketId).filter(Boolean) as string[];
@@ -114,9 +120,10 @@ export async function GET() {
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const entry = trendMap.get(key);
     if (entry) {
-      entry.pemasukan += Number(p.jumlah);
-      if (p.tipe === "DP") entry.dp += Number(p.jumlah);
-      if (p.tipe === "PELUNASAN") entry.pelunasan += Number(p.jumlah);
+      const jumlah = new Prisma.Decimal(p.jumlah).toNumber();
+      entry.pemasukan += jumlah;
+      if (p.tipe === "DP") entry.dp += jumlah;
+      if (p.tipe === "PELUNASAN") entry.pelunasan += jumlah;
     }
   }
 
@@ -136,7 +143,7 @@ export async function GET() {
       namaClient: b.namaClient,
       status: b.status,
       tanggalSesi: b.tanggalSesi?.toISOString() ?? null,
-      hargaPaket: Number(b.hargaPaket ?? 0),
+      hargaPaket: new Prisma.Decimal(b.hargaPaket ?? 0).toNumber(),
       dpStatus: b.dpStatus,
       createdAt: b.createdAt.toISOString(),
       namaPaket: b.paket?.namaPaket ?? null,

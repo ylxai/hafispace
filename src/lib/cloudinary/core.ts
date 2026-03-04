@@ -74,13 +74,18 @@ export async function getCloudinaryAccount(vendorId: string, accountId?: string)
   };
 }
 
-// Configure Cloudinary with specific account
-export function configureCloudinary(account: CloudinaryAccountConfig) {
-  cloudinary.config({
+// Get per-request config object dari account (tidak mutasi global state)
+export function getCloudinaryConfig(account: CloudinaryAccountConfig) {
+  return {
     cloud_name: account.cloudName,
     api_key: account.apiKey,
     api_secret: account.apiSecret,
-  });
+  };
+}
+
+// @deprecated — gunakan getCloudinaryConfig() untuk avoid race condition
+export function configureCloudinary(account: CloudinaryAccountConfig) {
+  cloudinary.config(getCloudinaryConfig(account));
 }
 
 // Initialize Cloudinary client for a specific vendor (legacy - uses default account)
@@ -128,11 +133,12 @@ export async function uploadPhotoToCloudinary(
     // Get Cloudinary account (specific or default)
     const account = await getCloudinaryAccount(vendorId, options.accountId);
 
-    // Configure Cloudinary for this account
-    configureCloudinary(account);
+    // Per-request config — tidak mutasi global state
+    const perRequestConfig = getCloudinaryConfig(account);
 
-    // Prepare upload options
+    // Prepare upload options dengan credentials per-request
     const uploadOptions = {
+      ...perRequestConfig,
       folder: options.folder,
       public_id: options.publicId,
       overwrite: options.overwrite,
@@ -269,15 +275,16 @@ export async function getPhotoFromCloudinary(
     // Get vendor-specific configuration
     const vendorConfig = await getVendorCloudinaryClient(vendorId);
 
-    // Configure Cloudinary for this vendor
-    cloudinary.config({
+    // Per-request config — tidak mutasi global state
+    const perRequestConfig = {
       cloud_name: vendorConfig.cloudName,
       api_key: vendorConfig.apiKey,
       api_secret: vendorConfig.apiSecret,
-    });
+    };
 
-    // Get resource details
+    // Get resource details dengan per-request config
     const result = await cloudinary.api.resource(publicId, {
+      ...perRequestConfig,
       resource_type: options.resourceType,
     });
 
@@ -312,15 +319,16 @@ export async function deletePhotoFromCloudinary(
     // Get vendor-specific configuration
     const vendorConfig = await getVendorCloudinaryClient(vendorId);
 
-    // Configure Cloudinary for this vendor
-    cloudinary.config({
+    // Per-request config — tidak mutasi global state
+    const perRequestConfig = {
       cloud_name: vendorConfig.cloudName,
       api_key: vendorConfig.apiKey,
       api_secret: vendorConfig.apiSecret,
-    });
+    };
 
-    // Delete the resource
+    // Delete the resource dengan per-request config
     const result = await cloudinary.uploader.destroy(publicId, {
+      ...perRequestConfig,
       resource_type: options.resourceType,
       invalidate: true, // Invalidate CDN cache
     });
@@ -415,12 +423,12 @@ export async function listPhotosFromCloudinary(
     // Get vendor-specific configuration
     const vendorConfig = await getVendorCloudinaryClient(vendorId);
 
-    // Configure Cloudinary for this vendor
-    cloudinary.config({
+    // Per-request config — tidak mutasi global state
+    const perRequestConfig = {
       cloud_name: vendorConfig.cloudName,
       api_key: vendorConfig.apiKey,
       api_secret: vendorConfig.apiSecret,
-    });
+    };
 
     // Prepare search parameters
     const searchParams: {
@@ -448,8 +456,8 @@ export async function listPhotosFromCloudinary(
       searchParams.next_cursor = options.nextCursor;
     }
 
-    // List resources
-    const result = await cloudinary.api.resources(searchParams);
+    // List resources dengan per-request config
+    const result = await cloudinary.api.resources({ ...perRequestConfig, ...searchParams });
 
     const items = result.resources.map((resource: CloudinaryResource) => ({
       publicId: resource.public_id,
@@ -482,15 +490,15 @@ export async function testCloudinaryConnection(vendorId: string): Promise<Cloudi
     // Get vendor-specific configuration
     const vendorConfig = await getVendorCloudinaryClient(vendorId);
 
-    // Configure Cloudinary for this vendor
-    cloudinary.config({
+    // Per-request config — tidak mutasi global state
+    const perRequestConfig = {
       cloud_name: vendorConfig.cloudName,
       api_key: vendorConfig.apiKey,
       api_secret: vendorConfig.apiSecret,
-    });
+    };
 
-    // Try to ping Cloudinary
-    const result = await cloudinary.api.ping();
+    // Try to ping Cloudinary dengan per-request config
+    const result = await cloudinary.api.ping(perRequestConfig);
 
     return {
       ...result,

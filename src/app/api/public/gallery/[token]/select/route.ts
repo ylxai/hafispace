@@ -2,11 +2,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { DEFAULT_MAX_SELECTION } from "@/lib/constants";
 import { getAblyRest, ABLY_CHANNEL_SELECTION } from "@/lib/ably";
-import {
-  getSelectionCount,
-  incrementSelection,
-  decrementSelection,
-} from "@/lib/redis";
 import { z } from "zod";
 
 const selectSchema = z.object({
@@ -61,74 +56,96 @@ export async function POST(
 
   const { fileId, filename, url, action } = parsed.data;
 
-  // Get current count from database
-  const currentCount = await getSelectionCount(gallery.id);
+  // Wrap seluruh operasi dalam transaction untuk mencegah race condition
+  let finalCount: number;
 
-  let finalCount = currentCount;
+  try {
+    finalCount = await prisma.$transaction(async (tx) => {
+      if (action === "add") {
+        // Hitung count di dalam transaction (atomic)
+        const currentCount = await tx.photoSelection.count({
+          where: { galleryId: gallery.id, isLocked: false },
+        });
 
-  if (action === "add") {
-    if (currentCount >= maxSelection) {
+        if (currentCount >= maxSelection) {
+          throw Object.assign(new Error("QUOTA_EXCEEDED"), {
+            code: "QUOTA_EXCEEDED",
+            message: `Maximum ${maxSelection} photos already selected`,
+            status: 422,
+          });
+        }
+
+        // Verify photo exists in gallery
+        const photoExists = await tx.photo.findFirst({
+          where: { galleryId: gallery.id, storageKey: fileId },
+        });
+
+        if (!photoExists) {
+          throw Object.assign(new Error("PHOTO_NOT_FOUND"), {
+            code: "PHOTO_NOT_FOUND",
+            message: "Photo not found in gallery",
+            status: 404,
+          });
+        }
+
+        // Check if already selected
+        const existing = await tx.photoSelection.findFirst({
+          where: { galleryId: gallery.id, fileId },
+        });
+
+        if (existing) {
+          throw Object.assign(new Error("ALREADY_SELECTED"), {
+            code: "ALREADY_SELECTED",
+            message: "Photo already selected",
+            status: 409,
+          });
+        }
+
+        await tx.photoSelection.create({
+          data: {
+            galleryId: gallery.id,
+            fileId,
+            filename,
+            filePath: url ?? null,
+            selectionType: "EDIT",
+          },
+        });
+
+        // Return updated count (dalam transaction yang sama)
+        return tx.photoSelection.count({
+          where: { galleryId: gallery.id, isLocked: false },
+        });
+      } else {
+        // action === "remove"
+        const existing = await tx.photoSelection.findFirst({
+          where: { galleryId: gallery.id, fileId, isLocked: false },
+        });
+
+        if (!existing) {
+          throw Object.assign(new Error("NOT_FOUND"), {
+            code: "NOT_FOUND",
+            message: "Selection not found or is locked",
+            status: 404,
+          });
+        }
+
+        await tx.photoSelection.delete({ where: { id: existing.id } });
+
+        // Return updated count (dalam transaction yang sama)
+        return tx.photoSelection.count({
+          where: { galleryId: gallery.id, isLocked: false },
+        });
+      }
+    });
+  } catch (err) {
+    const error = err as { code?: string; message?: string; status?: number };
+    if (error.code && error.status) {
       return NextResponse.json(
-        { code: "QUOTA_EXCEEDED", message: `Maximum ${maxSelection} photos already selected` },
-        { status: 422 }
+        { code: error.code, message: error.message },
+        { status: error.status }
       );
     }
-
-    // Verify photo exists in gallery
-    const photoExists = await prisma.photo.findFirst({
-      where: {
-        galleryId: gallery.id,
-        storageKey: fileId,
-      },
-    });
-
-    if (!photoExists) {
-      return NextResponse.json(
-        { code: "PHOTO_NOT_FOUND", message: "Photo not found in gallery" },
-        { status: 404 }
-      );
-    }
-
-    // Check if already selected
-    const existing = await prisma.photoSelection.findFirst({
-      where: { galleryId: gallery.id, fileId },
-    });
-
-    if (existing) {
-      return NextResponse.json(
-        { code: "ALREADY_SELECTED", message: "Photo already selected" },
-        { status: 409 }
-      );
-    }
-
-    await prisma.photoSelection.create({
-      data: {
-        galleryId: gallery.id,
-        fileId,
-        filename,
-        filePath: url ?? null,
-        selectionType: "EDIT",
-      },
-    });
-
-    // Get updated count from database
-    finalCount = await incrementSelection(gallery.id);
-  } else {
-    // action === "remove"
-    const existing = await prisma.photoSelection.findFirst({
-      where: { galleryId: gallery.id, fileId, isLocked: false },
-    });
-
-    if (!existing) {
-      return NextResponse.json(
-        { code: "NOT_FOUND", message: "Selection not found or is locked" },
-        { status: 404 }
-      );
-    }
-
-    await prisma.photoSelection.delete({ where: { id: existing.id } });
-    // Get updated count from database
-    finalCount = await decrementSelection(gallery.id);
+    throw err;
   }
 
   // Publish real-time update via Ably
