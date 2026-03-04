@@ -33,49 +33,45 @@ async def run_test():
         # -> Navigate to http://localhost:3000/
         await page.goto("http://localhost:3000/", wait_until="commit", timeout=10000)
         
-        # -> Input username 'nandika' into the username field (index 6), then fill password and submit login.
+        # -> Type the username into the username field (index 7).
         frame = context.pages[-1]
         # Input text
-        elem = frame.locator('input#username')
+        elem = frame.locator('xpath=/html/body/div[2]/div[2]/div[2]/form/div/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.fill('nandika')
         
         frame = context.pages[-1]
         # Input text
-        elem = frame.locator('input#password')
+        elem = frame.locator('xpath=/html/body/div[2]/div[2]/div[2]/form/div[2]/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.fill('klp123')
         
         frame = context.pages[-1]
         # Click element
-        elem = frame.locator('button[type=submit]')
+        elem = frame.locator('xpath=/html/body/div[2]/div[2]/div[2]/form/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
-        # -> Click 'Events' in the admin navigation (index 132).
+        # -> Click the 'Clients' navigation link in the sidebar (index 445) to navigate to the Clients page and then verify the URL contains '/admin/clients'.
         frame = context.pages[-1]
         # Click element
-        elem = frame.locator('xpath=/html/body/div[2]/main/div/nav/a[2]').nth(0)
+        elem = frame.locator('xpath=/html/body/div[2]/aside/div/nav/div[2]/ul/li[3]/a').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
-        # -> Click the '+ Create event' button (index 223) to open the create event form.
+        # -> Click the 'Galleries' navigation link (index 441) to attempt navigation to the Galleries page and then verify the URL updates to contain '/admin/galleries'.
         frame = context.pages[-1]
         # Click element
-        elem = frame.locator('xpath=/html/body/div[2]/main/div/section/header/button').nth(0)
+        elem = frame.locator('xpath=/html/body/div[2]/aside/div/nav/div[2]/ul/li[2]/a').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
-        # -> Type 'Test Client' into the Client Name field (index 303) and then click the 'Create Booking' submit button (index 336).
-        frame = context.pages[-1]
-        # Input text
-        elem = frame.locator('xpath=/html/body/div[2]/main/div/section/div/div/form/div/div/input').nth(0)
-        await page.wait_for_timeout(3000); await elem.fill('Test Client')
-        
+        # -> Click the 'Galleries' navigation link (use index 437) to attempt navigation to the Galleries page so the URL and active state can be verified.
         frame = context.pages[-1]
         # Click element
-        elem = frame.locator('xpath=/html/body/div[2]/main/div/section/div/div/form/div[6]/button[2]').nth(0)
+        elem = frame.locator('xpath=/html/body/div[2]/aside/div/nav/div[2]/ul/li/a').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
         # --> Assertions to verify final state
         frame = context.pages[-1]
-        await expect(frame.locator('text=Event Created').first).to_be_visible(timeout=3000)
-        await expect(frame.locator('text=Test Client').first).to_be_visible(timeout=3000)
+        assert '/admin/clients' in frame.url
+        assert '/admin/galleries' in frame.url
+        await expect(frame.locator('xpath=//a[normalize-space(text())="Galleries" and (contains(@class,"active") or @aria-current="page")]').first).to_be_visible(timeout=3000)
         await asyncio.sleep(5)
 
     finally:

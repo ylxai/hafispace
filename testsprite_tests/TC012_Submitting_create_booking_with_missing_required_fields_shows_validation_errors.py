@@ -33,49 +33,58 @@ async def run_test():
         # -> Navigate to http://localhost:3000/
         await page.goto("http://localhost:3000/", wait_until="commit", timeout=10000)
         
-        # -> Input username 'nandika' into the username field (index 6), then fill password and submit login.
+        # -> Fill the username and password fields with the provided credentials and click the 'Sign in' button to log in.
         frame = context.pages[-1]
         # Input text
-        elem = frame.locator('input#username')
+        elem = frame.locator('xpath=/html/body/div[2]/div[2]/div[2]/form/div/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.fill('nandika')
         
         frame = context.pages[-1]
         # Input text
-        elem = frame.locator('input#password')
+        elem = frame.locator('xpath=/html/body/div[2]/div[2]/div[2]/form/div[2]/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.fill('klp123')
         
         frame = context.pages[-1]
         # Click element
-        elem = frame.locator('button[type=submit]')
+        elem = frame.locator('xpath=/html/body/div[2]/div[2]/div[2]/form/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
-        # -> Click 'Events' in the admin navigation (index 132).
+        # -> Click 'Events' in the admin navigation to open the Events page.
         frame = context.pages[-1]
         # Click element
-        elem = frame.locator('xpath=/html/body/div[2]/main/div/nav/a[2]').nth(0)
+        elem = frame.locator('xpath=/html/body/div[2]/aside/div/nav/div/ul/li[2]/a').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
-        # -> Click the '+ Create event' button (index 223) to open the create event form.
+        # -> Ensure the Events page is rendered by clicking the 'Events' navigation item again and wait for the SPA to update so the '+ Create event' button can be located.
         frame = context.pages[-1]
         # Click element
-        elem = frame.locator('xpath=/html/body/div[2]/main/div/section/header/button').nth(0)
+        elem = frame.locator('xpath=/html/body/div[2]/aside/div/nav/div/ul/li[2]/a').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
-        # -> Type 'Test Client' into the Client Name field (index 303) and then click the 'Create Booking' submit button (index 336).
-        frame = context.pages[-1]
-        # Input text
-        elem = frame.locator('xpath=/html/body/div[2]/main/div/section/div/div/form/div/div/input').nth(0)
-        await page.wait_for_timeout(3000); await elem.fill('Test Client')
+        # -> Navigate directly to http://localhost:3000/admin/events to load the Events page so the '+ Create event' button can be located and clicked.
+        await page.goto("http://localhost:3000/admin/events", wait_until="commit", timeout=10000)
         
+        # -> Click the '+ Create Event' button to open the create event form so the submit validation can be tested.
         frame = context.pages[-1]
         # Click element
-        elem = frame.locator('xpath=/html/body/div[2]/main/div/section/div/div/form/div[6]/button[2]').nth(0)
+        elem = frame.locator('xpath=/html/body/div[2]/main/div/div/section/header/div[2]/button').nth(0)
+        await page.wait_for_timeout(3000); await elem.click(timeout=5000)
+        
+        # -> Click the 'Create Booking' (submit) button to trigger validation, then search the page for the text 'required' to verify validation errors are displayed.
+        frame = context.pages[-1]
+        # Click element
+        elem = frame.locator('xpath=/html/body/div[2]/main/div/div/section/div/div/form/div[9]/button[2]').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
         # --> Assertions to verify final state
         frame = context.pages[-1]
-        await expect(frame.locator('text=Event Created').first).to_be_visible(timeout=3000)
-        await expect(frame.locator('text=Test Client').first).to_be_visible(timeout=3000)
+        frame = context.pages[-1]
+        elem = frame.locator('xpath=/html/body/div[2]/main/div/div/section/div[1]/div/form/div[9]/button[2]').nth(0)
+        await page.wait_for_timeout(1000)
+        assert await elem.is_visible(), 'Create Booking (submit) button is not visible'
+        # The test plan expects a validation message with the text "required" after submitting the empty form.
+        # No element containing the text "required" exists in the provided Available elements list, so we cannot assert its visibility.
+        raise AssertionError("Validation message 'required' not found in available elements; feature may be missing or uses a different message")
         await asyncio.sleep(5)
 
     finally:

@@ -36,17 +36,17 @@ async def run_test():
         # -> Type the username into the username field (fill 'nandika') and the password into the password field (fill 'klp123'), then click 'Sign in' to attempt login.
         frame = context.pages[-1]
         # Input text
-        elem = frame.locator('xpath=/html/body/div[2]/div[4]/form/div/div/input').nth(0)
+        elem = frame.locator('input#username')
         await page.wait_for_timeout(3000); await elem.fill('nandika')
         
         frame = context.pages[-1]
         # Input text
-        elem = frame.locator('xpath=/html/body/div[2]/div[4]/form/div[2]/div/input').nth(0)
+        elem = frame.locator('input#password')
         await page.wait_for_timeout(3000); await elem.fill('klp123')
         
         frame = context.pages[-1]
         # Click element
-        elem = frame.locator('xpath=/html/body/div[2]/div[4]/form/button').nth(0)
+        elem = frame.locator('button[type=submit]')
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
         # -> Click the 'Clients' link in the admin navigation to open the Clients page and then verify the presence of an 'Add Client' workflow.

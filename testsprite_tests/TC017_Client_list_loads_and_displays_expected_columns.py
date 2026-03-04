@@ -36,17 +36,17 @@ async def run_test():
         # -> Enter username and password, then click the 'Sign in' button to authenticate as admin.
         frame = context.pages[-1]
         # Input text
-        elem = frame.locator('xpath=/html/body/div[2]/div[4]/form/div/div/input').nth(0)
+        elem = frame.locator('input#username')
         await page.wait_for_timeout(3000); await elem.fill('nandika')
         
         frame = context.pages[-1]
         # Input text
-        elem = frame.locator('xpath=/html/body/div[2]/div[4]/form/div[2]/div/input').nth(0)
+        elem = frame.locator('input#password')
         await page.wait_for_timeout(3000); await elem.fill('klp123')
         
         frame = context.pages[-1]
         # Click element
-        elem = frame.locator('xpath=/html/body/div[2]/div[4]/form/button').nth(0)
+        elem = frame.locator('button[type=submit]')
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
         # -> Click the 'Clients' navigation item (index 142) to open the Clients page and then verify URL contains '/admin/clients' and that the client list and key fields are visible.

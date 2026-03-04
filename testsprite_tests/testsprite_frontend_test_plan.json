@@ -1,8 +1,8 @@
 [
   {
     "id": "TC001",
-    "title": "Admin dashboard loads and shows metrics cards",
-    "description": "Verifies that an authenticated user can open the Admin Dashboard and see the four overview metric cards rendered.",
+    "title": "Admin dashboard shows overview metric cards after successful login",
+    "description": "Verifies that the admin dashboard loads and displays the four overview metric cards.",
     "category": "Admin Dashboard Overview",
     "priority": "High",
     "steps": [
@@ -12,7 +12,7 @@
       },
       {
         "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username or email field"
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
       },
       {
         "type": "action",
@@ -42,8 +42,8 @@
   },
   {
     "id": "TC002",
-    "title": "Admin dashboard shows Clients metric card",
-    "description": "Verifies the Clients overview card is visible on the Admin Dashboard for an authenticated user.",
+    "title": "Admin dashboard displays Clients metric card on overview section",
+    "description": "Verifies the Clients overview card label is visible on the admin dashboard.",
     "category": "Admin Dashboard Overview",
     "priority": "High",
     "steps": [
@@ -53,7 +53,7 @@
       },
       {
         "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username or email field"
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
       },
       {
         "type": "action",
@@ -75,8 +75,8 @@
   },
   {
     "id": "TC003",
-    "title": "Admin dashboard displays loading placeholders for metrics on initial load",
-    "description": "Verifies the Admin Dashboard shows \"—\" placeholders for metrics while data is loading.",
+    "title": "Admin dashboard shows loading placeholders (—) while metrics are loading",
+    "description": "Verifies that the dashboard presents the \"—\" placeholder values as a loading state before metrics render.",
     "category": "Admin Dashboard Overview",
     "priority": "Medium",
     "steps": [
@@ -86,7 +86,7 @@
       },
       {
         "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username or email field"
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
       },
       {
         "type": "action",
@@ -109,7 +109,7 @@
   {
     "id": "TC004",
     "title": "Admin dashboard shows upcoming workflows list section",
-    "description": "Verifies the Admin Dashboard includes a visible upcoming workflows list/section for an authenticated user.",
+    "description": "Verifies that the upcoming workflows list is visible on the admin dashboard.",
     "category": "Admin Dashboard Overview",
     "priority": "Medium",
     "steps": [
@@ -119,7 +119,7 @@
       },
       {
         "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username or email field"
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
       },
       {
         "type": "action",
@@ -132,15 +132,23 @@
       {
         "type": "assertion",
         "description": "Verify URL contains \"/admin\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Upcoming\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Upcoming workflows\" is visible"
       }
     ]
   },
   {
     "id": "TC005",
-    "title": "View Events page summary cards and bookings table columns",
-    "description": "Verifies that the Events Management page shows the summary cards and a bookings table with the expected columns.",
-    "category": "Bookings / Events Management",
-    "priority": "High",
+    "title": "Quick action: Create event button is present and does not navigate away (placeholder)",
+    "description": "Verifies the Create event quick action is visible and does not lead to a new page or success confirmation (known placeholder behavior).",
+    "category": "Admin Dashboard Overview",
+    "priority": "Medium",
     "steps": [
       {
         "type": "action",
@@ -159,8 +167,123 @@
         "description": "Click the \"Sign in\" button"
       },
       {
+        "type": "assertion",
+        "description": "Verify URL contains \"/admin\""
+      },
+      {
         "type": "action",
-        "description": "Click on \"Events\" in the admin navigation"
+        "description": "Click the \"Create event\" quick action button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/admin\""
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Quick action: Send invite button is present and does not navigate away (placeholder)",
+    "description": "Verifies the Send invite quick action is visible and does not change the current page when clicked.",
+    "category": "Admin Dashboard Overview",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/admin\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Send invite\" quick action button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/admin\""
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Quick action: Review comments button is present and does not navigate away (placeholder)",
+    "description": "Verifies the Review comments quick action is visible and remains on the dashboard after clicking.",
+    "category": "Admin Dashboard Overview",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/admin\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Review comments\" quick action button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/admin\""
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Metrics load attempt: dashboard still renders core labels even if values are missing",
+    "description": "Verifies that, even when metric values are not present (e.g., persistent placeholders), the dashboard still shows the metric labels and remains usable.",
+    "category": "Admin Dashboard Overview",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/admin\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Active Bookings\" is visible"
       },
       {
         "type": "assertion",
@@ -168,18 +291,14 @@
       },
       {
         "type": "assertion",
-        "description": "Verify text \"Client\" is visible"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Session Date\" is visible"
+        "description": "Verify text \"—\" is visible"
       }
     ]
   },
   {
-    "id": "TC006",
-    "title": "Create a new booking and verify it appears in the bookings table",
-    "description": "Verifies end-to-end booking creation via the \"+ Create event\" flow and that the new booking is visible in the table.",
+    "id": "TC009",
+    "title": "View bookings summary cards and bookings table after login",
+    "description": "Verifies the Events page loads after login and shows summary cards and the bookings table structure.",
     "category": "Bookings / Events Management",
     "priority": "High",
     "steps": [
@@ -201,7 +320,81 @@
       },
       {
         "type": "action",
-        "description": "Click on \"Events\" in the admin navigation"
+        "description": "Click \"Events\" in the admin navigation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify page title contains \"Events\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Total Bookings\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the bookings table headers include \"Client\", \"Package\", \"Session Date\", \"Status\", and \"Galleries\""
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Show loading state while bookings are fetched",
+    "description": "Verifies a loading indicator is shown while bookings data is being retrieved.",
+    "category": "Bookings / Events Management",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Events\" in the admin navigation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Loading bookings...\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Create a new booking from Events page and see it in the table",
+    "description": "Verifies an admin can create a booking and then see the new booking appear in the bookings table.",
+    "category": "Bookings / Events Management",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Events\" in the admin navigation"
       },
       {
         "type": "action",
@@ -209,7 +402,7 @@
       },
       {
         "type": "action",
-        "description": "Type \"Test Client\" into the client field"
+        "description": "Type \"Test Client A\" into the client field"
       },
       {
         "type": "action",
@@ -218,9 +411,9 @@
     ]
   },
   {
-    "id": "TC007",
-    "title": "Create booking form validation: submitting with missing required fields shows errors",
-    "description": "Verifies that submitting the create booking form without required fields shows visible validation errors and does not create a booking.",
+    "id": "TC012",
+    "title": "Submitting create booking with missing required fields shows validation errors",
+    "description": "Verifies the create booking form prevents submission when required fields are missing and shows validation errors.",
     "category": "Bookings / Events Management",
     "priority": "High",
     "steps": [
@@ -242,7 +435,7 @@
       },
       {
         "type": "action",
-        "description": "Click on \"Events\" in the admin navigation"
+        "description": "Click \"Events\" in the admin navigation"
       },
       {
         "type": "action",
@@ -259,50 +452,9 @@
     ]
   },
   {
-    "id": "TC008",
-    "title": "Bookings table shows expected column headers including Galleries",
-    "description": "Verifies that the bookings table includes the Galleries column along with key booking fields.",
-    "category": "Bookings / Events Management",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /login"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Sign in\" button"
-      },
-      {
-        "type": "action",
-        "description": "Click on \"Events\" in the admin navigation"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Package\" is visible"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Status\" is visible"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Galleries\" is visible"
-      }
-    ]
-  },
-  {
-    "id": "TC009",
-    "title": "Summary cards show all four metrics labels",
-    "description": "Verifies that all summary metric card labels are visible on the Events page.",
+    "id": "TC013",
+    "title": "Summary cards for booking counts are present and labeled correctly",
+    "description": "Verifies all booking summary cards are displayed with expected labels on the Events page.",
     "category": "Bookings / Events Management",
     "priority": "Low",
     "steps": [
@@ -324,7 +476,7 @@
       },
       {
         "type": "action",
-        "description": "Click on \"Events\" in the admin navigation"
+        "description": "Click \"Events\" in the admin navigation"
       },
       {
         "type": "assertion",
@@ -341,256 +493,10 @@
     ]
   },
   {
-    "id": "TC010",
-    "title": "Load Gallery Manager and view gallery cards with core metadata",
-    "description": "Verifies that an authenticated admin can open the galleries page and see gallery cards with expected visible metadata.",
-    "category": "Gallery Management",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /login"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Login\" is visible"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Sign in\" button"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/admin\""
-      },
-      {
-        "type": "action",
-        "description": "Click \"Galleries\" in the admin navigation menu"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/admin/galleries\""
-      }
-    ]
-  },
-  {
-    "id": "TC011",
-    "title": "Galleries page shows loading state while fetching data",
-    "description": "Verifies the galleries page displays the loading indicator during initial data fetch.",
-    "category": "Gallery Management",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /login"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Sign in\" button"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/admin\""
-      },
-      {
-        "type": "action",
-        "description": "Click \"Galleries\" in the admin navigation menu"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Loading galleries...\" is visible"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/admin/galleries\""
-      }
-    ]
-  },
-  {
-    "id": "TC012",
-    "title": "Empty state message appears when there are no galleries",
-    "description": "Verifies the empty state message is shown when the gallery list is empty.",
-    "category": "Gallery Management",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /login"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Sign in\" button"
-      },
-      {
-        "type": "action",
-        "description": "Click \"Galleries\" in the admin navigation menu"
-      },
-      {
-        "type": "action",
-        "description": "Wait for the galleries content to finish loading"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"No galleries yet. Upload a new gallery to start.\" is visible"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/admin/galleries\""
-      }
-    ]
-  },
-  {
-    "id": "TC013",
-    "title": "Gallery cards display additional token and selection metadata when present",
-    "description": "Verifies that gallery cards show client token and selection count metadata in the UI when available.",
-    "category": "Gallery Management",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /login"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Sign in\" button"
-      },
-      {
-        "type": "action",
-        "description": "Click \"Galleries\" in the admin navigation menu"
-      },
-      {
-        "type": "action",
-        "description": "Wait for the gallery cards grid to appear"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Token\" is visible"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Selected\" is visible"
-      }
-    ]
-  },
-  {
     "id": "TC014",
-    "title": "Manage button is UI-only and does not open a management view",
-    "description": "Verifies clicking \"Manage\" on a gallery card does not navigate away or open a management UI (known UI-only behavior).",
-    "category": "Gallery Management",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /login"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Sign in\" button"
-      },
-      {
-        "type": "action",
-        "description": "Click \"Galleries\" in the admin navigation menu"
-      },
-      {
-        "type": "action",
-        "description": "Wait for the gallery cards grid to appear"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Manage\" button on a gallery card"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/admin/galleries\""
-      }
-    ]
-  },
-  {
-    "id": "TC015",
-    "title": "Manage button click does not reveal a management modal or details panel",
-    "description": "Verifies that clicking \"Manage\" does not show a management modal/panel and the user remains on the same list view.",
-    "category": "Gallery Management",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /login"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Sign in\" button"
-      },
-      {
-        "type": "action",
-        "description": "Click \"Galleries\" in the admin navigation menu"
-      },
-      {
-        "type": "action",
-        "description": "Wait for the gallery cards grid to appear"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Manage\" button on a gallery card"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Loading galleries...\" is not visible"
-      }
-    ]
-  },
-  {
-    "id": "TC016",
-    "title": "Galleries page is reachable from admin dashboard navigation",
-    "description": "Verifies the admin can reach the gallery manager via in-app navigation (no direct URL navigation after login).",
-    "category": "Gallery Management",
+    "title": "Events page remains accessible and stable after refresh-like re-entry via navigation",
+    "description": "Verifies returning to Events via in-app navigation shows the same primary UI elements without breaking state.",
+    "category": "Bookings / Events Management",
     "priority": "Low",
     "steps": [
       {
@@ -610,8 +516,45 @@
         "description": "Click the \"Sign in\" button"
       },
       {
+        "type": "action",
+        "description": "Click \"Dashboard\" in the admin navigation"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Events\" in the admin navigation"
+      },
+      {
         "type": "assertion",
-        "description": "Verify URL contains \"/admin\""
+        "description": "Verify text \"Total Bookings\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the bookings table headers include \"Client\", \"Package\", \"Session Date\", \"Status\", and \"Galleries\""
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Galleries page shows loading state during initial fetch",
+    "description": "Verifies the Galleries page indicates loading while gallery data is being fetched.",
+    "category": "Gallery Management",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
       },
       {
         "type": "action",
@@ -619,7 +562,7 @@
       },
       {
         "type": "assertion",
-        "description": "Verify page title contains \"Galleries\""
+        "description": "Verify text \"Loading galleries...\" is visible"
       },
       {
         "type": "assertion",
@@ -628,9 +571,136 @@
     ]
   },
   {
+    "id": "TC016",
+    "title": "Create/Upload new gallery entry point is available from Galleries page",
+    "description": "Verifies the user can initiate the new gallery workflow from the Galleries page and sees a create/upload UI entry point.",
+    "category": "Gallery Management",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Galleries\" in the admin navigation menu"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"New Gallery\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Project\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Create\" is visible"
+      }
+    ]
+  },
+  {
     "id": "TC017",
-    "title": "Client list loads and displays expected columns",
-    "description": "Verifies an authenticated admin can open the Clients page and see the client list with key fields.",
+    "title": "Create gallery form validates required project name (edge case)",
+    "description": "Verifies the create gallery flow prevents submission when the required project name is missing.",
+    "category": "Gallery Management",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Galleries\" in the admin navigation menu"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"New Gallery\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Create gallery\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Project name\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Create gallery with project name and verify it appears in list",
+    "description": "Verifies creating a gallery with a project name results in the new gallery being listed on the Galleries page.",
+    "category": "Gallery Management",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Galleries\" in the admin navigation menu"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"New Gallery\" button"
+      },
+      {
+        "type": "action",
+        "description": "Type \"E2E Test Gallery\" into the project name field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Create gallery\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"E2E Test Gallery\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "Clients page shows list with key columns after login",
+    "description": "Verifies an authenticated admin can open Client Management and see the client list with expected visible fields.",
     "category": "Client Management",
     "priority": "High",
     "steps": [
@@ -664,14 +734,14 @@
       },
       {
         "type": "assertion",
-        "description": "Verify element \"Clients\" is visible"
+        "description": "Verify text \"Clients\" is visible"
       }
     ]
   },
   {
-    "id": "TC018",
-    "title": "Clients page shows loading state during fetch",
-    "description": "Verifies the Clients page displays a visible loading indicator while client data is being fetched.",
+    "id": "TC020",
+    "title": "Clients page displays loading state while fetching data",
+    "description": "Verifies the clients page shows the visible loading indicator during initial data fetch.",
     "category": "Client Management",
     "priority": "Medium",
     "steps": [
@@ -706,9 +776,9 @@
     ]
   },
   {
-    "id": "TC019",
-    "title": "Clients page empty state message is shown when no clients exist",
-    "description": "Verifies the Clients page shows the empty-state message when the account has no clients.",
+    "id": "TC021",
+    "title": "Empty state message is shown when there are no clients",
+    "description": "Verifies the no-clients empty state message is visible when the list is empty.",
     "category": "Client Management",
     "priority": "Medium",
     "steps": [
@@ -743,9 +813,9 @@
     ]
   },
   {
-    "id": "TC020",
-    "title": "Client rows show contact info and booking count when data exists",
-    "description": "Verifies that at least one client row (when present) shows name and contact fields and booking count.",
+    "id": "TC022",
+    "title": "Attempt to add a new client from Clients page (happy path if supported)",
+    "description": "Verifies the add-client flow allows creating a client and the new client appears in the list (if the UI supports creation).",
     "category": "Client Management",
     "priority": "High",
     "steps": [
@@ -774,21 +844,21 @@
         "description": "Click \"Clients\" in the admin navigation"
       },
       {
-        "type": "assertion",
-        "description": "Verify element \"Email\" is visible"
+        "type": "action",
+        "description": "Click the \"Add Client\" button"
       },
       {
         "type": "assertion",
-        "description": "Verify element \"Bookings\" is visible"
+        "description": "Verify text \"Add Client\" is visible"
       }
     ]
   },
   {
-    "id": "TC021",
-    "title": "View button is present per client row and does not open details (known UI-only behavior)",
-    "description": "Verifies clicking \"View\" does not navigate away or open a details view, matching the known limitation.",
+    "id": "TC023",
+    "title": "Add client requires name and phone validation (missing name)",
+    "description": "Verifies the add-client form prevents submission when the required name field is missing.",
     "category": "Client Management",
-    "priority": "Medium",
+    "priority": "High",
     "steps": [
       {
         "type": "action",
@@ -816,18 +886,75 @@
       },
       {
         "type": "action",
-        "description": "Click the \"View\" button on the first client row"
+        "description": "Click the \"Add Client\" button"
+      },
+      {
+        "type": "action",
+        "description": "Type \"5551234567\" into the phone field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Submit\" or \"Create\" button"
       },
       {
         "type": "assertion",
-        "description": "Verify URL contains \"/admin/clients\""
+        "description": "Verify text \"Name\" is visible"
       }
     ]
   },
   {
-    "id": "TC022",
-    "title": "Create new client flow is not available on current UI (Add Client button not present)",
-    "description": "Validates the UI does not currently expose an \"Add Client\" creation workflow on the Clients page.",
+    "id": "TC024",
+    "title": "Add client requires name and phone validation (missing phone)",
+    "description": "Verifies the add-client form prevents submission when the required phone field is missing.",
+    "category": "Client Management",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/admin\""
+      },
+      {
+        "type": "action",
+        "description": "Click \"Clients\" in the admin navigation"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Add Client\" button"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Test Client\" into the name field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Submit\" or \"Create\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Phone\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC025",
+    "title": "View button is UI-only and does not open client details",
+    "description": "Verifies clicking View on a client row does not navigate away or open a details view (known UI-only behavior).",
     "category": "Client Management",
     "priority": "Low",
     "steps": [
@@ -857,18 +984,22 @@
       },
       {
         "type": "assertion",
-        "description": "Verify element \"Clients\" is visible"
+        "description": "Verify URL contains \"/admin/clients\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"View\" button on the first client row"
       },
       {
         "type": "assertion",
-        "description": "Verify text \"Add Client\" is visible"
+        "description": "Verify URL contains \"/admin/clients\""
       }
     ]
   },
   {
-    "id": "TC023",
-    "title": "Clients page navigation remains stable from other admin pages",
-    "description": "Verifies an authenticated user can move from another admin page to Clients via UI navigation.",
+    "id": "TC026",
+    "title": "Client row displays contact info fields and join date when present",
+    "description": "Verifies at least one client row shows visible contact info labels and a join date in the list view.",
     "category": "Client Management",
     "priority": "Medium",
     "steps": [
@@ -894,7 +1025,294 @@
       },
       {
         "type": "action",
-        "description": "Click \"Events\" in the admin navigation"
+        "description": "Click \"Clients\" in the admin navigation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/admin/clients\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Joined\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC027",
+    "title": "Access Admin Settings page after login",
+    "description": "Verifies an authenticated admin can reach the Admin Settings page and see core content.",
+    "category": "Admin Settings",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Settings\" in the admin navigation menu"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/admin/settings\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Studio Profile\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Access Control\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC028",
+    "title": "All settings groups are visible on Admin Settings page",
+    "description": "Verifies the Settings page displays the three settings groups and their Configure actions.",
+    "category": "Admin Settings",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Settings\" in the admin navigation menu"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Studio Profile\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Access Control\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Notifications\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC029",
+    "title": "Click Configure on Studio Profile does not open a configuration form (placeholder)",
+    "description": "Verifies Studio Profile Configure is currently UI-only and does not reveal a functional edit/save UI.",
+    "category": "Admin Settings",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Settings\" in the admin navigation menu"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Configure\" button in the \"Studio Profile\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Save\" is not visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Studio Profile\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC030",
+    "title": "Click Configure on Access Control does not open a configuration form (placeholder)",
+    "description": "Verifies Access Control Configure is currently UI-only and does not reveal a functional edit/save UI.",
+    "category": "Admin Settings",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Settings\" in the admin navigation menu"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Configure\" button in the \"Access Control\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Save\" is not visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Access Control\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC031",
+    "title": "Click Configure on Notifications does not open a configuration form (placeholder)",
+    "description": "Verifies Notifications Configure is currently UI-only and does not reveal a functional edit/save UI.",
+    "category": "Admin Settings",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Settings\" in the admin navigation menu"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Configure\" button in the \"Notifications\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Save\" is not visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Notifications\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC032",
+    "title": "Settings page remains stable after clicking multiple Configure buttons",
+    "description": "Verifies repeated Configure clicks across groups do not navigate away or break the page content.",
+    "category": "Admin Settings",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Settings\" in the admin navigation menu"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Configure\" button in the \"Studio Profile\" section"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Configure\" button in the \"Access Control\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/admin/settings\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Notifications\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC033",
+    "title": "Admin Settings is reachable from another admin page via navigation",
+    "description": "Verifies the Settings page can be reached through normal in-app navigation from another admin area.",
+    "category": "Admin Settings",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Events\" in the admin navigation menu"
       },
       {
         "type": "assertion",
@@ -902,44 +1320,7 @@
       },
       {
         "type": "action",
-        "description": "Click \"Clients\" in the admin navigation"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/admin/clients\""
-      }
-    ]
-  },
-  {
-    "id": "TC024",
-    "title": "Admin can open Admin Settings page and see all settings groups",
-    "description": "Verifies the Settings page loads for an authenticated admin and displays the three settings groups.",
-    "category": "Admin Settings",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /login"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Sign in\" button"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/admin\""
-      },
-      {
-        "type": "action",
-        "description": "Click \"Settings\" in the admin navigation"
+        "description": "Click \"Settings\" in the admin navigation menu"
       },
       {
         "type": "assertion",
@@ -952,218 +1333,9 @@
     ]
   },
   {
-    "id": "TC025",
-    "title": "Admin Settings shows Access Control and Notifications groups",
-    "description": "Verifies the Settings page includes the Access Control and Notifications sections in addition to Studio Profile.",
-    "category": "Admin Settings",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /login"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Sign in\" button"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/admin\""
-      },
-      {
-        "type": "action",
-        "description": "Click \"Settings\" in the admin navigation"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Access Control\" is visible"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Notifications\" is visible"
-      }
-    ]
-  },
-  {
-    "id": "TC026",
-    "title": "Studio Profile Configure button is present and clickable (UI placeholder behavior acceptable)",
-    "description": "Verifies the Studio Profile group has a Configure control and clicking it does not break the page.",
-    "category": "Admin Settings",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /login"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Sign in\" button"
-      },
-      {
-        "type": "action",
-        "description": "Click \"Settings\" in the admin navigation"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Studio Profile\" is visible"
-      },
-      {
-        "type": "action",
-        "description": "Click \"Configure\" in the \"Studio Profile\" section"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/admin/settings\""
-      }
-    ]
-  },
-  {
-    "id": "TC027",
-    "title": "Access Control Configure button is present and clickable (UI placeholder behavior acceptable)",
-    "description": "Verifies the Access Control group has a Configure control and clicking it does not navigate away or crash.",
-    "category": "Admin Settings",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /login"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Sign in\" button"
-      },
-      {
-        "type": "action",
-        "description": "Click \"Settings\" in the admin navigation"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Access Control\" is visible"
-      },
-      {
-        "type": "action",
-        "description": "Click \"Configure\" in the \"Access Control\" section"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/admin/settings\""
-      }
-    ]
-  },
-  {
-    "id": "TC028",
-    "title": "Notifications Configure button is present and clickable (UI placeholder behavior acceptable)",
-    "description": "Verifies the Notifications group has a Configure control and clicking it does not navigate away or crash.",
-    "category": "Admin Settings",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /login"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Sign in\" button"
-      },
-      {
-        "type": "action",
-        "description": "Click \"Settings\" in the admin navigation"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Notifications\" is visible"
-      },
-      {
-        "type": "action",
-        "description": "Click \"Configure\" in the \"Notifications\" section"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/admin/settings\""
-      }
-    ]
-  },
-  {
-    "id": "TC029",
-    "title": "Settings page remains stable after clicking Configure on multiple groups",
-    "description": "Verifies repeated Configure clicks across different groups do not change route or remove the settings groups from view.",
-    "category": "Admin Settings",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /login"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Sign in\" button"
-      },
-      {
-        "type": "action",
-        "description": "Click \"Settings\" in the admin navigation"
-      },
-      {
-        "type": "action",
-        "description": "Click \"Configure\" in the \"Studio Profile\" section"
-      },
-      {
-        "type": "action",
-        "description": "Click \"Configure\" in the \"Access Control\" section"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Studio Profile\" is visible"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Notifications\" is visible"
-      }
-    ]
-  },
-  {
-    "id": "TC030",
-    "title": "Navigate from Admin dashboard to Clients and verify active highlight",
-    "description": "Verifies an authenticated admin can use navigation to reach Clients and the current page is highlighted.",
+    "id": "TC034",
+    "title": "Navigate from Admin Dashboard to Clients via navigation and see active highlight",
+    "description": "Verifies an authenticated admin can use the navigation to reach Clients and the active nav state updates.",
     "category": "Admin Navigation",
     "priority": "High",
     "steps": [
@@ -1197,14 +1369,14 @@
       },
       {
         "type": "assertion",
-        "description": "Verify the \"Clients\" navigation item is highlighted as the current page"
+        "description": "Verify element \"Clients navigation link (active/current state)\" is visible"
       }
     ]
   },
   {
-    "id": "TC031",
-    "title": "Navigate from Admin dashboard to Galleries and verify active highlight",
-    "description": "Verifies an authenticated admin can navigate to Galleries and sees it highlighted as active.",
+    "id": "TC035",
+    "title": "Navigate from Clients to Galleries via navigation and see active highlight",
+    "description": "Verifies navigation can switch between sections and updates the current/active page indicator.",
     "category": "Admin Navigation",
     "priority": "High",
     "steps": [
@@ -1225,8 +1397,12 @@
         "description": "Click the \"Sign in\" button"
       },
       {
+        "type": "action",
+        "description": "Click the \"Clients\" navigation link in the sidebar/header"
+      },
+      {
         "type": "assertion",
-        "description": "Verify URL contains \"/admin\""
+        "description": "Verify URL contains \"/admin/clients\""
       },
       {
         "type": "action",
@@ -1238,14 +1414,59 @@
       },
       {
         "type": "assertion",
-        "description": "Verify the \"Galleries\" navigation item is highlighted as the current page"
+        "description": "Verify element \"Galleries navigation link (active/current state)\" is visible"
       }
     ]
   },
   {
-    "id": "TC032",
-    "title": "Navigate from Admin dashboard to Settings and verify active highlight",
-    "description": "Verifies an authenticated admin can navigate to Settings and sees it highlighted as active.",
+    "id": "TC036",
+    "title": "Navigate from Galleries to Events via navigation and see active highlight",
+    "description": "Verifies navigation link routing to Events and the active navigation state for Events.",
+    "category": "Admin Navigation",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Sign in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Galleries\" navigation link in the sidebar/header"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/admin/galleries\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Events\" navigation link in the sidebar/header"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/admin/events\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Events navigation link (active/current state)\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC037",
+    "title": "Navigate to Settings via navigation and see active highlight",
+    "description": "Verifies navigation link routing to Settings and the active navigation state for Settings.",
     "category": "Admin Navigation",
     "priority": "Medium",
     "steps": [
@@ -1276,84 +1497,6 @@
       {
         "type": "assertion",
         "description": "Verify URL contains \"/admin/settings\""
-      },
-      {
-        "type": "assertion",
-        "description": "Verify the \"Settings\" navigation item is highlighted as the current page"
-      }
-    ]
-  },
-  {
-    "id": "TC033",
-    "title": "Verify admin navigation remains visible across sections",
-    "description": "Verifies the admin sidebar/header navigation is visible after switching sections.",
-    "category": "Admin Navigation",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /login"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_USER}}\" into the username/email field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Sign in\" button"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/admin\""
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Clients\" navigation link in the sidebar/header"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify element \"Admin navigation\" is visible"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify element \"Admin header\" is visible"
-      }
-    ]
-  },
-  {
-    "id": "TC034",
-    "title": "Invalid login credentials prevent access to admin navigation",
-    "description": "Verifies that incorrect credentials do not grant access to protected admin routes or navigation.",
-    "category": "Admin Navigation",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to /login"
-      },
-      {
-        "type": "action",
-        "description": "Type \"not-a-user@example.com\" into the username/email field"
-      },
-      {
-        "type": "action",
-        "description": "Type \"wrong-password\" into the password field"
-      },
-      {
-        "type": "action",
-        "description": "Click the \"Sign in\" button"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify URL contains \"/login\""
-      },
-      {
-        "type": "assertion",
-        "description": "Verify text \"Invalid\" is visible"
       }
     ]
   }

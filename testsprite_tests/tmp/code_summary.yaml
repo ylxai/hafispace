@@ -3,175 +3,279 @@ type: frontend
 tech_stack:
   - language: TypeScript
   - framework: Next.js 15 (App Router)
-  - ui_library: Tailwind CSS v4
-  - other: NextAuth v5, Prisma ORM, TanStack Query, Zod, React Hook Form, bcryptjs, Lucide React
+  - ui_library: TailwindCSS
+  - other: React Query, Prisma, NextAuth, Cloudinary, Ably, Resend, Zod
 
 routes:
-  - path: /
-    file: src/app/page.tsx
-    auth_required: false
-    description: Home/landing page with Next.js default template
   - path: /login
     file: src/app/login/page.tsx
     auth_required: false
-    description: Admin/client login page with username and password
+    description: Halaman login vendor
   - path: /admin
     file: src/app/admin/page.tsx
     auth_required: true
-    description: Admin dashboard home with studio overview metrics
+    description: Dashboard admin utama
   - path: /admin/events
     file: src/app/admin/events/page.tsx
     auth_required: true
-    description: Booking/events manager page with list and status summary
+    description: Manajemen booking/events
+  - path: /admin/events/[id]
+    file: src/app/admin/events/[id]/page.tsx
+    auth_required: true
+    description: Detail booking
   - path: /admin/galleries
     file: src/app/admin/galleries/page.tsx
     auth_required: true
-    description: Gallery manager page showing all galleries with status and photo counts
+    description: Manajemen gallery foto
+  - path: /admin/packages
+    file: src/app/admin/packages/page.tsx
+    auth_required: true
+    description: Manajemen paket foto
   - path: /admin/clients
     file: src/app/admin/clients/page.tsx
     auth_required: true
-    description: Client manager page showing all clients with contact and booking info
+    description: Manajemen klien
   - path: /admin/settings
     file: src/app/admin/settings/page.tsx
     auth_required: true
-    description: Settings page with studio profile, access control, and notifications
+    description: Pengaturan studio
+  - path: /booking
+    file: src/app/booking/page.tsx
+    auth_required: false
+    description: Form booking publik untuk klien
+  - path: /gallery/[token]
+    file: src/app/gallery/[token]/page.tsx
+    auth_required: false
+    description: Gallery publik untuk klien memilih foto
+  - path: /invoice/[kodeBooking]
+    file: src/app/invoice/[kodeBooking]/page.tsx
+    auth_required: false
+    description: Invoice publik untuk klien
 
 features:
-  - name: User Login
-    description: Admin/client login with username and password credentials via NextAuth
+  - name: Login Vendor
+    description: Login dengan email dan password
     files:
       - src/app/login/page.tsx
       - src/lib/auth/options.ts
-      - src/app/api/auth/[...nextauth]/route.ts
     entry_route: /login
     user_interactions:
-      - Fill username input field
-      - Fill password input field
-      - Click Sign in button to submit form
-      - See error message "Username atau password salah." on invalid credentials
-      - See loading state "Signing in..." while request is in progress
-      - Get redirected to /admin on successful login
+      - Fill email input
+      - Fill password input
+      - Click login button
+      - See error on invalid credentials
+      - Redirect to /admin on success
     api_calls:
       - method: POST
         endpoint: /api/auth/callback/credentials
     auth_required: false
 
-  - name: Admin Dashboard Overview
-    description: Admin home page showing key metrics - active bookings, total bookings, galleries, and clients
+  - name: Dashboard Admin
+    description: Overview metrics studio
     files:
       - src/app/admin/page.tsx
-      - src/hooks/use-admin-metrics.ts
+      - src/lib/services/metrics.service.ts
       - src/app/api/admin/metrics/route.ts
     entry_route: /admin
     user_interactions:
-      - View overview cards with metrics (Active Bookings, Total Bookings, Galleries, Clients)
-      - See loading state with "—" placeholders while data loads
-      - View upcoming workflows list
-      - Click quick action buttons (Create event, Upload gallery, Send invite, Review comments)
+      - View total bookings, omset, clients
+      - View revenue chart 6 bulan
+      - View upcoming sessions bulan ini
+      - View recent bookings
     api_calls:
       - method: GET
         endpoint: /api/admin/metrics
     auth_required: true
 
-  - name: Bookings / Events Management
-    description: View and manage photography session bookings with status tracking
+  - name: Manajemen Booking
+    description: List, filter, search, create, delete booking
     files:
       - src/app/admin/events/page.tsx
-      - src/hooks/use-admin-events.ts
-      - src/app/api/admin/events/route.ts
+      - src/app/admin/events/_components/payment-modal.tsx
+      - src/app/admin/events/_components/create-booking-modal.tsx
     entry_route: /admin/events
     user_interactions:
-      - View summary cards (Total Bookings, Active, Pending, Completed)
-      - View bookings table with Client, Package, Session Date, Status, and Galleries columns
-      - See status badges (PENDING, CONFIRMED, COMPLETED)
-      - Click "+ Create event" button to create a new booking
-      - See "Loading bookings..." while data loads
-      - See "No bookings yet. Create your first booking." when empty
+      - View list booking dengan filter status
+      - Filter by tanggal sesi
+      - Search by nama klien atau kode booking
+      - Click Tambah Booking untuk buat booking baru
+      - Fill form nama klien, HP, paket, tanggal, lokasi
+      - Click Bayar untuk catat pembayaran
+      - Click Export CSV untuk download data
+      - Bulk select dan delete bookings
     api_calls:
       - method: GET
         endpoint: /api/admin/events
       - method: POST
         endpoint: /api/admin/events
+      - method: DELETE
+        endpoint: /api/admin/events/bulk
     auth_required: true
 
-  - name: Gallery Management
-    description: View and manage photo galleries for clients with token-based access
+  - name: Detail Booking
+    description: Detail lengkap booking
+    files:
+      - src/app/admin/events/[id]/page.tsx
+      - src/app/api/admin/bookings/[id]/route.ts
+    entry_route: /admin/events/[id]
+    user_interactions:
+      - View info booking tanggal lokasi paket klien
+      - View riwayat pembayaran
+      - Catat pembayaran baru
+      - Update status booking
+      - Copy link invoice
+      - View galleries yang terhubung
+    api_calls:
+      - method: GET
+        endpoint: /api/admin/bookings/[id]
+      - method: PATCH
+        endpoint: /api/admin/bookings/[id]
+      - method: POST
+        endpoint: /api/admin/bookings/[id]/payments
+    auth_required: true
+
+  - name: Manajemen Gallery
+    description: Buat gallery, upload foto, edit, share link ke klien
     files:
       - src/app/admin/galleries/page.tsx
-      - src/hooks/use-admin-galleries.ts
-      - src/app/api/admin/galleries/route.ts
+      - src/app/admin/galleries/_components/upload-photos-modal.tsx
+      - src/app/admin/galleries/_components/edit-gallery-modal.tsx
     entry_route: /admin/galleries
     user_interactions:
-      - View gallery cards in a grid layout
-      - See gallery name, status badge, photo count, and client name
-      - See client token and selection count
-      - Click "Manage" button on a gallery card
-      - See "Loading galleries..." while data loads
-      - See "No galleries yet. Upload a new gallery to start." when empty
+      - View list gallery dengan status
+      - Click Buat Gallery baru
+      - Upload foto drag and drop max 15MB
+      - Edit nama gallery dan status
+      - Copy link gallery untuk klien
+      - View selections yang sudah dipilih klien
+      - Bulk delete gallery
     api_calls:
       - method: GET
         endpoint: /api/admin/galleries
       - method: POST
         endpoint: /api/admin/galleries
+      - method: POST
+        endpoint: /api/admin/galleries/[id]/upload
+      - method: PATCH
+        endpoint: /api/admin/galleries/[id]
+      - method: DELETE
+        endpoint: /api/admin/galleries/[id]
     auth_required: true
 
-  - name: Client Management
-    description: View and manage photography clients with contact info and booking history
+  - name: Gallery Publik Klien
+    description: Klien melihat dan memilih foto dari gallery
     files:
-      - src/app/admin/clients/page.tsx
-      - src/hooks/use-admin-clients.ts
-      - src/app/api/admin/clients/route.ts
-    entry_route: /admin/clients
+      - src/app/gallery/[token]/page.tsx
+      - src/app/api/public/gallery/[token]/route.ts
+      - src/app/api/public/gallery/[token]/select/route.ts
+    entry_route: /gallery/[token]
     user_interactions:
-      - View client list with name, contact info (email/phone/instagram), and booking count
-      - See join date for each client
-      - Click "View" button to view client details
-      - See "Loading clients..." while data loads
-      - See "No clients yet. Invite your first client." when empty
+      - View semua foto gallery dengan pagination
+      - Click foto untuk select atau deselect
+      - View jumlah foto yang dipilih vs kuota
+      - See error jika melebihi kuota
     api_calls:
       - method: GET
-        endpoint: /api/admin/clients
+        endpoint: /api/public/gallery/[token]
       - method: POST
-        endpoint: /api/admin/clients
+        endpoint: /api/public/gallery/[token]/select
+    auth_required: false
+
+  - name: Form Booking Publik
+    description: Klien isi form booking online
+    files:
+      - src/app/booking/page.tsx
+      - src/app/booking/_components/booking-form-content.tsx
+      - src/app/api/public/booking/route.ts
+    entry_route: /booking
+    user_interactions:
+      - Pilih paket foto
+      - Fill nama HP email
+      - Pilih tanggal sesi
+      - Fill custom fields jika ada
+      - Setuju syarat dan ketentuan
+      - Submit form booking
+      - See konfirmasi booking berhasil
+    api_calls:
+      - method: GET
+        endpoint: /api/public/booking
+      - method: POST
+        endpoint: /api/public/booking
+    auth_required: false
+
+  - name: Invoice Publik
+    description: Klien lihat dan print invoice
+    files:
+      - src/app/invoice/[kodeBooking]/page.tsx
+      - src/app/api/public/invoice/[kodeBooking]/route.ts
+    entry_route: /invoice/[kodeBooking]
+    user_interactions:
+      - View detail invoice klien paket pembayaran
+      - Click Print untuk cetak invoice
+    api_calls:
+      - method: GET
+        endpoint: /api/public/invoice/[kodeBooking]
+    auth_required: false
+
+  - name: Manajemen Paket
+    description: CRUD paket foto dengan harga kuota edit include cetak
+    files:
+      - src/app/admin/packages/page.tsx
+      - src/app/api/admin/packages/route.ts
+    entry_route: /admin/packages
+    user_interactions:
+      - View list paket
+      - Buat paket baru nama kategori harga kuota edit
+      - Edit paket
+      - Delete paket
+    api_calls:
+      - method: GET
+        endpoint: /api/admin/packages
+      - method: POST
+        endpoint: /api/admin/packages
+      - method: PATCH
+        endpoint: /api/admin/packages/[id]
+      - method: DELETE
+        endpoint: /api/admin/packages/[id]
     auth_required: true
 
-  - name: Admin Settings
-    description: Configure studio profile, access control, and notification preferences
+  - name: Pengaturan Studio
+    description: Setup profil studio Cloudinary form booking custom fields Viesus
     files:
       - src/app/admin/settings/page.tsx
+      - src/app/admin/settings/_components/studio-profile-panel.tsx
+      - src/app/admin/settings/_components/form-booking-panel.tsx
+      - src/app/admin/settings/_components/viesus-enhancement-panel.tsx
+      - src/app/admin/settings/_components/custom-fields-panel.tsx
     entry_route: /admin/settings
     user_interactions:
-      - View settings groups (Studio Profile, Access Control, Notifications)
-      - Click "Configure" button on each settings group
-    api_calls: []
-    auth_required: true
-
-  - name: Admin Navigation
-    description: Sidebar/header navigation for the admin panel
-    files:
-      - src/components/admin/navigation.tsx
-      - src/components/admin/layout/header.tsx
-      - src/app/admin/layout.tsx
-    entry_route: /admin
-    user_interactions:
-      - Click navigation links to switch between admin sections
-      - View current page highlighted in navigation
-    api_calls: []
+      - Edit nama studio logo WA admin
+      - Setup Cloudinary credentials
+      - Toggle form booking aktif atau nonaktif
+      - Set DP percentage
+      - Tambah custom fields untuk form booking
+      - Toggle Viesus enhancement
+    api_calls:
+      - method: GET
+        endpoint: /api/admin/settings/profile
+      - method: PATCH
+        endpoint: /api/admin/settings/profile
+      - method: GET
+        endpoint: /api/admin/settings/cloudinary
+      - method: POST
+        endpoint: /api/admin/settings/cloudinary
     auth_required: true
 
 known_limitations:
-  - issue: Quick action buttons on Admin Dashboard are UI-only placeholders with no functionality
-    location: src/app/admin/page.tsx
-    impact: Clicking Create event, Upload gallery, Send invite, Review comments buttons does nothing
-  - issue: Settings Configure buttons are UI-only with no connected forms or backend
-    location: src/app/admin/settings/page.tsx
-    impact: No actual settings can be saved
-  - issue: Client "View" button has no navigation or modal connected
-    location: src/app/admin/clients/page.tsx
-    impact: Cannot view individual client details
-  - issue: Gallery "Manage" button has no navigation or modal connected
-    location: src/app/admin/galleries/page.tsx
-    impact: Cannot manage individual gallery details
-  - issue: Forgot password button has no functionality
-    location: src/app/login/page.tsx
-    impact: Password reset is not available
+  - issue: Rate limiting tidak ada di public endpoints butuh Upstash
+    location: src/app/api/public/
+    impact: API bisa di-abuse tanpa throttling
+  - issue: Token gallery tidak ada expiry butuh schema migration
+    location: prisma/schema.prisma Gallery.clientToken
+    impact: Link gallery valid selamanya
+  - issue: View count fingerprint cache reset saat server restart
+    location: src/app/api/public/gallery/[token]/route.ts
+    impact: View count bisa double-count setelah deploy
+  - issue: Metrics cache tidak invalidate otomatis saat ada booking baru
+    location: src/app/api/admin/metrics/route.ts
+    impact: Dashboard bisa terlambat update hingga 5 menit

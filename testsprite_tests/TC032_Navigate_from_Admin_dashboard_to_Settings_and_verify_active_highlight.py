@@ -36,17 +36,17 @@ async def run_test():
         # -> Type the provided username and password into the inputs (indices 6 and 7) and click the Sign in button (index 10).
         frame = context.pages[-1]
         # Input text
-        elem = frame.locator('xpath=/html/body/div[2]/div[4]/form/div/div/input').nth(0)
+        elem = frame.locator('input#username')
         await page.wait_for_timeout(3000); await elem.fill('nandika')
         
         frame = context.pages[-1]
         # Input text
-        elem = frame.locator('xpath=/html/body/div[2]/div[4]/form/div[2]/div/input').nth(0)
+        elem = frame.locator('input#password')
         await page.wait_for_timeout(3000); await elem.fill('klp123')
         
         frame = context.pages[-1]
         # Click element
-        elem = frame.locator('xpath=/html/body/div[2]/div[4]/form/button').nth(0)
+        elem = frame.locator('button[type=submit]')
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
         # -> Click the 'Settings' navigation link (index 135) to navigate to the Settings page and then verify it becomes the active/highlighted nav item.

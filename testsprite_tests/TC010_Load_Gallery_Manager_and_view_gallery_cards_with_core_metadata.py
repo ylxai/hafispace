@@ -36,18 +36,18 @@ async def run_test():
         # -> Verify whether the text 'Login' is visible on the page (use find_text).
         frame = context.pages[-1]
         # Input text
-        elem = frame.locator('xpath=/html/body/div[2]/div[4]/form/div/div/input').nth(0)
+        elem = frame.locator('input#username')
         await page.wait_for_timeout(3000); await elem.fill('nandika')
         
         frame = context.pages[-1]
         # Input text
-        elem = frame.locator('xpath=/html/body/div[2]/div[4]/form/div[2]/div/input').nth(0)
+        elem = frame.locator('input#password')
         await page.wait_for_timeout(3000); await elem.fill('klp123')
         
         # -> Click the 'Sign in' button to submit the login form and proceed to the admin area.
         frame = context.pages[-1]
         # Click element
-        elem = frame.locator('xpath=/html/body/div[2]/div[4]/form/button').nth(0)
+        elem = frame.locator('button[type=submit]')
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
         # -> Click 'Galleries' in the admin navigation menu to open the galleries list (use element index 133).

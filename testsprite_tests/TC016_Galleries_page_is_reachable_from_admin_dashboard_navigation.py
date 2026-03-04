@@ -36,17 +36,17 @@ async def run_test():
         # -> Type username 'nandika' into the username field (index 6). Then type password 'klp123' into the password field (index 7), and click the 'Sign in' button (index 10).
         frame = context.pages[-1]
         # Input text
-        elem = frame.locator('xpath=/html/body/div[2]/div[4]/form/div/div/input').nth(0)
+        elem = frame.locator('input#username')
         await page.wait_for_timeout(3000); await elem.fill('nandika')
         
         frame = context.pages[-1]
         # Input text
-        elem = frame.locator('xpath=/html/body/div[2]/div[4]/form/div[2]/div/input').nth(0)
+        elem = frame.locator('input#password')
         await page.wait_for_timeout(3000); await elem.fill('klp123')
         
         frame = context.pages[-1]
         # Click element
-        elem = frame.locator('xpath=/html/body/div[2]/div[4]/form/button').nth(0)
+        elem = frame.locator('button[type=submit]')
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
         # -> Click the 'Galleries' navigation item in the admin menu (index 164) to open the Galleries manager, then verify the page title contains 'Galleries' and the URL contains '/admin/galleries'.
