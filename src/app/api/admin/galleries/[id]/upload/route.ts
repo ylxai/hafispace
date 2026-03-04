@@ -281,7 +281,7 @@ export async function POST(
     return NextResponse.json(
       { 
         error: "Failed to upload photos",
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: 'Gagal mengupload foto. Silakan coba lagi.'
       },
       { status: 500 }
     );

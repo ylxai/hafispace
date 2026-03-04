@@ -4,6 +4,11 @@ import { DEFAULT_MAX_SELECTION, GALLERY_VIEW_COOKIE_TTL_SECONDS } from "@/lib/co
 
 const PHOTOS_PER_PAGE = 50;
 
+// In-memory cache untuk view count deduplication via IP+UA fingerprint
+// Key: SHA-256 hash (16 hex chars), Value: timestamp pertama kali view
+// Reset saat server restart — acceptable tradeoff tanpa Redis
+const viewFingerprintCache = new Map<string, number>();
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ token: string }> }
@@ -86,15 +91,44 @@ export async function GET(
     ? await prisma.photo.count({ where: { galleryId: gallery.id } })
     : undefined;
 
-  // Increment view count hanya sekali per session (cek cookie)
+  // Increment view count hanya sekali per session
+  // Gunakan cookie + IP+UA fingerprint sebagai double check (cegah cookie bypass)
   const viewedCookieKey = `viewed_${gallery.id}`;
-  const alreadyViewed = _request.headers.get("cookie")?.includes(viewedCookieKey);
+  const hasCookie = _request.headers.get("cookie")?.includes(viewedCookieKey) ?? false;
+
+  // Buat fingerprint dari IP + User-Agent (non-PII, hanya hash)
+  const ip = _request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    ?? _request.headers.get("x-real-ip")
+    ?? "unknown";
+  const ua = _request.headers.get("user-agent") ?? "unknown";
+  const rawFingerprint = `${gallery.id}:${ip}:${ua.slice(0, 100)}`;
+
+  // Hash fingerprint dengan Web Crypto API (tersedia di Edge runtime)
+  const fingerprintHash = await crypto.subtle
+    .digest("SHA-256", new TextEncoder().encode(rawFingerprint))
+    .then((buf) =>
+      Array.from(new Uint8Array(buf))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("")
+        .slice(0, 16) // Ambil 16 hex char (64-bit) — cukup untuk dedup
+    );
+
+  // Cek apakah fingerprint ini sudah view dalam 24 jam via in-memory cache
+  // (Simple Map-based cache — reset saat server restart, tapi sudah jauh lebih baik dari cookie-only)
+  const alreadyViewed = hasCookie || viewFingerprintCache.has(fingerprintHash);
 
   if (!alreadyViewed) {
     await prisma.gallery.update({
       where: { id: gallery.id },
       data: { viewCount: { increment: 1 } },
     });
+    // Simpan fingerprint ke cache dengan TTL 24 jam
+    viewFingerprintCache.set(fingerprintHash, Date.now());
+    // Cleanup expired entries (lebih dari 24 jam)
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    for (const [key, ts] of viewFingerprintCache.entries()) {
+      if (ts < cutoff) viewFingerprintCache.delete(key);
+    }
   }
 
   // Ambil selections sekaligus — count dihitung dari hasil query (1 query, bukan 2)

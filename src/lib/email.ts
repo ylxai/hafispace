@@ -30,7 +30,7 @@ export async function sendBookingConfirmationEmail({
   invoiceUrl: string;
 }) {
   if (!process.env.RESEND_API_KEY) {
-    console.log('RESEND_API_KEY not set, skipping email');
+    // RESEND_API_KEY tidak diset — email dilewati (set di .env untuk mengaktifkan)
     return { success: false, error: 'No API key' };
   }
 

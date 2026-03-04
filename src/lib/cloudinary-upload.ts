@@ -88,13 +88,6 @@ export async function uploadImageToCloudinary(
     // Generate thumbnail URL dengan explicit cloud name + f_auto untuk WebP/AVIF
     const thumbnailUrl = `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,g_auto,w_400,h_400,f_auto,q_auto/${result.publicId}`;
 
-    // Log for debugging
-    console.log("Generated URLs:", {
-      publicId: result.publicId,
-      secureUrl: result.secureUrl,
-      thumbnailUrl,
-      cloudName: account.cloudName,
-    });
 
     return {
       publicId: result.publicId,
