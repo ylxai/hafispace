@@ -21,6 +21,44 @@ const ALLOWED_MIME_TYPES = [
   'image/avif',
 ];
 
+// Magic bytes signatures untuk validasi file yang sesungguhnya (bukan hanya MIME dari client)
+const MAGIC_BYTES: Array<{ bytes: number[]; offset?: number; mime: string }> = [
+  { bytes: [0xFF, 0xD8, 0xFF], mime: 'image/jpeg' },           // JPEG
+  { bytes: [0x89, 0x50, 0x4E, 0x47], mime: 'image/png' },      // PNG
+  { bytes: [0x52, 0x49, 0x46, 0x46], mime: 'image/webp' },     // WEBP (RIFF header)
+  { bytes: [0x49, 0x49, 0x2A, 0x00], mime: 'image/tiff' },     // TIFF (little-endian)
+  { bytes: [0x4D, 0x4D, 0x00, 0x2A], mime: 'image/tiff' },     // TIFF (big-endian)
+];
+
+/**
+ * Verifikasi file adalah benar-benar image berdasarkan magic bytes
+ * Mencegah upload file berbahaya dengan extension/MIME yang dipalsukan
+ */
+async function verifyImageMagicBytes(file: File): Promise<boolean> {
+  // Baca hanya 12 bytes pertama (cukup untuk semua signature)
+  const headerSlice = file.slice(0, 12);
+  const buffer = new Uint8Array(await headerSlice.arrayBuffer());
+
+  // HEIC/HEIF — cek ftyp box di offset 4
+  // Format: ????ftyp (4 bytes size + 'ftyp' magic)
+  if (buffer.length >= 8) {
+    const ftyp = [buffer[4], buffer[5], buffer[6], buffer[7]];
+    if (ftyp[0] === 0x66 && ftyp[1] === 0x74 && ftyp[2] === 0x79 && ftyp[3] === 0x70) {
+      return true; // HEIC/HEIF/MP4 container
+    }
+  }
+
+  // Cek magic bytes lainnya
+  for (const sig of MAGIC_BYTES) {
+    const offset = sig.offset ?? 0;
+    if (buffer.length < offset + sig.bytes.length) continue;
+    const match = sig.bytes.every((b, i) => buffer[offset + i] === b);
+    if (match) return true;
+  }
+
+  return false;
+}
+
 // Upload multiple photos to Cloudinary and save to database
 export async function POST(
   request: Request,
@@ -115,6 +153,19 @@ export async function POST(
             fileName: file.name,
             fileType: file.type,
             code: "UNSUPPORTED_FORMAT"
+          },
+          { status: 400 }
+        );
+      }
+
+      // Verifikasi magic bytes — cegah file berbahaya dengan MIME dipalsukan
+      const isValidImage = await verifyImageMagicBytes(file);
+      if (!isValidImage) {
+        return NextResponse.json(
+          {
+            error: `File "${file.name}" bukan file gambar yang valid`,
+            fileName: file.name,
+            code: "INVALID_FILE_CONTENT"
           },
           { status: 400 }
         );

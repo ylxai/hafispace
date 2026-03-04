@@ -149,40 +149,36 @@ export async function uploadPhotoToCloudinary(
     };
 
     // Upload to Cloudinary
-    const result = await new Promise<UploadApiResponse>((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        uploadOptions,
-        (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
-          if (error) {
-            console.error("Error uploading to Cloudinary:", error);
-            reject(new Error(`Failed to upload photo to Cloudinary: ${error.message ?? 'Unknown error'}`));
-          } else if (result) {
-            resolve(result);
-          } else {
-            reject(new Error('Upload returned neither result nor error'));
-          }
-        }
-      );
+    // Gunakan upload_chunked_stream untuk file > 5MB agar tidak timeout
+    const CHUNK_SIZE = 6 * 1024 * 1024; // 6MB per chunk (minimum Cloudinary requirement)
+    const USE_CHUNKED = Buffer.isBuffer(file) && file.length > 5 * 1024 * 1024;
 
-      // If file is a buffer, pass it to the stream
+    const result = await new Promise<UploadApiResponse>((resolve, reject) => {
+      const callback = (
+        error: UploadApiErrorResponse | undefined,
+        result: UploadApiResponse | undefined
+      ) => {
+        if (error) {
+          console.error("Error uploading to Cloudinary:", error);
+          reject(new Error(`Failed to upload photo to Cloudinary: ${error.message ?? 'Unknown error'}`));
+        } else if (result) {
+          resolve(result);
+        } else {
+          reject(new Error('Upload returned neither result nor error'));
+        }
+      };
+
       if (Buffer.isBuffer(file)) {
-        uploadStream.end(file);
+        const stream = USE_CHUNKED
+          ? cloudinary.uploader.upload_chunked_stream(
+              { ...uploadOptions, chunk_size: CHUNK_SIZE },
+              callback
+            )
+          : cloudinary.uploader.upload_stream(uploadOptions, callback);
+        stream.end(file);
       } else {
-        // If it's a data URL or path, pass it directly to upload
-        cloudinary.uploader.upload(
-          file as string,
-          { ...uploadOptions },
-          (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
-            if (error) {
-              console.error("Error uploading to Cloudinary:", error);
-              reject(new Error(`Failed to upload photo to Cloudinary: ${error.message ?? 'Unknown error'}`));
-            } else if (result) {
-              resolve(result);
-            } else {
-              reject(new Error('Upload returned neither result nor error'));
-            }
-          }
-        );
+        // Data URL atau path — pakai upload langsung
+        cloudinary.uploader.upload(file as string, { ...uploadOptions }, callback);
       }
     });
 
@@ -666,38 +662,35 @@ export async function uploadPhotoToCloudinaryWithViesus(
       filename_override: filename.replace(/\.[^/.]+$/, ""),
     };
 
-    // Upload to Cloudinary
+    // Upload to Cloudinary — chunked untuk file > 5MB
+    const CHUNK_SIZE = 6 * 1024 * 1024;
+    const USE_CHUNKED = Buffer.isBuffer(file) && file.length > 5 * 1024 * 1024;
+
     const result = await new Promise<UploadApiResponse>((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        uploadOptions,
-        (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
-          if (error) {
-            console.error("Error uploading to Cloudinary:", error);
-            reject(new Error(`Failed to upload photo to Cloudinary: ${error.message ?? 'Unknown error'}`));
-          } else if (result) {
-            resolve(result);
-          } else {
-            reject(new Error('Upload returned neither result nor error'));
-          }
+      const callback = (
+        error: UploadApiErrorResponse | undefined,
+        result: UploadApiResponse | undefined
+      ) => {
+        if (error) {
+          console.error("Error uploading to Cloudinary:", error);
+          reject(new Error(`Failed to upload photo to Cloudinary: ${error.message ?? 'Unknown error'}`));
+        } else if (result) {
+          resolve(result);
+        } else {
+          reject(new Error('Upload returned neither result nor error'));
         }
-      );
+      };
 
       if (Buffer.isBuffer(file)) {
-        uploadStream.end(file);
+        const stream = USE_CHUNKED
+          ? cloudinary.uploader.upload_chunked_stream(
+              { ...uploadOptions, chunk_size: CHUNK_SIZE },
+              callback
+            )
+          : cloudinary.uploader.upload_stream(uploadOptions, callback);
+        stream.end(file);
       } else {
-        cloudinary.uploader.upload(
-          file as string,
-          { ...uploadOptions },
-          (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
-            if (error) {
-              reject(new Error(`Failed to upload photo to Cloudinary: ${error.message ?? 'Unknown error'}`));
-            } else if (result) {
-              resolve(result);
-            } else {
-              reject(new Error('Upload returned neither result nor error'));
-            }
-          }
-        );
+        cloudinary.uploader.upload(file as string, { ...uploadOptions }, callback);
       }
     });
 

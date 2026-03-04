@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Lightbox } from "@/components/gallery/lightbox";
 import type * as AblyModule from "ably";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
@@ -133,6 +133,9 @@ export default function ViewspacePage() {
     );
   }, [data?.gallery?.photos, data?.gallery?.selections]);
 
+  // Debounce timer ref untuk Ably refetch — cegah multiple refetch saat banyak event sekaligus
+  const refetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Ably real-time subscription for selection updates
   useEffect(() => {
     if (!data?.gallery?.id) return;
@@ -148,8 +151,14 @@ export default function ViewspacePage() {
         });
         const channel = ably.channels.get(`gallery:${data.gallery.id}:selection`);
         await channel.subscribe("count-updated", () => {
-          // Refetch gallery data to update selections
-          refetch();
+          // Debounce refetch — tunggu 500ms setelah event terakhir sebelum refetch
+          if (refetchDebounceRef.current) {
+            clearTimeout(refetchDebounceRef.current);
+          }
+          refetchDebounceRef.current = setTimeout(() => {
+            refetch();
+            refetchDebounceRef.current = null;
+          }, 500);
         });
       } catch {
         // Ably connection failed — silent fallback
@@ -160,6 +169,10 @@ export default function ViewspacePage() {
 
     return () => {
       ably?.close();
+      // Cleanup debounce timer saat unmount
+      if (refetchDebounceRef.current) {
+        clearTimeout(refetchDebounceRef.current);
+      }
     };
   }, [data?.gallery?.id, token, refetch]);
 

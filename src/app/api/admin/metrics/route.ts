@@ -9,10 +9,21 @@ export async function GET() {
   if (!session?.user?.id) return unauthorizedResponse();
 
   const vendorId = session.user.id;
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+  // Gunakan WIB (UTC+7) untuk perhitungan tanggal
+  // Prisma menyimpan tanggal dalam UTC, jadi perlu offset
+  const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+  const nowUtc = Date.now();
+  const nowWib = new Date(nowUtc + WIB_OFFSET_MS);
+  const yearWib = nowWib.getUTCFullYear();
+  const monthWib = nowWib.getUTCMonth();
+
+  // Start of current month WIB → UTC
+  const startOfMonth = new Date(Date.UTC(yearWib, monthWib, 1) - WIB_OFFSET_MS);
+  // End of current month WIB → UTC
+  const endOfMonth = new Date(Date.UTC(yearWib, monthWib + 1, 0, 23, 59, 59) - WIB_OFFSET_MS);
+  // 6 months ago start WIB → UTC
+  const sixMonthsAgo = new Date(Date.UTC(yearWib, monthWib - 5, 1) - WIB_OFFSET_MS);
 
   const [
     totalBookings,
@@ -35,11 +46,18 @@ export async function GET() {
       where: { vendorId, createdAt: { gte: startOfMonth, lte: endOfMonth } },
       select: { jumlah: true, tipe: true },
     }),
-    prisma.booking.groupBy({
-      by: ["paketId"],
-      where: { vendorId, paketId: { not: null } },
-      _count: { paketId: true },
-      orderBy: { _count: { paketId: "desc" } },
+    prisma.package.findMany({
+      where: {
+        vendorId,
+        bookings: { some: { vendorId } },
+      },
+      select: {
+        id: true,
+        namaPaket: true,
+        kategori: true,
+        _count: { select: { bookings: true } },
+      },
+      orderBy: { bookings: { _count: "desc" } },
       take: 5,
     }),
     prisma.booking.findMany({
@@ -92,32 +110,26 @@ export async function GET() {
     .reduce((sum, p) => sum.add(p.jumlah), new Prisma.Decimal(0))
     .toNumber();
 
-  // Resolve nama paket
-  const packageIds = topPackages.map((p) => p.paketId).filter(Boolean) as string[];
-  const packageNames = await prisma.package.findMany({
-    where: { id: { in: packageIds } },
-    select: { id: true, namaPaket: true, kategori: true },
-  });
-  const packageMap = new Map(packageNames.map((p) => [p.id, p]));
-
+  // topPackages sudah include namaPaket dan kategori — tidak perlu query tambahan
   const topPackagesWithNames = topPackages.map((p) => ({
-    paketId: p.paketId,
-    count: p._count.paketId,
-    namaPaket: packageMap.get(p.paketId ?? "")?.namaPaket ?? "Tanpa Paket",
-    kategori: packageMap.get(p.paketId ?? "")?.kategori ?? "LAINNYA",
+    paketId: p.id,
+    count: p._count.bookings,
+    namaPaket: p.namaPaket,
+    kategori: p.kategori,
   }));
 
   // Tren 6 bulan
   const trendMap = new Map<string, { bulan: string; pemasukan: number; dp: number; pelunasan: number }>();
   for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const label = d.toLocaleDateString("id-ID", { month: "short", year: "2-digit" });
+    const d = new Date(Date.UTC(yearWib, monthWib - i, 1));
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleDateString("id-ID", { month: "short", year: "2-digit", timeZone: "Asia/Jakarta" });
     trendMap.set(key, { bulan: label, pemasukan: 0, dp: 0, pelunasan: 0 });
   }
   for (const p of paymentsTrend) {
-    const d = new Date(p.createdAt);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    // Convert payment UTC timestamp ke WIB untuk grouping
+    const dWib = new Date(new Date(p.createdAt).getTime() + WIB_OFFSET_MS);
+    const key = `${dWib.getUTCFullYear()}-${String(dWib.getUTCMonth() + 1).padStart(2, "0")}`;
     const entry = trendMap.get(key);
     if (entry) {
       const jumlah = new Prisma.Decimal(p.jumlah).toNumber();
