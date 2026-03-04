@@ -31,7 +31,7 @@ function extractPublicId(url: string): string {
 
 type Photo = {
   id: string;
-  storageKey: string;  // Fixed: Changed from fileId to storageKey to match API response
+  storageKey: string;
   filename: string;
   url: string;
   thumbnailUrl: string | null;
@@ -72,25 +72,28 @@ function SelectionCounter({
   const isFull = count >= max;
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between text-sm">
         <span className={`font-semibold ${isFull ? "text-amber-600" : "text-slate-900"}`}>
-          {count} / {max} selected
+          {count} / {max} dipilih
         </span>
         {isLocked && (
-          <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-            ✓ Submitted
+          <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+            ✓ Terkirim
           </span>
         )}
         {isFull && !isLocked && (
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-            Quota full
+          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+            Kuota penuh
           </span>
         )}
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+      {/* Progress bar lebih tebal & informatif */}
+      <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
         <div
-          className={`h-full rounded-full transition-all duration-300 ${isFull ? "bg-amber-500" : "bg-slate-900"}`}
+          className={`h-full rounded-full transition-all duration-500 ${
+            isFull ? "bg-amber-500" : isLocked ? "bg-green-500" : "bg-slate-900"
+          }`}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -100,6 +103,7 @@ function SelectionCounter({
 
 function PhotoSelectCard({
   photo,
+  index,
   isSelected,
   isFull,
   isLocked,
@@ -107,6 +111,7 @@ function PhotoSelectCard({
   isPending,
 }: {
   photo: Photo;
+  index: number;
   isSelected: boolean;
   isFull: boolean;
   isLocked: boolean;
@@ -124,19 +129,19 @@ function PhotoSelectCard({
       type="button"
       onClick={() => canSelect && onToggle(photo)}
       disabled={!canSelect || isPending}
+      aria-label={`${isSelected ? "Batalkan pilihan" : "Pilih"} foto ${index + 1}`}
       className={`group relative aspect-square w-full overflow-hidden rounded-xl transition-all duration-200 ${
         isSelected
           ? "ring-4 ring-slate-900 ring-offset-2"
           : canSelect
-            ? "hover:opacity-90"
-            : "cursor-not-allowed opacity-50"
+            ? "hover:opacity-90 active:scale-95"
+            : "cursor-not-allowed opacity-40"
       }`}
-      aria-label={`${isSelected ? "Deselect" : "Select"} ${photo.filename}`}
     >
       <div className="relative h-full w-full bg-slate-100">
         <Image
           src={thumbnailUrl}
-          alt={photo.filename}
+          alt={`Foto ${index + 1}`}
           fill
           className="object-cover"
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -149,11 +154,16 @@ function PhotoSelectCard({
         />
       </div>
 
+      {/* Nomor foto */}
+      <div className="absolute bottom-1.5 left-1.5 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white/80">
+        {index + 1}
+      </div>
+
       {/* Selection overlay */}
       {isSelected && (
         <div className="absolute inset-0 flex items-center justify-center bg-slate-900/30">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-white shadow-lg">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-white shadow-lg">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
@@ -180,6 +190,7 @@ export default function PickspacePage() {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showHint, setShowHint] = useState(true);
 
   const { data, isLoading, isError } = useQuery<GalleryData>({
     queryKey: ["gallery", token],
@@ -200,6 +211,11 @@ export default function PickspacePage() {
     }
   }, [data]);
 
+  // Sembunyikan hint setelah interaksi pertama
+  useEffect(() => {
+    if (selectedIds.size > 0) setShowHint(false);
+  }, [selectedIds.size]);
+
   // Ably real-time subscription
   useEffect(() => {
     if (!data?.gallery?.id) return;
@@ -208,7 +224,6 @@ export default function PickspacePage() {
 
     const connect = async () => {
       try {
-        // Pass gallery token to the API for authorization
         ably = new Ably.Realtime({ 
           authUrl: `/api/ably-token?gallery=${token}` 
         });
@@ -236,7 +251,7 @@ export default function PickspacePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fileId: photo.storageKey,  // Fixed: Use storageKey as fileId
+          fileId: photo.storageKey,
           filename: photo.filename,
           url: photo.url,
           action,
@@ -260,7 +275,7 @@ export default function PickspacePage() {
     },
     onSettled: () => setPendingId(null),
     onError: (err) => {
-      alert(err instanceof Error ? err.message : "Failed to update selection");
+      alert(err instanceof Error ? err.message : "Gagal memperbarui pilihan");
     },
   });
 
@@ -274,6 +289,31 @@ export default function PickspacePage() {
     [isLocked, pendingId, selectedIds, toggleSelection]
   );
 
+  const handleSelectAll = useCallback(() => {
+    if (!data?.gallery) return;
+    const allPhotos = data.gallery.photos;
+    const maxSelection = data.gallery.settings.maxSelection;
+    // Pilih semua hingga batas maxSelection
+    const toSelect = allPhotos.slice(0, maxSelection);
+    toSelect.forEach((photo) => {
+      if (!selectedIds.has(photo.storageKey) && !pendingId) {
+        const action = "add";
+        setPendingId(photo.storageKey);
+        toggleSelection({ photo, action });
+      }
+    });
+  }, [data, selectedIds, pendingId, toggleSelection]);
+
+  const handleClearAll = useCallback(() => {
+    if (!data?.gallery) return;
+    data.gallery.photos.forEach((photo) => {
+      if (selectedIds.has(photo.storageKey) && !pendingId) {
+        setPendingId(photo.storageKey);
+        toggleSelection({ photo, action: "remove" });
+      }
+    });
+  }, [data, selectedIds, pendingId, toggleSelection]);
+
   const handleSubmit = async () => {
     if (selectedIds.size === 0) return;
     setIsLocked(true);
@@ -285,7 +325,7 @@ export default function PickspacePage() {
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="text-center">
           <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
-          <p className="text-sm text-slate-500">Loading gallery...</p>
+          <p className="text-sm text-slate-500">Memuat galeri...</p>
         </div>
       </div>
     );
@@ -295,8 +335,8 @@ export default function PickspacePage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
         <div className="text-center">
-          <p className="text-2xl font-bold text-slate-900">Gallery not found</p>
-          <p className="mt-2 text-sm text-slate-500">The gallery link may be invalid or expired.</p>
+          <p className="text-2xl font-bold text-slate-900">Galeri tidak ditemukan</p>
+          <p className="mt-2 text-sm text-slate-500">Link galeri tidak valid atau sudah kadaluarsa.</p>
         </div>
       </div>
     );
@@ -310,50 +350,56 @@ export default function PickspacePage() {
     <div className="min-h-screen bg-slate-50">
       {/* Success Modal */}
       {showSuccess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-2xl">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
               <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-slate-900">Selection Submitted!</h2>
+            <h2 className="text-xl font-bold text-slate-900">Pilihan Berhasil Dikirim! 🎉</h2>
             <p className="mt-2 text-sm text-slate-600">
-              You have selected {selectedIds.size} photos. Your photographer has been notified.
+              Anda telah memilih <strong>{selectedIds.size} foto</strong>. Fotografer akan segera memproses pilihan Anda.
             </p>
             {gallery.settings.thankYouMessage && (
-              <p className="mt-4 text-sm italic text-slate-500">{gallery.settings.thankYouMessage}</p>
+              <p className="mt-4 rounded-xl bg-slate-50 p-3 text-sm italic text-slate-500">
+                &ldquo;{gallery.settings.thankYouMessage}&rdquo;
+              </p>
             )}
             <Link
               href={`/gallery/${token}`}
-              className="mt-6 inline-block rounded-full bg-slate-900 px-8 py-3 text-sm font-semibold text-white transition hover:bg-slate-700"
+              className="mt-6 inline-block w-full rounded-full bg-slate-900 px-8 py-3 text-sm font-semibold text-white transition hover:bg-slate-700"
             >
-              View Gallery
+              Kembali ke Galeri
             </Link>
           </div>
         </div>
       )}
 
       {/* Sticky Header */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-sm shadow-sm">
+        <div className="mx-auto max-w-5xl px-4 py-3 sm:px-6">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
               <Link
                 href={`/gallery/${token}`}
-                className="mb-1 flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700"
+                className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors"
               >
-                ← Back to gallery
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                Kembali ke galeri
               </Link>
               <h1 className="truncate text-base font-bold text-slate-900">{gallery.namaProject}</h1>
             </div>
+            {/* Tombol submit header — label konsisten */}
             <button
               type="button"
               onClick={handleSubmit}
               disabled={selectedIds.size === 0 || isLocked}
               className="shrink-0 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-40"
             >
-              Submit ({selectedIds.size})
+              Kirim Seleksi ({selectedIds.size})
             </button>
           </div>
           <div className="mt-3">
@@ -362,28 +408,66 @@ export default function PickspacePage() {
         </div>
       </header>
 
-      {/* Instructions */}
-      <div className="border-b border-slate-100 bg-white px-4 py-3 sm:px-6">
-        <p className="text-center text-sm text-slate-600">
-          Tap a photo to select it · Choose up to <strong>{maxSelection}</strong> photos
-          {isFull && !isLocked && (
-            <span className="ml-2 font-semibold text-amber-600">· Quota reached</span>
+      {/* Instructions + Quick Actions */}
+      <div className="border-b border-slate-100 bg-white px-4 py-2.5 sm:px-6">
+        <div className="mx-auto max-w-5xl flex items-center justify-between gap-3 flex-wrap">
+          {/* Hint — tampil hanya jika belum ada yang dipilih */}
+          {showHint ? (
+            <p className="text-sm text-slate-500 flex-1">
+              👆 Ketuk foto untuk memilih · Maks. <strong>{maxSelection}</strong> foto
+              {isFull && !isLocked && (
+                <span className="ml-2 font-semibold text-amber-600">· Kuota penuh</span>
+              )}
+            </p>
+          ) : (
+            <p className="text-sm text-slate-500 flex-1">
+              {selectedIds.size} foto dipilih · Maks. <strong>{maxSelection}</strong>
+              {isFull && !isLocked && (
+                <span className="ml-2 font-semibold text-amber-600">· Kuota penuh</span>
+              )}
+            </p>
           )}
-        </p>
+          {/* Quick action buttons */}
+          {!isLocked && (
+            <div className="flex items-center gap-2 shrink-0">
+              {selectedIds.size > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  disabled={!!pendingId}
+                  className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                >
+                  Batal Semua
+                </button>
+              )}
+              {selectedIds.size === 0 && gallery.photos.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  disabled={!!pendingId || isFull}
+                  className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                >
+                  Pilih Semua
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Photo Grid */}
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      <main className="mx-auto max-w-5xl px-3 py-5 sm:px-6">
         {gallery.photos.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-white py-20 text-center">
-            <p className="text-slate-500">No photos in this gallery yet.</p>
+            <p className="text-slate-500">Belum ada foto di galeri ini.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {gallery.photos.map((photo) => (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            {gallery.photos.map((photo, index) => (
               <PhotoSelectCard
                 key={photo.id}
                 photo={photo}
+                index={index}
                 isSelected={selectedIds.has(photo.storageKey)}
                 isFull={isFull}
                 isLocked={isLocked}
@@ -394,7 +478,7 @@ export default function PickspacePage() {
           </div>
         )}
 
-        {/* Bottom Submit */}
+        {/* Bottom Submit — label konsisten dengan header */}
         {gallery.photos.length > 0 && !isLocked && (
           <div className="mt-10 text-center">
             <button
@@ -403,10 +487,10 @@ export default function PickspacePage() {
               disabled={selectedIds.size === 0}
               className="rounded-full bg-slate-900 px-10 py-3.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-40"
             >
-              Submit Selection ({selectedIds.size} photos)
+              Kirim Seleksi ({selectedIds.size} foto)
             </button>
             {selectedIds.size === 0 && (
-              <p className="mt-2 text-xs text-slate-500">Select at least 1 photo to submit</p>
+              <p className="mt-2 text-xs text-slate-500">Pilih minimal 1 foto untuk mengirim</p>
             )}
           </div>
         )}
