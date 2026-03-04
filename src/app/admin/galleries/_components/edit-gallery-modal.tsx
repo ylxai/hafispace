@@ -161,7 +161,17 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
             <p className="text-sm text-slate-600">Client: {gallery.clientName}</p>
             <div className="flex gap-4 text-xs text-slate-500">
               <span>{gallery.photoCount} photos</span>
-              <span>{gallery.selectionCount} selections</span>
+              {gallery.selectionCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setShowSelections(true)}
+                  className="font-semibold text-sky-600 hover:text-sky-800 underline underline-offset-2 transition-colors"
+                >
+                  {gallery.selectionCount} seleksi →
+                </button>
+              ) : (
+                <span>0 seleksi</span>
+              )}
               <span>{gallery.viewCount} views</span>
             </div>
           </div>
@@ -226,6 +236,15 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
         </div>
 
         <div className="mt-6 flex flex-wrap justify-end gap-3">
+          {gallery.selectionCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowSelections(true)}
+              className="rounded-full border border-sky-200 bg-sky-50 px-5 py-2 text-sm font-medium text-sky-700 hover:bg-sky-100"
+            >
+              📋 Lihat Seleksi ({gallery.selectionCount})
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setShowUploadModal(true)}
