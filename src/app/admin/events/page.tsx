@@ -815,13 +815,29 @@ export default function AdminEventsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <button
-                      type="button"
-                      onClick={() => setPaymentBookingId(booking.id)}
-                      className="rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition whitespace-nowrap"
-                    >
-                      💰 Bayar
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentBookingId(booking.id)}
+                        className="rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition whitespace-nowrap"
+                      >
+                        💰 Bayar
+                      </button>
+                      <a
+                        href={`/admin/events/${booking.id}`}
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition whitespace-nowrap"
+                      >
+                        Detail
+                      </a>
+                      <a
+                        href={`/invoice/${booking.kodeBooking}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-600 hover:bg-sky-100 transition whitespace-nowrap"
+                      >
+                        Invoice
+                      </a>
+                    </div>
                   </td>
                 </tr>
               ))
