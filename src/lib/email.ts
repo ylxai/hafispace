@@ -39,7 +39,7 @@ export async function sendBookingConfirmationEmail({
     const formatDate = (s: string) => new Date(s).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
     await getResend().emails.send({
-      from: `${namaStudio} <noreply@hafispace.com>`,
+      from: `${namaStudio} <onboarding@resend.dev>`,
       to,
       subject: `Konfirmasi Booking ${kodeBooking} - ${namaStudio}`,
       html: `
