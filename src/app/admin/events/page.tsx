@@ -7,6 +7,8 @@ import { StatusBadge } from "@/components/admin";
 import { useAdminEvents } from "@/hooks/use-admin-events";
 import { useToast } from "@/components/ui/toast";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
+import { formatRupiah } from "@/lib/format";
+
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -40,10 +42,6 @@ interface PackageOption {
 }
 
 // ─── Format helpers ───────────────────────────────────────────────────────────
-
-function formatRupiah(amount: number) {
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(amount);
-}
 
 // ─── Payment Modal ────────────────────────────────────────────────────────────
 

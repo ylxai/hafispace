@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { formatRupiah } from "@/lib/format";
+
 
 interface RecentBooking {
   id: string;
@@ -32,12 +34,6 @@ const DP_STATUS_LABELS: Record<string, string> = {
   PARTIAL: "Partial",
   UNPAID: "Belum Bayar",
 };
-
-function formatRupiah(amount: number) {
-  if (amount >= 1_000_000) return `Rp ${(amount / 1_000_000).toFixed(1)}jt`;
-  if (amount >= 1_000) return `Rp ${(amount / 1_000).toFixed(0)}rb`;
-  return `Rp ${amount}`;
-}
 
 export function RecentBookings({ bookings }: { bookings: RecentBooking[] }) {
   return (

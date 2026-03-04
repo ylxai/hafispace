@@ -1,5 +1,6 @@
 "use client";
 
+import { formatRupiah, formatRupiahShort } from "@/lib/format";
 import {
   AreaChart,
   Area,
@@ -16,20 +17,6 @@ interface TrendData {
   pemasukan: number;
   dp: number;
   pelunasan: number;
-}
-
-function formatRupiahShort(value: number) {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}jt`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}rb`;
-  return String(value);
-}
-
-function formatRupiah(amount: number) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(amount);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

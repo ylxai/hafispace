@@ -1,6 +1,8 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 export async function sendBookingConfirmationEmail({
   to,
@@ -36,7 +38,7 @@ export async function sendBookingConfirmationEmail({
     const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
     const formatDate = (s: string) => new Date(s).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-    await resend.emails.send({
+    await getResend().emails.send({
       from: `${namaStudio} <noreply@hafispace.com>`,
       to,
       subject: `Konfirmasi Booking ${kodeBooking} - ${namaStudio}`,
