@@ -271,28 +271,27 @@ export default function AdminGalleriesPage() {
                 }`}
                 onClick={() => setSelectedGallery(gallery)}
               >
-                {/* Checkbox — pojok kiri atas */}
-                <div
-                  className="absolute top-5 left-5 z-10"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSelectGallery(gallery.id);
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedGalleryIds.has(gallery.id)}
-                    onChange={() => handleSelectGallery(gallery.id)}
-                    className="h-5 w-5 rounded border-slate-300 text-sky-500 focus:ring-sky-400 cursor-pointer"
-                  />
-                </div>
-
                 {/* Gradient overlay hover — pointer-events-none agar tidak block interaksi */}
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/0 via-white/0 to-sky-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
-                {/* Content — pl-10 agar tidak tertimpa checkbox */}
-                <div className="relative pl-10">
+                {/* Content */}
+                <div className="relative">
                   <div className="flex items-start justify-between gap-2">
+                    {/* Checkbox inline di kiri, sejajar dengan judul */}
+                    <div
+                      className="mt-0.5 shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectGallery(gallery.id);
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedGalleryIds.has(gallery.id)}
+                        onChange={() => handleSelectGallery(gallery.id)}
+                        className="h-5 w-5 rounded border-slate-300 text-sky-500 focus:ring-sky-400 cursor-pointer"
+                      />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-lg font-semibold text-slate-900 truncate tracking-tight">
                         {gallery.namaProject}
