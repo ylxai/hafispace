@@ -44,11 +44,7 @@ next-env.d.ts
 *.png
 *.jpg
 *.jpeg
-dashboard-*.png
-events-*.png
-packages-*.png
-*-review.png
-*-desktop.png
+screenshots/
 
 # AI tool config files (opencode, cursor, etc)
 opencode.json
