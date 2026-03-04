@@ -96,6 +96,14 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
     setShowBulkActions(newSet.size > 0);
   };
 
+  const filteredSelections = selections.filter((s) => {
+    if (filter === "locked") return s.isLocked;
+    if (filter === "unlocked") return !s.isLocked;
+    if (filter === "edit") return s.selectionType === "EDIT";
+    if (filter === "print") return s.selectionType === "PRINT";
+    return true;
+  });
+
   const handleSelectAll = () => {
     if (selectedSelectionIds.size === filteredSelections.length) {
       setSelectedSelectionIds(new Set());
@@ -217,13 +225,6 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
     }
   };
 
-  const filteredSelections = selections.filter((s) => {
-    if (filter === "locked") return s.isLocked;
-    if (filter === "unlocked") return !s.isLocked;
-    if (filter === "edit") return s.selectionType === "EDIT";
-    if (filter === "print") return s.selectionType === "PRINT";
-    return true;
-  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">

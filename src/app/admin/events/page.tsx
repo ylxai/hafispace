@@ -6,6 +6,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { StatusBadge } from "@/components/admin";
 import { useAdminEvents } from "@/hooks/use-admin-events";
 import { useToast } from "@/components/ui/toast";
+import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -30,6 +32,13 @@ interface PaymentData {
   summary: PaymentSummary;
 }
 
+interface PackageOption {
+  id: string;
+  namaPaket: string;
+  kategori: string;
+  harga: number;
+}
+
 // ─── Format helpers ───────────────────────────────────────────────────────────
 
 function formatRupiah(amount: number) {
@@ -41,7 +50,7 @@ function formatRupiah(amount: number) {
 function PaymentModal({ bookingId, onClose }: { bookingId: string; onClose: () => void }) {
   const queryClient = useQueryClient();
   const toast = useToast();
-  const [form, setForm] = useState({ jumlah: "", tipe: "DP" as "DP" | "PELUNASAN" | "LAINNYA", keterangan: "" });
+  const [form, setForm] = useState({ jumlah: "", tipe: "DP" as "DP" | "PELUNASAN" | "LAINNYA", keterangan: "", buktiBayar: "" });
   const [isSaving, setIsSaving] = useState(false);
 
   const { data, isLoading } = useQuery<PaymentData>({
@@ -72,7 +81,7 @@ function PaymentModal({ bookingId, onClose }: { bookingId: string; onClose: () =
         return;
       }
       toast.success("Pembayaran berhasil dicatat!");
-      setForm({ jumlah: "", tipe: "DP", keterangan: "" });
+      setForm({ jumlah: "", tipe: "DP", keterangan: "", buktiBayar: "" });
       await queryClient.invalidateQueries({ queryKey: ["booking-payments", bookingId] });
       await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
     } catch {
@@ -160,6 +169,19 @@ function PaymentModal({ bookingId, onClose }: { bookingId: string; onClose: () =
                       <p className="text-xs text-slate-400 mt-0.5">
                         {new Date(p.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
                         {p.keterangan && ` · ${p.keterangan}`}
+                        {p.buktiBayar && (
+                          <>
+                            {" · "}
+                            <a
+                              href={p.buktiBayar}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sky-600 hover:text-sky-700 font-medium"
+                            >
+                              Lihat Bukti
+                            </a>
+                          </>
+                        )}
                       </p>
                     </div>
                     <button
@@ -217,6 +239,16 @@ function PaymentModal({ bookingId, onClose }: { bookingId: string; onClose: () =
                   className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
                 />
               </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Link Bukti Transfer (opsional)</label>
+                <input
+                  type="url"
+                  value={form.buktiBayar}
+                  onChange={(e) => setForm((f) => ({ ...f, buktiBayar: e.target.value }))}
+                  placeholder="https://..."
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                />
+              </div>
               <button
                 type="submit"
                 disabled={isSaving}
@@ -236,6 +268,17 @@ function CreateBookingModal({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedPackageId, setSelectedPackageId] = useState<string>("");
+  const [hargaPaket, setHargaPaket] = useState<string>("");
+
+  const { data: packagesData } = useQuery<{ packages: PackageOption[] }>({
+    queryKey: ['admin-packages'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/packages');
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -250,13 +293,19 @@ function CreateBookingModal({ onClose }: { onClose: () => void }) {
     // Set to noon to avoid timezone edge cases
     sessionDate.setHours(12, 0, 0, 0);
     
+    const paketIdValue = (form.elements.namedItem("paketId") as HTMLSelectElement).value;
+    const paketCustomValue = (form.elements.namedItem("paketCustom") as HTMLInputElement).value;
+    const hargaPaketValue = (form.elements.namedItem("hargaPaket") as HTMLInputElement).value;
+
     const data = {
       namaClient: (form.elements.namedItem("namaClient") as HTMLInputElement).value,
       hpClient: (form.elements.namedItem("hpClient") as HTMLInputElement).value,
       emailClient: (form.elements.namedItem("emailClient") as HTMLInputElement).value || undefined,
       tanggalSesi: sessionDate.toISOString(),
       lokasiSesi: (form.elements.namedItem("lokasiSesi") as HTMLInputElement).value,
-      paketCustom: (form.elements.namedItem("paketCustom") as HTMLInputElement).value || undefined,
+      paketId: paketIdValue || undefined,
+      paketCustom: paketCustomValue || undefined,
+      hargaPaket: hargaPaketValue ? parseFloat(hargaPaketValue) : undefined,
       maxSelection: parseInt((form.elements.namedItem("maxSelection") as HTMLSelectElement).value),
       notes: (form.elements.namedItem("notes") as HTMLTextAreaElement).value || undefined,
     };
@@ -387,14 +436,61 @@ function CreateBookingModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="paketId">
+              Pilih Paket
+            </label>
+            <select
+              id="paketId"
+              name="paketId"
+              value={selectedPackageId}
+              onChange={(e) => {
+                const pkgId = e.target.value;
+                setSelectedPackageId(pkgId);
+                if (pkgId) {
+                  const pkg = packagesData?.packages.find(p => p.id === pkgId);
+                  if (pkg) {
+                    setHargaPaket(pkg.harga.toString());
+                  }
+                } else {
+                  setHargaPaket("");
+                }
+              }}
+              className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400 bg-white"
+            >
+              <option value="">-- Pilih Paket --</option>
+              {packagesData?.packages.map(pkg => (
+                <option key={pkg.id} value={pkg.id}>
+                  {pkg.namaPaket} — Rp {new Intl.NumberFormat('id-ID').format(pkg.harga)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
             <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="paketCustom">
-              Package Name
+              Atau Nama Paket Custom
             </label>
             <input
               id="paketCustom"
               name="paketCustom"
               type="text"
-              placeholder="e.g. Wedding Full Day"
+              placeholder="e.g. Wedding Full Day (opsional)"
+              className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="hargaPaket">
+              Harga Paket (Rp)
+            </label>
+            <input
+              id="hargaPaket"
+              name="hargaPaket"
+              type="number"
+              value={hargaPaket}
+              onChange={(e) => setHargaPaket(e.target.value)}
+              placeholder="0"
+              min="0"
               className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
             />
           </div>
@@ -462,10 +558,41 @@ export default function AdminEventsPage() {
   const [bulkActionStatus, setBulkActionStatus] = useState<"PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "">("");
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
   const [paymentBookingId, setPaymentBookingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const toast = useToast();
   const queryClient = useQueryClient();
 
-  const bookings = useMemo(() => data?.items ?? [], [data?.items]);
+  const bookings = useMemo(() => {
+    let filtered = data?.items ?? [];
+    
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(b => 
+        b.namaClient.toLowerCase().includes(query) ||
+        b.kodeBooking.toLowerCase().includes(query) ||
+        b.hpClient?.toLowerCase().includes(query)
+      );
+    }
+    
+    // Filter by status
+    if (statusFilter) {
+      filtered = filtered.filter(b => b.status === statusFilter);
+    }
+    
+    // Filter by date range
+    if (dateFrom) {
+      filtered = filtered.filter(b => b.tanggalSesi >= dateFrom);
+    }
+    if (dateTo) {
+      filtered = filtered.filter(b => b.tanggalSesi <= dateTo);
+    }
+    
+    return filtered;
+  }, [data?.items, searchQuery, statusFilter, dateFrom, dateTo]);
 
   // Show error toast if query fails
   if (error) {
@@ -659,17 +786,95 @@ export default function AdminEventsPage() {
             Track upcoming sessions and manage delivery timelines.
           </p>
         </div>
-        <button
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-slate-800 hover:shadow-md"
-          type="button"
-          onClick={() => setShowModal(true)}
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Create Event
-        </button>
+        <div className="flex items-center gap-3">
+          <a
+            href="/api/admin/bookings/export"
+            download
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export CSV
+          </a>
+          <button
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-slate-800 hover:shadow-md"
+            type="button"
+            onClick={() => setShowModal(true)}
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Create Event
+          </button>
+        </div>
       </header>
+
+      {/* Filters */}
+      <div className="rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-xl p-5 shadow-sm">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Cari</label>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Nama, kode, HP..."
+              className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Status</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400 bg-white"
+            >
+              <option value="">Semua Status</option>
+              <option value="PENDING">Pending</option>
+              <option value="CONFIRMED">Confirmed</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Sesi Dari</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Sesi Sampai</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setStatusFilter("");
+                setDateFrom("");
+                setDateTo("");
+              }}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition"
+            >
+              Reset Filter
+            </button>
+          </div>
+        </div>
+        <div className="mt-3 text-xs text-slate-500">
+          Menampilkan <span className="font-semibold text-slate-900">{bookings.length}</span> dari{" "}
+          <span className="font-semibold text-slate-900">{data?.items.length ?? 0}</span> booking
+        </div>
+      </div>
 
       {/* Stats Grid */}
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -768,9 +973,7 @@ export default function AdminEventsPage() {
                           className="text-green-500 hover:text-green-600"
                           title="WhatsApp"
                         >
-                          <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                          </svg>
+                          <WhatsappIcon className="h-3.5 w-3.5" />
                         </a>
                       )}
                     </div>
