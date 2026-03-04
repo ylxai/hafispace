@@ -289,30 +289,57 @@ export default function PickspacePage() {
     [isLocked, pendingId, selectedIds, toggleSelection]
   );
 
-  const handleSelectAll = useCallback(() => {
-    if (!data?.gallery) return;
-    const allPhotos = data.gallery.photos;
-    const maxSelection = data.gallery.settings.maxSelection;
-    // Pilih semua hingga batas maxSelection
-    const toSelect = allPhotos.slice(0, maxSelection);
-    toSelect.forEach((photo) => {
-      if (!selectedIds.has(photo.storageKey) && !pendingId) {
-        const action = "add";
-        setPendingId(photo.storageKey);
-        toggleSelection({ photo, action });
-      }
-    });
-  }, [data, selectedIds, pendingId, toggleSelection]);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
-  const handleClearAll = useCallback(() => {
-    if (!data?.gallery) return;
-    data.gallery.photos.forEach((photo) => {
-      if (selectedIds.has(photo.storageKey) && !pendingId) {
-        setPendingId(photo.storageKey);
-        toggleSelection({ photo, action: "remove" });
-      }
-    });
-  }, [data, selectedIds, pendingId, toggleSelection]);
+  const handleSelectAll = useCallback(async () => {
+    if (!data?.gallery || isBulkProcessing || pendingId) return;
+    setIsBulkProcessing(true);
+    try {
+      const res = await fetch(`/api/public/gallery/${token}/select/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "add-all",
+          photos: data.gallery.photos.map((p) => ({
+            storageKey: p.storageKey,
+            filename: p.filename,
+            url: p.url,
+          })),
+        }),
+      });
+      if (!res.ok) throw new Error("Gagal memilih semua foto");
+      const result = await res.json() as { selectionCount: number };
+      setSelectionCount(result.selectionCount);
+      // Update selectedIds dari data gallery
+      const allKeys = new Set(data.gallery.photos.map((p) => p.storageKey));
+      setSelectedIds(allKeys);
+      queryClient.invalidateQueries({ queryKey: ["gallery", token] });
+    } catch {
+      alert("Gagal memilih semua foto. Coba lagi.");
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  }, [data, token, isBulkProcessing, pendingId, queryClient]);
+
+  const handleClearAll = useCallback(async () => {
+    if (!data?.gallery || isBulkProcessing || pendingId) return;
+    setIsBulkProcessing(true);
+    try {
+      const res = await fetch(`/api/public/gallery/${token}/select/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "remove-all" }),
+      });
+      if (!res.ok) throw new Error("Gagal membatalkan semua pilihan");
+      setSelectionCount(0);
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ["gallery", token] });
+    } catch {
+      alert("Gagal membatalkan semua pilihan. Coba lagi.");
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  }, [data, token, isBulkProcessing, pendingId, queryClient]);
 
   const handleSubmit = async () => {
     if (selectedIds.size === 0) return;
@@ -446,20 +473,20 @@ export default function PickspacePage() {
                 <button
                   type="button"
                   onClick={handleClearAll}
-                  disabled={!!pendingId}
+                  disabled={!!pendingId || isBulkProcessing}
                   className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
                 >
-                  Batal Semua
+                  {isBulkProcessing ? "..." : "Batal Semua"}
                 </button>
               )}
               {selectedIds.size === 0 && gallery.photos.length > 0 && (
                 <button
                   type="button"
                   onClick={handleSelectAll}
-                  disabled={!!pendingId || isFull}
+                  disabled={!!pendingId || isFull || isBulkProcessing}
                   className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
                 >
-                  Pilih Semua
+                  {isBulkProcessing ? "..." : "Pilih Semua"}
                 </button>
               )}
             </div>

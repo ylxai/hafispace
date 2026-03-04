@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { UPLOAD_COMPLETE_FEEDBACK_MS } from "@/lib/constants";
 import ViesusPreview from "@/components/admin/viesus-preview";
@@ -34,7 +34,57 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
   const [showSelections, setShowSelections] = useState(false);
   const [showViesus, setShowViesus] = useState(false);
   const [firstPhoto, setFirstPhoto] = useState<{ url: string; publicId: string; vendorId: string } | null>(null);
+  const [liveSelectionCount, setLiveSelectionCount] = useState(gallery.selectionCount);
+  const [clientSubmitted, setClientSubmitted] = useState(false);
+  const ablyRef = useRef<null>(null);
   const galleryUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/gallery/${gallery.clientToken}`;
+
+  // Ably realtime — subscribe untuk update count & notifikasi submit dari klien
+  useEffect(() => {
+    let mounted = true;
+
+    const connect = async () => {
+      try {
+        const Ably = (await import("ably")).default;
+        const ably = new Ably.Realtime({
+          authUrl: `/api/ably-token?gallery=${gallery.clientToken}`,
+        });
+        ablyRef.current = ably;
+
+        const channel = ably.channels.get(`gallery:${gallery.id}:selection`);
+
+        // Update counter realtime saat klien pilih/batal foto
+        await channel.subscribe("count-updated", (msg) => {
+          if (!mounted) return;
+          if (typeof msg.data?.count === "number") {
+            setLiveSelectionCount(msg.data.count);
+            queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
+          }
+        });
+
+        // Notifikasi saat klien submit seleksi
+        await channel.subscribe("selection-submitted", (msg) => {
+          if (!mounted) return;
+          const count = msg.data?.count ?? liveSelectionCount;
+          setClientSubmitted(true);
+          setLiveSelectionCount(count);
+          toast.success(`🎉 Klien telah mengirim seleksi ${count} foto!`);
+          queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
+          queryClient.invalidateQueries({ queryKey: ["admin-selections", gallery.id] });
+        });
+      } catch {
+        // Ably tidak tersedia — silent fallback
+      }
+    };
+
+    connect();
+
+    return () => {
+      mounted = false;
+      ablyRef.current?.close();
+      ablyRef.current = null;
+    };
+  }, [gallery.id, gallery.clientToken]);
 
   async function handleShowViesus() {
     if (!showViesus && !firstPhoto) {
@@ -159,15 +209,20 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
           <div className="rounded-xl bg-slate-50 p-4 space-y-2">
             <p className="text-base font-semibold text-slate-900">{gallery.namaProject}</p>
             <p className="text-sm text-slate-600">Client: {gallery.clientName}</p>
-            <div className="flex gap-4 text-xs text-slate-500">
+            <div className="flex flex-wrap gap-3 text-xs text-slate-500">
               <span>{gallery.photoCount} photos</span>
-              {gallery.selectionCount > 0 ? (
+              {liveSelectionCount > 0 ? (
                 <button
                   type="button"
                   onClick={() => setShowSelections(true)}
-                  className="font-semibold text-sky-600 hover:text-sky-800 underline underline-offset-2 transition-colors"
+                  className="font-semibold text-sky-600 hover:text-sky-800 underline underline-offset-2 transition-colors flex items-center gap-1"
                 >
-                  {gallery.selectionCount} seleksi →
+                  {liveSelectionCount} seleksi →
+                  {clientSubmitted && (
+                    <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700">
+                      Submitted
+                    </span>
+                  )}
                 </button>
               ) : (
                 <span>0 seleksi</span>
@@ -239,13 +294,17 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
         <div className="mt-5 space-y-2">
           {/* Baris 1: secondary actions */}
           <div className="grid grid-cols-3 gap-2">
-            {gallery.selectionCount > 0 ? (
+            {liveSelectionCount > 0 ? (
               <button
                 type="button"
                 onClick={() => setShowSelections(true)}
-                className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-medium text-sky-700 hover:bg-sky-100 transition"
+                className={`rounded-lg border px-3 py-2 text-xs font-medium transition ${
+                  clientSubmitted
+                    ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
+                    : "border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100"
+                }`}
               >
-                📋 Seleksi ({gallery.selectionCount})
+                {clientSubmitted ? "✓" : "📋"} Seleksi ({liveSelectionCount})
               </button>
             ) : (
               <div /> /* placeholder agar grid tetap 3 kolom */
