@@ -241,6 +241,7 @@ function FormBookingPanel() {
   const toast = useToast();
   const [formData, setFormData] = useState({
     bookingFormActive: false,
+    waAdmin: "",
     dpPercentage: 30,
     rekeningPembayaran: "",
     syaratKetentuan: "",
@@ -256,6 +257,7 @@ function FormBookingPanel() {
         const data = await res.json();
         setFormData({
           bookingFormActive: data.vendor.bookingFormActive ?? false,
+          waAdmin: data.vendor.waAdmin ?? "",
           dpPercentage: data.vendor.dpPercentage ?? 30,
           rekeningPembayaran: data.vendor.rekeningPembayaran ?? "",
           syaratKetentuan: data.vendor.syaratKetentuan ?? "",
@@ -280,6 +282,7 @@ function FormBookingPanel() {
       const data = await res.json();
       setFormData({
         bookingFormActive: data.vendor.bookingFormActive ?? false,
+        waAdmin: data.vendor.waAdmin ?? "",
         dpPercentage: data.vendor.dpPercentage ?? 30,
         rekeningPembayaran: data.vendor.rekeningPembayaran ?? "",
         syaratKetentuan: data.vendor.syaratKetentuan ?? "",
@@ -338,6 +341,23 @@ function FormBookingPanel() {
                 className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${formData.bookingFormActive ? "translate-x-5" : "translate-x-0"}`}
               />
             </button>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600">
+              Nomor WhatsApp Admin
+            </label>
+            <div className="flex items-center gap-2">
+              <span className="rounded-l-xl border border-r-0 border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-500">+</span>
+              <input
+                type="tel"
+                value={formData.waAdmin}
+                onChange={(e) => setFormData((f) => ({ ...f, waAdmin: e.target.value.replace(/\D/g, '') }))}
+                placeholder="6282353345446"
+                className="flex-1 rounded-r-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-slate-400"
+              />
+            </div>
+            <p className="mt-1 text-xs text-slate-400">Format: 628xxx (tanpa + atau spasi). Digunakan untuk tombol konfirmasi WA di form booking publik.</p>
           </div>
 
           <div>

@@ -12,6 +12,7 @@ const settingsSchema = z.object({
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   enableViesusEnhancement: z.boolean().optional(),
   // Booking form settings
+  waAdmin: z.string().optional().nullable(),
   dpPercentage: z.coerce.number().int().min(0).max(100).optional(),
   rekeningPembayaran: z.string().optional().nullable(),
   syaratKetentuan: z.string().optional().nullable(),
@@ -38,6 +39,7 @@ export async function GET() {
       subscriptionExpired: true,
       enableViesusEnhancement: true,
       createdAt: true,
+      waAdmin: true,
       dpPercentage: true,
       rekeningPembayaran: true,
       syaratKetentuan: true,
@@ -71,7 +73,7 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const { namaStudio, phone, email, enableViesusEnhancement, dpPercentage, rekeningPembayaran, syaratKetentuan, themeColor, successMessage, bookingFormActive } = parsed.data;
+  const { namaStudio, phone, email, enableViesusEnhancement, waAdmin, dpPercentage, rekeningPembayaran, syaratKetentuan, themeColor, successMessage, bookingFormActive } = parsed.data;
 
   await prisma.vendor.update({
     where: { id: session.user.id },
@@ -80,6 +82,7 @@ export async function PATCH(request: Request) {
       ...(phone !== undefined && { phone }),
       ...(email !== undefined && email !== "" && { email }),
       ...(enableViesusEnhancement !== undefined && { enableViesusEnhancement }),
+      ...(waAdmin !== undefined && { waAdmin }),
       ...(dpPercentage !== undefined && { dpPercentage }),
       ...(rekeningPembayaran !== undefined && { rekeningPembayaran }),
       ...(syaratKetentuan !== undefined && { syaratKetentuan }),

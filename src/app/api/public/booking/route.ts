@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
       id: true,
       namaStudio: true,
       logoUrl: true,
+      waAdmin: true,
       dpPercentage: true,
       rekeningPembayaran: true,
       syaratKetentuan: true,
