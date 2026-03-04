@@ -552,32 +552,41 @@ export async function testCloudinaryConnectionWithCredentials(
 }
 
 // Get a VIESUS-enhanced URL for an image
+// Membangun URL secara manual dengan cloudName eksplisit — tidak mutasi global config
 export function getViesusEnhancedUrl(publicId: string, options: {
+  cloudName?: string;
   width?: number;
   height?: number;
   quality?: string | number;
   crop?: string;
 } = {}): string {
-  const transformation: Array<Record<string, unknown>> = [
-    { effect: 'viesus_correct' }
-  ];
-  
-  // Add optional transformations
-  if (options.width || options.height) {
-    transformation.push({
-      width: options.width,
-      height: options.height,
-      crop: options.crop ?? 'scale'
-    });
+  // Build transformation string
+  const parts: string[] = ['e_viesus_correct'];
+
+  if (options.width ?? options.height) {
+    const cropMode = options.crop ?? 'scale';
+    const dims = [
+      options.width ? `w_${options.width}` : null,
+      options.height ? `h_${options.height}` : null,
+      `c_${cropMode}`,
+    ].filter(Boolean).join(',');
+    parts.push(dims);
   }
-  
-  if (options.quality) {
-    transformation.push({ quality: options.quality });
+
+  parts.push(`q_${options.quality ?? 'auto'}`);
+  parts.push('f_auto');
+
+  const transformation = parts.join('/');
+
+  // Jika cloudName tersedia, build URL manual (lebih aman untuk multi-tenant)
+  if (options.cloudName) {
+    return `https://res.cloudinary.com/${options.cloudName}/image/upload/${transformation}/${publicId}`;
   }
-  
+
+  // Fallback ke cloudinary.url() jika cloudName tidak tersedia
   return cloudinary.url(publicId, {
-    transformation,
-    secure: true
+    transformation: [{ effect: 'viesus_correct' }, { quality: options.quality ?? 'auto', fetch_format: 'auto' }],
+    secure: true,
   });
 }
 
@@ -593,18 +602,11 @@ export async function applyViesusEnhancement(
   } = {}
 ): Promise<string> {
   try {
-    // Get vendor-specific configuration
+    // Get vendor config untuk cloudName
     const vendorConfig = await getVendorCloudinaryClient(vendorId);
 
-    // Configure Cloudinary for this vendor
-    cloudinary.config({
-      cloud_name: vendorConfig.cloudName,
-      api_key: vendorConfig.apiKey,
-      api_secret: vendorConfig.apiSecret,
-    });
-
-    // Generate and return the VIESUS-enhanced URL
-    return getViesusEnhancedUrl(publicId, options);
+    // Generate URL dengan cloudName eksplisit — tidak pakai cloudinary.url() global
+    return getViesusEnhancedUrl(publicId, { ...options, cloudName: vendorConfig.cloudName });
   } catch (error) {
     console.error("Error applying VIESUS enhancement:", error);
     throw new Error("Failed to apply VIESUS enhancement to image");
@@ -649,24 +651,19 @@ export async function uploadPhotoToCloudinaryWithViesus(
 }> {
   try {
     // Get vendor-specific configuration
-    const vendorConfig = await getVendorCloudinaryClient(vendorId);
+    const account = await getCloudinaryAccount(vendorId);
+    const perRequestConfig = getCloudinaryConfig(account);
 
-    // Configure Cloudinary for this vendor
-    cloudinary.config({
-      cloud_name: vendorConfig.cloudName,
-      api_key: vendorConfig.apiKey,
-      api_secret: vendorConfig.apiSecret,
-    });
-
-    // Prepare upload options
+    // Prepare upload options dengan per-request config
     const uploadOptions = {
+      ...perRequestConfig,
       folder: options.folder,
       public_id: options.publicId,
       overwrite: options.overwrite,
       resource_type: options.resourceType,
       use_filename: true,
       unique_filename: true,
-      filename_override: filename.replace(/\.[^/.]+$/, ""), // Remove extension for filename
+      filename_override: filename.replace(/\.[^/.]+$/, ""),
     };
 
     // Upload to Cloudinary
@@ -685,17 +682,14 @@ export async function uploadPhotoToCloudinaryWithViesus(
         }
       );
 
-      // If file is a buffer, pass it to the stream
       if (Buffer.isBuffer(file)) {
         uploadStream.end(file);
       } else {
-        // If it's a data URL or path, pass it directly to upload
         cloudinary.uploader.upload(
           file as string,
           { ...uploadOptions },
           (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
             if (error) {
-              console.error("Error uploading to Cloudinary:", error);
               reject(new Error(`Failed to upload photo to Cloudinary: ${error.message ?? 'Unknown error'}`));
             } else if (result) {
               resolve(result);
@@ -709,16 +703,13 @@ export async function uploadPhotoToCloudinaryWithViesus(
 
     // Determine if VIESUS should be applied
     const applyViesus = options.applyViesus ?? await isViesusEnhancementEnabled(vendorId);
-    
+
     let viesusEnhancedUrl: string | undefined;
     if (applyViesus && result.resource_type === 'image') {
-      // Create URL with VIESUS enhancement
-      viesusEnhancedUrl = cloudinary.url(result.public_id, {
-        transformation: [
-          { effect: 'viesus_correct' },
-          { quality: 'auto' }, // Also apply auto quality
-        ],
-        secure: true
+      // Build Viesus URL manual dengan cloudName eksplisit
+      viesusEnhancedUrl = getViesusEnhancedUrl(result.public_id, {
+        cloudName: account.cloudName,
+        quality: 'auto',
       });
     }
 

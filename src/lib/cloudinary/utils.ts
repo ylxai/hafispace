@@ -34,7 +34,7 @@ export function extractPublicId(url: string): string {
  * Dipakai di gallery/[token]/page.tsx
  */
 export function generateThumbnailUrl(cloudName: string, publicId: string): string {
-  return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,w_400,h_400,q_auto,f_auto/${publicId}`;
+  return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,g_auto,w_400,h_400,f_auto,q_auto/${publicId}`;
 }
 
 /**

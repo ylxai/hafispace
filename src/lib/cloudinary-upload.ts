@@ -1,14 +1,9 @@
 import { v2 as cloudinary } from 'cloudinary';
-import { uploadPhotoToCloudinary, getCloudinaryAccount, configureCloudinary } from './cloudinary';
+import { uploadPhotoToCloudinary, getCloudinaryAccount } from './cloudinary';
 import type { CloudinaryResource } from '@/types/cloudinary';
 
-// Configure Cloudinary with environment variables (fallback)
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true, // Always use HTTPS
-});
+// Tidak ada global config mutation di module level.
+// Setiap fungsi yang butuh credentials harus pass config per-request.
 
 // Cloudinary upload folder structure
 export const CLOUDINARY_FOLDERS = {
@@ -76,9 +71,8 @@ export async function uploadImageToCloudinary(
   accountId: string;
 }> {
   try {
-    // Get Cloudinary account and configure
+    // Get Cloudinary account (tidak perlu configureCloudinary — uploadPhotoToCloudinary handle per-request config)
     const account = await getCloudinaryAccount(vendorId, options.accountId);
-    configureCloudinary(account);
 
     // Use the account's cloudName explicitly for URL generation
     const { cloudName } = account;
@@ -91,8 +85,8 @@ export async function uploadImageToCloudinary(
       resourceType: options.resourceType,
     });
 
-    // Generate thumbnail URL with explicit cloud name
-    const thumbnailUrl = `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,g_auto,h_400,q_auto:good,w_400/${result.publicId}`;
+    // Generate thumbnail URL dengan explicit cloud name + f_auto untuk WebP/AVIF
+    const thumbnailUrl = `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,g_auto,w_400,h_400,f_auto,q_auto/${result.publicId}`;
 
     // Log for debugging
     console.log("Generated URLs:", {
@@ -263,15 +257,19 @@ export function getResponsiveImageUrls(publicId: string, options?: {
 
 /**
  * Delete image from Cloudinary
+ * Gunakan deletePhotoFromCloudinary dari lib/cloudinary/core.ts untuk multi-tenant.
+ * Fungsi ini hanya untuk backward compat dengan single-account setup.
  */
 export async function deleteImageFromCloudinary(
   publicId: string,
-  resourceType: 'image' | 'video' | 'raw' = 'image'
+  resourceType: 'image' | 'video' | 'raw' = 'image',
+  config?: { cloud_name?: string; api_key?: string; api_secret?: string }
 ): Promise<boolean> {
   try {
     const result = await cloudinary.uploader.destroy(publicId, {
+      ...(config ?? {}),
       resource_type: resourceType,
-      invalidate: true, // Invalidate CDN cache
+      invalidate: true,
     });
 
     return result.result === 'ok' || result.result === 'not found';
