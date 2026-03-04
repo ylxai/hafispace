@@ -63,7 +63,7 @@ const cards = (o: Overview) => [
 
 export function MetricsCards({ overview }: { overview: Overview }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
       {cards(overview).map((card) => (
         <div
           key={card.label}

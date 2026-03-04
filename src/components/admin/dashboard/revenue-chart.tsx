@@ -57,7 +57,14 @@ export function RevenueChart({ data }: { data: TrendData[] }) {
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-          <XAxis dataKey="bulan" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+          <XAxis
+            dataKey="bulan"
+            tick={{ fontSize: 10, fill: "#94a3b8" }}
+            axisLine={false}
+            tickLine={false}
+            interval={0}
+            padding={{ right: 8 }}
+          />
           <YAxis tickFormatter={(v: number) => v === 0 ? "0" : formatRupiahShort(v)} tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} width={52} />
           <Tooltip content={<CustomTooltip />} />
           <Legend

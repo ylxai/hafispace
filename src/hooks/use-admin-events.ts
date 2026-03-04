@@ -4,16 +4,15 @@ export type AdminBooking = {
   id: string;
   kodeBooking: string;
   namaClient: string;
-  clientName: string;
   hpClient: string;
   emailClient: string | null;
   paket: string;
   tanggalSesi: string;
   lokasiSesi: string | null;
   status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
-  dpAmount: string;
+  dpAmount: number;
   dpStatus: "UNPAID" | "PARTIAL" | "PAID";
-  hargaPaket: string;
+  hargaPaket: number;
   galleryCount: number;
   createdAt: string;
 };

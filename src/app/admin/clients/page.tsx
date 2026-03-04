@@ -180,28 +180,30 @@ export default function AdminClientsPage() {
       
       {/* Bulk Actions Bar */}
       {showBulkActions && (
-        <div className="fixed top-16 left-0 right-0 z-40 bg-amber-50 border-b border-amber-200 p-4 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="fixed top-16 left-0 right-0 z-40 bg-amber-50 border-b border-amber-200 px-4 py-3 backdrop-blur-sm shadow-sm">
+          <div className="max-w-7xl mx-auto flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* Info + Clear */}
             <div className="flex items-center gap-3">
-              <span className="text-amber-800 font-medium">
-                {selectedClientIds.size} client(s) selected
+              <span className="text-amber-800 font-medium text-sm">
+                {selectedClientIds.size} client dipilih
               </span>
               <button
                 type="button"
-                onClick={() => setSelectedClientIds(new Set())}
-                className="text-amber-600 hover:text-amber-800 text-sm font-medium"
+                onClick={() => { setSelectedClientIds(new Set()); setShowBulkActions(false); }}
+                className="text-amber-600 hover:text-amber-800 text-sm font-medium underline underline-offset-2"
               >
-                Clear selection
+                Batal
               </button>
             </div>
-            <div className="flex items-center gap-3">
+            {/* Actions */}
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={handleBulkDelete}
                 disabled={isBulkProcessing}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                className="shrink-0 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
               >
-                Delete Selected
+                {isBulkProcessing ? "Menghapus..." : "Hapus"}
               </button>
             </div>
           </div>
@@ -283,7 +285,7 @@ export default function AdminClientsPage() {
                <div
                  key={client.id}
                  onClick={() => setSelectedClient(client)}
-                 className={`group relative rounded-3xl border bg-white/70 backdrop-blur-xl p-6 shadow-sm transition-all duration-300 hover:shadow-glass hover:-translate-y-1 cursor-pointer overflow-hidden ${
+                 className={`group relative rounded-3xl border bg-white/70 backdrop-blur-xl p-6 shadow-sm transition-all duration-300 hover:shadow-glass hover:-translate-y-1 cursor-pointer ${
                    selectedClientIds.has(client.id)
                      ? "border-sky-400 ring-2 ring-sky-100"
                      : "border-slate-200 hover:border-white/40"
@@ -291,7 +293,7 @@ export default function AdminClientsPage() {
                >
                  {/* Checkbox overlay */}
                  <div 
-                   className="absolute top-4 right-4 z-10"
+                   className="absolute top-6 left-6 z-10"
                    onClick={(e) => {
                      e.stopPropagation();
                      handleSelectClient(client.id);
@@ -307,7 +309,7 @@ export default function AdminClientsPage() {
                  
                  <div className="absolute inset-0 bg-gradient-to-br from-white/0 via-white/0 to-sky-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                  
-                 <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                 <div className="relative pl-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                    <div className="flex items-center gap-4">
                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-lg font-bold text-slate-600 shadow-inner">
                        {client.name.charAt(0).toUpperCase()}

@@ -10,12 +10,16 @@ import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import { PaymentModal } from "./_components/payment-modal";
 import { CreateBookingModal } from "./_components/create-booking-modal";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-
-
-
 // ─── Format helpers ───────────────────────────────────────────────────────────
+
+const formatRupiah = (amount: number) =>
+  new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(amount);
+
+const DP_STATUS_MAP: Record<string, { label: string; className: string }> = {
+  PAID:    { label: "Lunas",   className: "bg-green-100 text-green-700" },
+  PARTIAL: { label: "Partial", className: "bg-amber-100 text-amber-700" },
+  UNPAID:  { label: "Belum Bayar", className: "bg-slate-100 text-slate-500" },
+};
 
 // ─── Payment Modal ────────────────────────────────────────────────────────────
 
@@ -32,6 +36,7 @@ export default function AdminEventsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [showFilter, setShowFilter] = useState(false);
   const toast = useToast();
   const queryClient = useQueryClient();
 
@@ -191,27 +196,29 @@ export default function AdminEventsPage() {
       
       {/* Bulk Actions Bar */}
       {showBulkActions && (
-        <div className="fixed top-16 left-0 right-0 z-40 bg-amber-50 border-b border-amber-200 p-4 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="fixed top-16 left-0 right-0 z-40 bg-amber-50 border-b border-amber-200 px-4 py-3 backdrop-blur-sm shadow-sm">
+          <div className="max-w-7xl mx-auto flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* Info + Clear */}
             <div className="flex items-center gap-3">
-              <span className="text-amber-800 font-medium">
-                {selectedBookingIds.size} booking(s) selected
+              <span className="text-amber-800 font-medium text-sm">
+                {selectedBookingIds.size} booking dipilih
               </span>
               <button
                 type="button"
-                onClick={() => setSelectedBookingIds(new Set())}
-                className="text-amber-600 hover:text-amber-800 text-sm font-medium"
+                onClick={() => { setSelectedBookingIds(new Set()); setShowBulkActions(false); }}
+                className="text-amber-600 hover:text-amber-800 text-sm font-medium underline underline-offset-2"
               >
-                Clear selection
+                Batal
               </button>
             </div>
-            <div className="flex items-center gap-3">
+            {/* Actions */}
+            <div className="flex flex-wrap items-center gap-2">
               <select
                 value={bulkActionStatus}
                 onChange={(e) => setBulkActionStatus(e.target.value as "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED")}
-                className="rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 text-sm text-amber-900 outline-none focus:border-amber-400"
+                className="flex-1 min-w-0 rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 text-sm text-amber-900 outline-none focus:border-amber-400"
               >
-                <option value="">Select status</option>
+                <option value="">Ubah status...</option>
                 <option value="PENDING">Pending</option>
                 <option value="CONFIRMED">Confirmed</option>
                 <option value="COMPLETED">Completed</option>
@@ -221,17 +228,17 @@ export default function AdminEventsPage() {
                 type="button"
                 onClick={handleBulkUpdate}
                 disabled={!bulkActionStatus || isBulkProcessing}
-                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+                className="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
               >
-                Update Status
+                Update
               </button>
               <button
                 type="button"
                 onClick={handleBulkDelete}
                 disabled={isBulkProcessing}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                className="shrink-0 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
               >
-                Delete Selected
+                {isBulkProcessing ? "Menghapus..." : "Hapus"}
               </button>
             </div>
           </div>
@@ -281,18 +288,45 @@ export default function AdminEventsPage() {
       </header>
 
       {/* Filters */}
-      <div className="rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-xl p-5 shadow-sm">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Cari</label>
+      <div className="rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
+        {/* Filter Header — selalu tampil, collapsible toggle di mobile */}
+        <div className="flex items-center justify-between px-5 py-4">
+          <div className="flex items-center gap-3">
+            {/* Search input — selalu visible */}
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Nama, kode, HP..."
-              className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
+              className="w-44 sm:w-64 rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
             />
+            {/* Active filter badge */}
+            {(statusFilter || dateFrom || dateTo) && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-1 text-xs font-medium text-sky-700">
+                <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L13 10.414V15a1 1 0 01-.553.894l-4 2A1 1 0 017 17v-6.586L3.293 6.707A1 1 0 013 6V3z" clipRule="evenodd" /></svg>
+                {[statusFilter, dateFrom, dateTo].filter(Boolean).length} filter aktif
+              </span>
+            )}
           </div>
+          {/* Toggle filter button — mobile */}
+          <button
+            type="button"
+            onClick={() => setShowFilter(!showFilter)}
+            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition sm:hidden"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+            </svg>
+            Filter
+            <svg className={`h-3.5 w-3.5 transition-transform ${showFilter ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Extended filters — always show di desktop, collapsible di mobile */}
+        <div className={`px-5 pb-5 ${showFilter ? "block" : "hidden sm:block"}`}>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Status</label>
             <select
@@ -340,7 +374,8 @@ export default function AdminEventsPage() {
             </button>
           </div>
         </div>
-        <div className="mt-3 text-xs text-slate-500">
+        </div>
+        <div className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
           Menampilkan <span className="font-semibold text-slate-900">{bookings.length}</span> dari{" "}
           <span className="font-semibold text-slate-900">{data?.items.length ?? 0}</span> booking
         </div>
@@ -367,9 +402,10 @@ export default function AdminEventsPage() {
         ))}
       </div>
 
-      {/* Bookings Table */}
-      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
-        <table className="w-full text-left text-sm">
+      {/* Bookings Table — Desktop (hidden di mobile, pakai card list) */}
+      <div className="hidden sm:block overflow-hidden rounded-3xl border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm min-w-[700px]">
           <thead className="bg-slate-50/80 backdrop-blur-sm">
             <tr>
               <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 w-12">
@@ -431,7 +467,7 @@ export default function AdminEventsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <p className="font-semibold text-slate-900 tracking-tight">
-                      {booking.clientName}
+                      {booking.namaClient}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-xs text-slate-500 font-mono">{booking.kodeBooking}</p>
@@ -466,15 +502,11 @@ export default function AdminEventsPage() {
                   <td className="px-6 py-4">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">
-                        {booking.dpAmount ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(booking.dpAmount)) : "-"}
+                        {booking.dpAmount ? formatRupiah(booking.dpAmount) : "-"}
                       </p>
                       {booking.dpStatus && (
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                          booking.dpStatus === "PAID" ? "bg-green-100 text-green-700" :
-                          booking.dpStatus === "PARTIAL" ? "bg-amber-100 text-amber-700" :
-                          "bg-slate-100 text-slate-500"
-                        }`}>
-                          {booking.dpStatus === "PAID" ? "Lunas" : booking.dpStatus === "PARTIAL" ? "Partial" : "Belum Bayar"}
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${DP_STATUS_MAP[booking.dpStatus]?.className ?? "bg-slate-100 text-slate-500"}`}>
+                          {DP_STATUS_MAP[booking.dpStatus]?.label ?? booking.dpStatus}
                         </span>
                       )}
                     </div>
@@ -517,6 +549,125 @@ export default function AdminEventsPage() {
             )}
           </tbody>
         </table>
+        </div>
+      </div>
+
+      {/* Bookings Card List — Mobile only (hidden di sm+) */}
+      <div className="sm:hidden space-y-3">
+        {isLoading ? (
+          <div className="flex items-center justify-center gap-3 py-10 text-sm text-slate-500">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900" />
+            Loading bookings...
+          </div>
+        ) : bookings.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100/80">
+              <svg className="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <p className="font-medium text-slate-900">No bookings yet</p>
+            <p className="mt-1 text-sm text-slate-500">Create your first booking to get started</p>
+          </div>
+        ) : (
+          bookings.map((booking) => (
+            <div
+              key={booking.id}
+              className={`relative rounded-2xl border bg-white/70 backdrop-blur-xl p-4 shadow-sm transition-all ${
+                selectedBookingIds.has(booking.id) ? "border-sky-400 ring-2 ring-sky-100" : "border-slate-200"
+              }`}
+            >
+              {/* Checkbox + Status Row */}
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedBookingIds.has(booking.id)}
+                    onChange={() => handleSelectBooking(booking.id)}
+                    className="h-4 w-4 rounded border-slate-300 text-slate-600 focus:ring-slate-500"
+                  />
+                  <div>
+                    <p className="font-semibold text-slate-900 text-sm">{booking.namaClient}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <p className="text-xs text-slate-400 font-mono">{booking.kodeBooking}</p>
+                      {booking.hpClient && (
+                        <a
+                          href={`https://wa.me/${booking.hpClient.replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-green-500 hover:text-green-600"
+                        >
+                          <WhatsappIcon className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <StatusBadge label={booking.status} />
+              </div>
+
+              {/* Info Grid */}
+              <div className="grid grid-cols-2 gap-2 mb-3 text-xs text-slate-600">
+                <div>
+                  <p className="text-slate-400 uppercase tracking-wider text-[10px] font-medium">Paket</p>
+                  <p className="font-medium text-slate-700 mt-0.5">{booking.paket || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-slate-400 uppercase tracking-wider text-[10px] font-medium">Sesi</p>
+                  <p className="font-medium text-slate-700 mt-0.5">
+                    {booking.tanggalSesi
+                      ? new Date(booking.tanggalSesi).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })
+                      : "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-400 uppercase tracking-wider text-[10px] font-medium">Dana Masuk</p>
+                  <p className="font-medium text-slate-700 mt-0.5">
+                    {booking.dpAmount ? formatRupiah(booking.dpAmount) : "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-400 uppercase tracking-wider text-[10px] font-medium">Galleries</p>
+                  <p className="font-medium text-slate-700 mt-0.5">{booking.galleryCount} gallery</p>
+                </div>
+              </div>
+
+              {/* DP Status */}
+              {booking.dpStatus && (
+                <div className="mb-3">
+                  <span className={`text-[10px] font-medium px-2 py-1 rounded-full ${DP_STATUS_MAP[booking.dpStatus]?.className ?? "bg-slate-100 text-slate-500"}`}>
+                    {DP_STATUS_MAP[booking.dpStatus]?.label ?? booking.dpStatus}
+                  </span>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setPaymentBookingId(booking.id)}
+                  className="flex-1 rounded-xl border border-green-200 bg-green-50 py-2.5 text-xs font-medium text-green-700 hover:bg-green-100 transition min-h-[44px]"
+                >
+                  💰 Bayar
+                </button>
+                <a
+                  href={`/admin/events/${booking.id}`}
+                  className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition text-center min-h-[44px] flex items-center justify-center"
+                >
+                  Detail
+                </a>
+                <a
+                  href={`/invoice/${booking.kodeBooking}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 rounded-xl border border-sky-200 bg-sky-50 py-2.5 text-xs font-medium text-sky-600 hover:bg-sky-100 transition text-center min-h-[44px] flex items-center justify-center"
+                >
+                  Invoice
+                </a>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </section>
   );

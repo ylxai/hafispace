@@ -225,7 +225,8 @@ export function AdminSidebar() {
       </aside>
 
       {/* Mobile: Top Bar */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-slate-100 bg-white px-4 py-3">
+      {/* Mobile Top Bar — logo + hamburger menu */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-slate-100 bg-white/90 backdrop-blur-xl px-4 py-3">
         <div className="flex items-center gap-2.5">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-white">
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
