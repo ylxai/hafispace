@@ -283,7 +283,7 @@ export default function AdminClientsPage() {
                <div
                  key={client.id}
                  onClick={() => setSelectedClient(client)}
-                 className={`group relative rounded-3xl border bg-white/70 backdrop-blur-xl p-6 shadow-sm transition-all duration-300 hover:shadow-glass hover:-translate-y-1 cursor-pointer overflow-hidden ${
+                 className={`group relative rounded-3xl border bg-white/70 backdrop-blur-xl p-6 pr-12 shadow-sm transition-all duration-300 hover:shadow-glass hover:-translate-y-1 cursor-pointer ${
                    selectedClientIds.has(client.id)
                      ? "border-sky-400 ring-2 ring-sky-100"
                      : "border-slate-200 hover:border-white/40"

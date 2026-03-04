@@ -262,7 +262,7 @@ export default function AdminGalleriesPage() {
              {galleries.map((gallery) => (
                <div
                  key={gallery.id}
-                 className={`group relative rounded-3xl border bg-white/70 backdrop-blur-xl p-6 shadow-sm transition-all duration-300 hover:shadow-glass hover:-translate-y-1 overflow-hidden cursor-pointer ${
+                 className={`group relative rounded-3xl border bg-white/70 backdrop-blur-xl p-6 pr-12 shadow-sm transition-all duration-300 hover:shadow-glass hover:-translate-y-1 cursor-pointer ${
                    selectedGalleryIds.has(gallery.id)
                      ? "border-sky-400 ring-2 ring-sky-100"
                      : "border-slate-200 hover:border-white/40"
