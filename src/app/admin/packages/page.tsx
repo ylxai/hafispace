@@ -345,7 +345,6 @@ export default function PackagesPage() {
           <div className="h-10 w-1 rounded-full bg-gradient-to-b from-sky-500 to-sky-700" />
           <div>
             <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Katalog</p>
-            <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">Packages</h1>
           </div>
         </div>
         <button

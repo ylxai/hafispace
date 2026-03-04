@@ -19,9 +19,7 @@ export default async function AdminHomePage() {
             <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
               {monthLabel}
             </p>
-            <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">
-              Dashboard
-            </h1>
+    
           </div>
         </div>
         <p className="text-sm text-slate-500">
