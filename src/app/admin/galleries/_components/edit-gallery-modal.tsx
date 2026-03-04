@@ -267,7 +267,7 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
           </div>
 
           {/* Baris 2: primary actions */}
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 mt-2 pt-3 border-t border-slate-100">
             <button
               type="button"
               onClick={handleDelete}
