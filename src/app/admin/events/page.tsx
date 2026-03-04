@@ -196,27 +196,29 @@ export default function AdminEventsPage() {
       
       {/* Bulk Actions Bar */}
       {showBulkActions && (
-        <div className="fixed top-16 left-0 right-0 z-40 bg-amber-50 border-b border-amber-200 p-4 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="fixed top-16 left-0 right-0 z-40 bg-amber-50 border-b border-amber-200 px-4 py-3 backdrop-blur-sm shadow-sm">
+          <div className="max-w-7xl mx-auto flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* Info + Clear */}
             <div className="flex items-center gap-3">
-              <span className="text-amber-800 font-medium">
-                {selectedBookingIds.size} booking(s) selected
+              <span className="text-amber-800 font-medium text-sm">
+                {selectedBookingIds.size} booking dipilih
               </span>
               <button
                 type="button"
-                onClick={() => setSelectedBookingIds(new Set())}
-                className="text-amber-600 hover:text-amber-800 text-sm font-medium"
+                onClick={() => { setSelectedBookingIds(new Set()); setShowBulkActions(false); }}
+                className="text-amber-600 hover:text-amber-800 text-sm font-medium underline underline-offset-2"
               >
-                Clear selection
+                Batal
               </button>
             </div>
-            <div className="flex items-center gap-3">
+            {/* Actions */}
+            <div className="flex flex-wrap items-center gap-2">
               <select
                 value={bulkActionStatus}
                 onChange={(e) => setBulkActionStatus(e.target.value as "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED")}
-                className="rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 text-sm text-amber-900 outline-none focus:border-amber-400"
+                className="flex-1 min-w-0 rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 text-sm text-amber-900 outline-none focus:border-amber-400"
               >
-                <option value="">Select status</option>
+                <option value="">Ubah status...</option>
                 <option value="PENDING">Pending</option>
                 <option value="CONFIRMED">Confirmed</option>
                 <option value="COMPLETED">Completed</option>
@@ -226,17 +228,17 @@ export default function AdminEventsPage() {
                 type="button"
                 onClick={handleBulkUpdate}
                 disabled={!bulkActionStatus || isBulkProcessing}
-                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+                className="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
               >
-                Update Status
+                Update
               </button>
               <button
                 type="button"
                 onClick={handleBulkDelete}
                 disabled={isBulkProcessing}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                className="shrink-0 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
               >
-                Delete Selected
+                {isBulkProcessing ? "Menghapus..." : "Hapus"}
               </button>
             </div>
           </div>
