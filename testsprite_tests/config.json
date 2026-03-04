@@ -1,0 +1,12 @@
+{
+  "status": "init",
+  "scope": "codebase",
+  "type": "backend",
+  "localEndpoint": "http://124.197.42.88:3000/",
+  "localPort": 3000,
+  "projectPath": "/home/eouser/scrapper/my-platform",
+  "needLogin": true,
+  "username": "nandika",
+  "password": "klp123",
+  "authType": "nextauth"
+}

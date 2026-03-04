@@ -1,0 +1,152 @@
+[
+  {
+    "id": "TC001",
+    "title": "Auth - Login Success",
+    "description": "POST /api/auth/callback/credentials with valid credentials (nandika/klp123), verify 200 response with session cookie"
+  },
+  {
+    "id": "TC002",
+    "title": "Auth - Login Failure",
+    "description": "POST /api/auth/callback/credentials with invalid credentials, verify error response"
+  },
+  {
+    "id": "TC003",
+    "title": "Metrics - Unauthorized Access",
+    "description": "GET /api/admin/metrics without auth, verify 401 {code: 'UNAUTHORIZED', message: 'Unauthorized'}"
+  },
+  {
+    "id": "TC004",
+    "title": "Metrics - Get Dashboard Metrics",
+    "description": "GET /api/admin/metrics with auth, verify response contains {overview: {totalBookings, bookingsBulanIni, totalClients, totalOmset, pemasukanBulanIni, dpBulanIni}, topPackages, upcomingSessions, recentBookings, trendData}"
+  },
+  {
+    "id": "TC005",
+    "title": "Clients - List All Clients",
+    "description": "GET /api/admin/clients with auth, verify response {items: [{id, name, email, phone, instagram, totalBooking, createdAt}]}"
+  },
+  {
+    "id": "TC006",
+    "title": "Clients - Create New Client",
+    "description": "POST /api/admin/clients with {name, phone, email}, verify 201 response with created client data"
+  },
+  {
+    "id": "TC007",
+    "title": "Clients - Create Client Validation Error",
+    "description": "POST /api/admin/clients with missing name, verify 400 validation error response"
+  },
+  {
+    "id": "TC008",
+    "title": "Clients - Update Client",
+    "description": "PUT /api/admin/clients with {id, name, phone}, verify client updated successfully"
+  },
+  {
+    "id": "TC009",
+    "title": "Clients - Delete Client",
+    "description": "DELETE /api/admin/clients with clientId, verify client deleted"
+  },
+  {
+    "id": "TC010",
+    "title": "Events - List All Bookings",
+    "description": "GET /api/admin/events with auth, verify response {items: [{id, kodeBooking, namaClient, paket, tanggalSesi, status, dpStatus, hargaPaket, galleryCount}]}"
+  },
+  {
+    "id": "TC011",
+    "title": "Events - Create New Booking",
+    "description": "POST /api/admin/events with {clientId, packageId, tanggalSesi, lokasiSesi}, verify booking created"
+  },
+  {
+    "id": "TC012",
+    "title": "Events - Create Booking Validation",
+    "description": "POST /api/admin/events with missing required fields, verify 400 validation error"
+  },
+  {
+    "id": "TC013",
+    "title": "Galleries - List All Galleries",
+    "description": "GET /api/admin/galleries with auth, verify response {items: [{id, namaProject, status, clientToken, viewCount, photoCount, selectionCount, clientName, storageProvider}]}"
+  },
+  {
+    "id": "TC014",
+    "title": "Galleries - Create New Gallery",
+    "description": "POST /api/admin/galleries with {bookingId, namaProject}, verify gallery created with unique clientToken"
+  },
+  {
+    "id": "TC015",
+    "title": "Galleries - Get Gallery by ID",
+    "description": "GET /api/admin/galleries/[id] with auth, verify gallery details with photos"
+  },
+  {
+    "id": "TC016",
+    "title": "Galleries - Update Gallery",
+    "description": "PUT /api/admin/galleries/[id] with updated data, verify changes applied"
+  },
+  {
+    "id": "TC017",
+    "title": "Galleries - Delete Gallery",
+    "description": "DELETE /api/admin/galleries/[id], verify gallery deleted"
+  },
+  {
+    "id": "TC018",
+    "title": "Packages - List All Packages",
+    "description": "GET /api/admin/packages with auth, verify response {items: [{id, namaPaket, kategori, harga, deskripsi}]}"
+  },
+  {
+    "id": "TC019",
+    "title": "Settings - Get Vendor Settings",
+    "description": "GET /api/admin/settings with auth, verify vendor profile data"
+  },
+  {
+    "id": "TC020",
+    "title": "Settings - Update Vendor Settings",
+    "description": "PATCH /api/admin/settings with updated profile, verify changes saved"
+  },
+  {
+    "id": "TC021",
+    "title": "Settings - List Cloudinary Accounts",
+    "description": "GET /api/admin/settings/cloudinary/accounts with auth, verify list of configured accounts"
+  },
+  {
+    "id": "TC022",
+    "title": "Settings - Add Cloudinary Account",
+    "description": "POST /api/admin/settings/cloudinary/accounts with account credentials, verify account added"
+  },
+  {
+    "id": "TC023",
+    "title": "Public - Get Gallery by Token",
+    "description": "GET /api/public/gallery/[token] with valid token, verify gallery data returned"
+  },
+  {
+    "id": "TC024",
+    "title": "Public - Get Gallery Invalid Token",
+    "description": "GET /api/public/gallery/[token] with invalid token, verify 404 error"
+  },
+  {
+    "id": "TC025",
+    "title": "Public - Get Selection Count",
+    "description": "GET /api/public/gallery/[token]/count, verify current selection count"
+  },
+  {
+    "id": "TC026",
+    "title": "Public - Select Photo",
+    "description": "POST /api/public/gallery/[token]/select with photoId, verify selection saved"
+  },
+  {
+    "id": "TC027",
+    "title": "Public - Deselect Photo",
+    "description": "POST /api/public/gallery/[token]/select with photoId (toggle off), verify selection removed"
+  },
+  {
+    "id": "TC028",
+    "title": "Public - Select Photo Exceeds Limit",
+    "description": "POST /api/public/gallery/[token]/select when max selections reached, verify 400 error"
+  },
+  {
+    "id": "TC029",
+    "title": "Public - Send Notification",
+    "description": "POST /api/public/gallery/[token]/notify after selection complete, verify notification sent"
+  },
+  {
+    "id": "TC030",
+    "title": "Bookings - Get Booking by ID",
+    "description": "GET /api/admin/bookings/[id] with auth, verify booking details with payments"
+  }
+]

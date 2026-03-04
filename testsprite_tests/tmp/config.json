@@ -1,22 +1,17 @@
 {
-  "status": "ready",
-  "scope": "codebase",
-  "type": "frontend",
-  "localEndpoint": "http://localhost:3000/",
-  "serverPort": 42435,
-  "needLogin": true,
-  "username": "user nandika",
-  "password": "klp123",
-  "authType": "basic",
+  "status": "init",
   "executionArgs": {
     "projectName": "my-platform",
     "projectPath": "/home/eouser/scrapper/my-platform",
     "testIds": [],
-    "additionalInstruction": "Login credentials: email/username field id='username' value='nandika', password field id='password' value='klp123'. Login button is type=submit. After login redirect to /admin. Test admin dashboard, events/booking management, gallery management, packages, settings pages.",
-    "serverMode": "development",
+    "additionalInstruction": "",
+    "serverMode": "production",
     "envs": {
       "API_KEY": "sk-user-WobCJOZfVhICewJoASmkfoqH7gTejWWkLFNhV-Ehz4tEs6gUI4lHTfulIKeeQ-yMUUwkg9A-4-qcMcLt1lI0R7kyU54XkXmn2xLDPoepiBxd1cwkE76uwqNlUO4pqM9H094"
     }
   },
-  "proxy": "http://75b09f88-4109-41d1-b391-a2c73cc45bbc:fcivXOOyIImXuGE0gCJ145J3Tq6g46CK@tun.testsprite.com:8080"
+  "scope": "codebase",
+  "type": "backend",
+  "localEndpoint": "http://localhost:3000/",
+  "serverPort": 38427
 }

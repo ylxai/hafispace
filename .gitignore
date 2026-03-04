@@ -39,4 +39,29 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# images (screenshots, review images — bukan asset production)
 *.png
+*.jpg
+*.jpeg
+dashboard-*.png
+events-*.png
+packages-*.png
+*-review.png
+*-desktop.png
+
+# AI tool config files (opencode, cursor, etc)
+opencode.json
+AGENTS.md
+.opencode/
+
+# TestSprite E2E test files (auto-generated, tidak perlu di version control)
+testsprite_tests/tmp/
+testsprite_tests/*.py
+testsprite_tests/auth_helper.py
+.testsprite/
+
+# Temporary files
+/tmp/
+*.lock
+*.log
