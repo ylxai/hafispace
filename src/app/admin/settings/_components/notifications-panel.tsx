@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useToast } from "@/components/ui/toast";
 
 export function NotificationsPanel() {
   const [isOpen, setIsOpen] = useState(false);

@@ -2,13 +2,8 @@
 
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { SUCCESS_FEEDBACK_DURATION_MS, UPLOAD_COMPLETE_FEEDBACK_MS } from "@/lib/constants";
 import { StatusBadge } from "@/components/admin";
 import { useAdminGalleries } from "@/hooks/use-admin-galleries";
-import { DragDropUpload } from "@/components/admin/drag-drop-upload";
-import { ImageEditor } from "@/components/admin/image-editor";
-import { SelectionsModal } from "@/components/admin/selections-modal";
-import ViesusPreview from "@/components/admin/viesus-preview";
 import { useToast } from "@/components/ui/toast";
 
 type AdminGallery = {
@@ -23,9 +18,7 @@ type AdminGallery = {
   createdAt: string;
 };
 
-const STATUS_OPTIONS: AdminGallery["status"][] = ["DRAFT", "IN_REVIEW", "DELIVERED"];
 
-import { UploadPhotosModal } from "./_components/upload-photos-modal";
 import { EditGalleryModal } from "./_components/edit-gallery-modal";
 
 export default function AdminGalleriesPage() {

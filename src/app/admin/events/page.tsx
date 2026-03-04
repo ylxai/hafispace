@@ -1,45 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { StatusBadge } from "@/components/admin";
 import { useAdminEvents } from "@/hooks/use-admin-events";
 import { useToast } from "@/components/ui/toast";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
-import { formatRupiah } from "@/lib/format";
 import { PaymentModal } from "./_components/payment-modal";
 import { CreateBookingModal } from "./_components/create-booking-modal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Payment {
-  id: string;
-  jumlah: number;
-  tipe: "DP" | "PELUNASAN" | "LAINNYA";
-  keterangan?: string | null;
-  buktiBayar?: string | null;
-  createdAt: string;
-}
 
-interface PaymentSummary {
-  totalBayar: number;
-  sisaTagihan: number;
-  lunas: boolean;
-}
 
-interface PaymentData {
-  booking: { id: string; namaClient: string; kodeBooking: string; hargaPaket: number };
-  payments: Payment[];
-  summary: PaymentSummary;
-}
-
-interface PackageOption {
-  id: string;
-  namaPaket: string;
-  kategori: string;
-  harga: number;
-}
 
 // ─── Format helpers ───────────────────────────────────────────────────────────
 

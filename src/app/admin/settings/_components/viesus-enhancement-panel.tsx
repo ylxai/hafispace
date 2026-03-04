@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { SAVED_FEEDBACK_DURATION_MS } from "@/lib/constants";
-import { useToast } from "@/components/ui/toast";
 
 export function ViesusEnhancementPanel() {
   const [isOpen, setIsOpen] = useState(false);

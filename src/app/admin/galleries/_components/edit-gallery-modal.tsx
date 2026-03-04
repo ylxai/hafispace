@@ -2,14 +2,10 @@
 
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { SUCCESS_FEEDBACK_DURATION_MS, UPLOAD_COMPLETE_FEEDBACK_MS } from "@/lib/constants";
-import { StatusBadge } from "@/components/admin";
-import { useAdminGalleries } from "@/hooks/use-admin-galleries";
-import { DragDropUpload } from "@/components/admin/drag-drop-upload";
-import { ImageEditor } from "@/components/admin/image-editor";
-import { SelectionsModal } from "@/components/admin/selections-modal";
+import { UPLOAD_COMPLETE_FEEDBACK_MS } from "@/lib/constants";
 import ViesusPreview from "@/components/admin/viesus-preview";
 import { useToast } from "@/components/ui/toast";
+import { SelectionsModal } from "@/components/admin/selections-modal";
 import { UploadPhotosModal } from "./upload-photos-modal";
 
 type AdminGallery = {

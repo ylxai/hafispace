@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { SAVED_FEEDBACK_DURATION_MS } from "@/lib/constants";
 import { useToast } from "@/components/ui/toast";

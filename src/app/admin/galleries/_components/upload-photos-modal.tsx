@@ -2,14 +2,10 @@
 
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { SUCCESS_FEEDBACK_DURATION_MS, UPLOAD_COMPLETE_FEEDBACK_MS } from "@/lib/constants";
-import { StatusBadge } from "@/components/admin";
-import { useAdminGalleries } from "@/hooks/use-admin-galleries";
-import { DragDropUpload } from "@/components/admin/drag-drop-upload";
-import { ImageEditor } from "@/components/admin/image-editor";
-import { SelectionsModal } from "@/components/admin/selections-modal";
-import ViesusPreview from "@/components/admin/viesus-preview";
+import { SUCCESS_FEEDBACK_DURATION_MS } from "@/lib/constants";
 import { useToast } from "@/components/ui/toast";
+import { ImageEditor } from "@/components/admin/image-editor";
+import { DragDropUpload } from "@/components/admin/drag-drop-upload";
 
 type AdminGallery = {
   id: string;
@@ -23,7 +19,6 @@ type AdminGallery = {
   createdAt: string;
 };
 
-const STATUS_OPTIONS: AdminGallery["status"][] = ["DRAFT", "IN_REVIEW", "DELIVERED"];
 
 
 export function UploadPhotosModal({ gallery, onClose }: { gallery: AdminGallery; onClose: () => void }) {
