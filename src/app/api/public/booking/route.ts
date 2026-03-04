@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { sendBookingConfirmationEmail } from "@/lib/email";
 
 const bookingSchema = z.object({
   namaClient: z.string().min(1, "Nama wajib diisi"),
@@ -90,7 +91,13 @@ export async function POST(request: NextRequest) {
   // Validasi vendor aktif dan form aktif
   const vendor = await prisma.vendor.findUnique({
     where: { id: vendorId, status: "ACTIVE" },
-    select: { id: true, bookingFormActive: true, dpPercentage: true },
+    select: { 
+      id: true, 
+      bookingFormActive: true, 
+      dpPercentage: true,
+      namaStudio: true,
+      rekeningPembayaran: true,
+    },
   });
 
   if (!vendor) return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
@@ -166,6 +173,24 @@ export async function POST(request: NextRequest) {
       hargaPaket: true,
     },
   });
+
+  // Send confirmation email if emailClient is provided (fire and forget)
+  if (emailClient) {
+    const invoiceUrl = `${process.env.NEXTAUTH_URL ?? ''}/invoice/${booking.kodeBooking}`;
+    sendBookingConfirmationEmail({
+      to: emailClient,
+      namaClient,
+      kodeBooking: booking.kodeBooking,
+      tanggalSesi,
+      namaPaket: paket.namaPaket,
+      hargaPaket,
+      dpAmount,
+      dpPercentage: vendor.dpPercentage,
+      namaStudio: vendor.namaStudio ?? 'Studio',
+      rekeningPembayaran: vendor.rekeningPembayaran,
+      invoiceUrl,
+    }).catch(console.error);
+  }
 
   return NextResponse.json({
     success: true,
