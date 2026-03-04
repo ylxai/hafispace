@@ -285,8 +285,8 @@ export default function AdminGalleriesPage() {
                    />
                  </div>
                  
-                 {/* Subtle gradient overlay on hover */}
-                 <div className="absolute inset-0 bg-gradient-to-br from-white/0 via-white/0 to-sky-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                 {/* Subtle gradient overlay on hover — pointer-events-none agar tidak block checkbox */}
+                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/0 via-white/0 to-sky-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                  
                  {/* Content */}
                  <div className="relative">
