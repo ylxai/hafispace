@@ -506,57 +506,44 @@ export default function ViewspacePage() {
                 </div>
 
                 {/* Submit Section */}
-                <div className="mt-6 space-y-4 rounded-2xl border border-rose-400/20 bg-rose-900/10 p-5">
-                  <div className="text-center">
-                    <p className="text-lg font-semibold text-white">
-                      🎯 {selectedPhotos.length} foto dipilih
-                    </p>
-                    <p className="mt-1 text-sm text-slate-400">
-                      Kirim pilihan Anda untuk memulai proses editing
-                    </p>
-                  </div>
-
-                  <div className="flex gap-3">
+                <div className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-900/10 p-4">
+                  <p className="mb-3 text-center text-sm text-slate-400">
+                    🎯 {selectedPhotos.length} foto siap — kirim untuk mulai editing
+                  </p>
+                  <div className="flex flex-wrap gap-2">
                     {hasDownload && selectedPhotos.length > 0 && (
                       <button
                         type="button"
                         onClick={handleDownloadOriginal}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-3 font-semibold text-white transition hover:bg-white/20"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
                       >
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
                         Unduh Original
                       </button>
                     )}
-                    
                     {gallery.vendor.phone ? (
                       <button
                         type="button"
                         onClick={handleSubmitToWhatsApp}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-full bg-green-500 px-6 py-3 font-semibold text-white transition hover:bg-green-600"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-full bg-green-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-600"
                       >
-                        <WhatsappIcon className="h-5 w-5" />
+                        <WhatsappIcon className="h-4 w-4" />
                         Kirim via WhatsApp
                       </button>
                     ) : (
                       <a
                         href={`mailto:${gallery.vendor.namaStudio}?subject=Seleksi Foto: ${gallery.namaProject}&body=${selectedPhotos.map((_, i) => `Foto ${i + 1}`).join('\n')}`}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-full bg-sky-500 px-6 py-3 font-semibold text-white transition hover:bg-sky-600"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-full bg-sky-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-600"
                       >
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                         Kirim via Email
                       </a>
                     )}
                   </div>
-                  
-                  <p className="text-center text-xs text-slate-500">
-                    {hasDownload 
-                      ? "Anda bisa mengunduh original atau mengirim pilihan untuk mulai editing"
-                      : "Admin akan meninjau pilihan Anda dan memulai proses editing"}
-                  </p>
                 </div>
               </>
             )}

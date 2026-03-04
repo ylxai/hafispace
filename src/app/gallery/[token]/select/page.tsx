@@ -494,6 +494,13 @@ export default function PickspacePage() {
             )}
           </div>
         )}
+
+        {/* Footer credit studio */}
+        <div className="mt-10 pb-6 text-center">
+          <p className="text-xs text-slate-400">
+            © {new Date().getFullYear()} {gallery.vendor.namaStudio ?? "Photography"} · Galeri foto eksklusif
+          </p>
+        </div>
       </main>
     </div>
   );
