@@ -10,12 +10,16 @@ import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import { PaymentModal } from "./_components/payment-modal";
 import { CreateBookingModal } from "./_components/create-booking-modal";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-
-
-
 // ─── Format helpers ───────────────────────────────────────────────────────────
+
+const formatRupiah = (amount: number) =>
+  new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(amount);
+
+const DP_STATUS_MAP: Record<string, { label: string; className: string }> = {
+  PAID:    { label: "Lunas",   className: "bg-green-100 text-green-700" },
+  PARTIAL: { label: "Partial", className: "bg-amber-100 text-amber-700" },
+  UNPAID:  { label: "Belum Bayar", className: "bg-slate-100 text-slate-500" },
+};
 
 // ─── Payment Modal ────────────────────────────────────────────────────────────
 
@@ -461,7 +465,7 @@ export default function AdminEventsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <p className="font-semibold text-slate-900 tracking-tight">
-                      {booking.clientName}
+                      {booking.namaClient}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-xs text-slate-500 font-mono">{booking.kodeBooking}</p>
@@ -496,15 +500,11 @@ export default function AdminEventsPage() {
                   <td className="px-6 py-4">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">
-                        {booking.dpAmount ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(booking.dpAmount)) : "-"}
+                        {booking.dpAmount ? formatRupiah(booking.dpAmount) : "-"}
                       </p>
                       {booking.dpStatus && (
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                          booking.dpStatus === "PAID" ? "bg-green-100 text-green-700" :
-                          booking.dpStatus === "PARTIAL" ? "bg-amber-100 text-amber-700" :
-                          "bg-slate-100 text-slate-500"
-                        }`}>
-                          {booking.dpStatus === "PAID" ? "Lunas" : booking.dpStatus === "PARTIAL" ? "Partial" : "Belum Bayar"}
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${DP_STATUS_MAP[booking.dpStatus]?.className ?? "bg-slate-100 text-slate-500"}`}>
+                          {DP_STATUS_MAP[booking.dpStatus]?.label ?? booking.dpStatus}
                         </span>
                       )}
                     </div>
@@ -585,7 +585,7 @@ export default function AdminEventsPage() {
                     className="h-4 w-4 rounded border-slate-300 text-slate-600 focus:ring-slate-500"
                   />
                   <div>
-                    <p className="font-semibold text-slate-900 text-sm">{booking.clientName}</p>
+                    <p className="font-semibold text-slate-900 text-sm">{booking.namaClient}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <p className="text-xs text-slate-400 font-mono">{booking.kodeBooking}</p>
                       {booking.hpClient && (
@@ -621,9 +621,7 @@ export default function AdminEventsPage() {
                 <div>
                   <p className="text-slate-400 uppercase tracking-wider text-[10px] font-medium">Dana Masuk</p>
                   <p className="font-medium text-slate-700 mt-0.5">
-                    {booking.dpAmount
-                      ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(booking.dpAmount))
-                      : "-"}
+                    {booking.dpAmount ? formatRupiah(booking.dpAmount) : "-"}
                   </p>
                 </div>
                 <div>
@@ -635,12 +633,8 @@ export default function AdminEventsPage() {
               {/* DP Status */}
               {booking.dpStatus && (
                 <div className="mb-3">
-                  <span className={`text-[10px] font-medium px-2 py-1 rounded-full ${
-                    booking.dpStatus === "PAID" ? "bg-green-100 text-green-700" :
-                    booking.dpStatus === "PARTIAL" ? "bg-amber-100 text-amber-700" :
-                    "bg-slate-100 text-slate-500"
-                  }`}>
-                    {booking.dpStatus === "PAID" ? "Lunas" : booking.dpStatus === "PARTIAL" ? "Partial" : "Belum Bayar"}
+                  <span className={`text-[10px] font-medium px-2 py-1 rounded-full ${DP_STATUS_MAP[booking.dpStatus]?.className ?? "bg-slate-100 text-slate-500"}`}>
+                    {DP_STATUS_MAP[booking.dpStatus]?.label ?? booking.dpStatus}
                   </span>
                 </div>
               )}
