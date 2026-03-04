@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 
 // Types
 interface IncludeCetak {
@@ -226,9 +227,11 @@ function BookingFormContent() {
           {/* Header */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-6 text-center">
             {vendorData.logoUrl && (
-              <img
+              <Image
                 src={vendorData.logoUrl}
                 alt={vendorData.namaStudio ?? 'Studio'}
+                width={120}
+                height={64}
                 className="h-16 mx-auto mb-4 object-contain"
               />
             )}
@@ -327,9 +330,11 @@ function BookingFormContent() {
         {/* Header */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6 text-center">
           {vendorData.logoUrl && (
-            <img
+            <Image
               src={vendorData.logoUrl}
               alt={vendorData.namaStudio ?? 'Studio'}
+              width={120}
+              height={64}
               className="h-16 mx-auto mb-4 object-contain"
             />
           )}

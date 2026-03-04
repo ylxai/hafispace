@@ -1,7 +1,5 @@
 "use client";
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-
 interface TopPackage {
   paketId: string | null;
   count: number;
@@ -17,16 +15,6 @@ const KATEGORI_COLORS: Record<string, string> = {
   LAINNYA: "#94a3b8",
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CustomTooltip({ active, payload }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-xl border border-slate-100 bg-white p-3 shadow-lg text-xs">
-      <p className="font-semibold text-slate-700">{payload[0]?.payload?.namaPaket}</p>
-      <p className="text-slate-500 mt-1">{payload[0]?.value} booking</p>
-    </div>
-  );
-}
 
 export function TopPackagesChart({ data }: { data: TopPackage[] }) {
   // Jika tidak ada data, tampilkan empty state
@@ -88,18 +76,6 @@ export function TopPackagesChart({ data }: { data: TopPackage[] }) {
         ))}
       </div>
 
-      {/* Hidden recharts untuk future use */}
-      <div className="sr-only">
-        <ResponsiveContainer width="100%" height={1}>
-          <BarChart data={data}>
-            <Bar dataKey="count">
-              {data.map((entry, i) => (
-                <Cell key={i} fill={KATEGORI_COLORS[entry.kategori] ?? "#94a3b8"} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
     </div>
   );
 }

@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Validasi gagal", details: parsed.error.format() }, { status: 400 });
   }
 
-  const { namaClient, hpClient, emailClient, tanggalSesi, lokasiSesi, paketId, catatan, customFields } = parsed.data;
+  const { namaClient, hpClient, emailClient, tanggalSesi, lokasiSesi, paketId, catatan } = parsed.data;
 
   // Validasi paket milik vendor
   const paket = await prisma.package.findFirst({
@@ -117,6 +117,7 @@ export async function POST(request: NextRequest) {
     select: { id: true },
   });
 
+  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   if (!client) {
     client = await prisma.client.create({
       data: {
