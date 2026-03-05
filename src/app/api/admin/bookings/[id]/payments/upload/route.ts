@@ -21,8 +21,8 @@ export async function POST(
   if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
   const formData = await request.formData();
-  const file = formData.get("file") as File | null;
-  if (!file) return NextResponse.json({ error: "File wajib diupload" }, { status: 400 });
+  const file = formData.get("file");
+  if (!(file instanceof File)) return NextResponse.json({ error: "File wajib diupload" }, { status: 400 });
 
   // Validasi tipe file
   const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/heic"];

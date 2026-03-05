@@ -59,8 +59,6 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
 
   async function handleFileUpload(file: File) {
     setIsUploading(true);
-    // Revoke URL lama sebelum buat yang baru
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(URL.createObjectURL(file));
     try {
       const fd = new FormData();
