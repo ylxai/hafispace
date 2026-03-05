@@ -10,6 +10,7 @@ const packageSchema = z.object({
   harga: z.coerce.number().min(0).default(0),
   deskripsi: z.string().optional(),
   kuotaEdit: z.coerce.number().int().positive().optional().nullable(),
+  maxSelection: z.coerce.number().int().min(1).default(40),
   includeCetak: z
     .array(z.object({ nama: z.string(), jumlah: z.coerce.number().int().positive() }))
     .optional()
@@ -33,6 +34,7 @@ export async function GET() {
       harga: true,
       deskripsi: true,
       kuotaEdit: true,
+      maxSelection: true,
       includeCetak: true,
       urutan: true,
       status: true,
@@ -53,7 +55,7 @@ export async function POST(request: NextRequest) {
   const parsed = packageSchema.safeParse(body);
   if (!parsed.success) return validationErrorResponse(parsed.error.format());
 
-  const { namaPaket, kategori, harga, deskripsi, kuotaEdit, includeCetak, urutan, status } = parsed.data;
+  const { namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak, urutan, status } = parsed.data;
 
   const newPackage = await prisma.package.create({
     data: {
@@ -63,6 +65,7 @@ export async function POST(request: NextRequest) {
       harga,
       deskripsi,
       kuotaEdit,
+      maxSelection,
       includeCetak: includeCetak ?? undefined,
       urutan,
       status,
@@ -89,11 +92,11 @@ export async function PUT(request: NextRequest) {
   });
   if (!existing) return NextResponse.json({ error: "Package not found" }, { status: 404 });
 
-  const { namaPaket, kategori, harga, deskripsi, kuotaEdit, includeCetak, urutan, status } = parsed.data;
+  const { namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak, urutan, status } = parsed.data;
 
   const updated = await prisma.package.update({
     where: { id },
-    data: { namaPaket, kategori, harga, deskripsi, kuotaEdit, includeCetak: includeCetak ?? undefined, urutan, status },
+    data: { namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak: includeCetak ?? undefined, urutan, status },
   });
 
   return NextResponse.json(updated);

@@ -84,6 +84,7 @@ model Package {
   createdAt    DateTime        @default(now()) @map("created_at")
   kategori     PackageCategory @default(LAINNYA)
   kuotaEdit    Int?            @map("kuota_edit")
+  maxSelection Int             @default(40) @map("max_selection")
   includeCetak Json?           @map("include_cetak")
   bookings     Booking[]
   vendor       Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)

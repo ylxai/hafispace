@@ -8,6 +8,7 @@ interface PackageOption {
   namaPaket: string;
   kategori: string;
   harga: number;
+  maxSelection: number;
 }
 
 export function CreateBookingModal({ onClose }: { onClose: () => void }) {
@@ -16,6 +17,7 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedPackageId, setSelectedPackageId] = useState<string>("");
   const [hargaPaket, setHargaPaket] = useState<string>("");
+  const [maxSelection, setMaxSelection] = useState<number>(40);
 
   const { data: packagesData } = useQuery<{ packages: PackageOption[] }>({
     queryKey: ['admin-packages'],
@@ -207,9 +209,11 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
                       const pkg = packagesData?.packages.find(p => p.id === pkgId);
                       if (pkg) {
                         setHargaPaket(pkg.harga.toString());
+                        setMaxSelection(pkg.maxSelection);
                       }
                     } else {
                       setHargaPaket("");
+                      setMaxSelection(40);
                     }
                   }}
                   className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400 bg-white"
@@ -252,24 +256,18 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
                 />
               </div>
 
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="maxSelection">
-                  Max Selections *
-                </label>
-                <select
-                  id="maxSelection"
-                  name="maxSelection"
-                  required
-                  defaultValue="40"
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
-                >
-                  <option value="40">40 photos</option>
-                  <option value="80">80 photos</option>
-                  <option value="120">120 photos</option>
-                  <option value="160">160 photos</option>
-                  <option value="200">200 photos</option>
-                </select>
-              </div>
+              {/* maxSelection — dari paket, tampilkan sebagai info */}
+              <input type="hidden" name="maxSelection" value={maxSelection} />
+              {selectedPackageId && (
+                <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 flex items-center gap-3">
+                  <svg className="h-4 w-4 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-xs text-blue-700">
+                    Paket ini memiliki batas seleksi <span className="font-semibold">{maxSelection} foto</span>. Dapat diubah di halaman Paket.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="notes">
