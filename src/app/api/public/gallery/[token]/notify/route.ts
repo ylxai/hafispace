@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(
   request: Request,
@@ -7,6 +8,16 @@ export async function POST(
 ) {
   try {
     const { token } = await params;
+
+    // Rate limit: maks 5 notifikasi per jam per IP+token (cegah spam)
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(`notify:${ip}:${token}`, { limit: 5, windowMs: 60 * 60_000 });
+    if (!rl.success) {
+      return NextResponse.json(
+        { code: "RATE_LIMITED", message: "Terlalu banyak notifikasi. Coba lagi nanti." },
+        { status: 429 }
+      );
+    }
     const body = await request.json();
     const { type, photoCount, photos } = body;
 

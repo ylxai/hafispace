@@ -147,6 +147,8 @@ model Booking {
   @@index([tanggalSesi])
   @@index([status])
   @@index([createdAt])
+  @@index([vendorId, status])
+  @@index([vendorId, tanggalSesi])
   @@map("bookings")
 }
 
@@ -252,6 +254,7 @@ model PhotoSelection {
   @@index([selectionType])
   @@index([selectedAt])
   @@index([galleryId])
+  @@index([galleryId, selectedAt])
   @@map("photo_selections")
 }
 
