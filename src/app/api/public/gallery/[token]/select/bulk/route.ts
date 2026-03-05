@@ -19,10 +19,10 @@ const BulkSelectSchema = z.object({
 
 export async function POST(
   request: Request,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    const { token } = params;
+    const { token } = await params;
     const body = await request.json() as unknown;
     const parsed = BulkSelectSchema.safeParse(body);
 
@@ -40,7 +40,7 @@ export async function POST(
       select: {
         id: true,
         status: true,
-        settings: { select: { maxSelection: true } },
+        booking: { select: { maxSelection: true } },
       },
     });
 
@@ -52,7 +52,7 @@ export async function POST(
       return NextResponse.json({ error: "Gallery is not published" }, { status: 403 });
     }
 
-    const maxSelection = gallery.settings?.maxSelection ?? 40;
+    const maxSelection = gallery.booking?.maxSelection ?? 40;
     let finalCount = 0;
 
     if (action === "remove-all") {

@@ -4,10 +4,10 @@ import { getAblyRest, ABLY_CHANNEL_SELECTION } from "@/lib/ably";
 
 export async function POST(
   _request: Request,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    const { token } = params;
+    const { token } = await params;
 
     const gallery = await prisma.gallery.findUnique({
       where: { clientToken: token },
