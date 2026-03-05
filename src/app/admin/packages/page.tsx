@@ -52,15 +52,6 @@ const FILTER_TABS: { label: string; value: PackageCategory | "ALL" }[] = [
   { label: "Lainnya", value: "LAINNYA" },
 ];
 
-const emptyForm = {
-  namaPaket: "",
-  kategori: "LAINNYA" as PackageCategory,
-  harga: 0,
-  deskripsi: "",
-  kuotaEdit: "" as string | number,
-  status: "active",
-  includeCetak: [] as IncludeCetak[],
-};
 
 function PackageModal({
   pkg,
@@ -464,6 +455,3 @@ export default function PackagesPage() {
   );
 }
 
-// suppress unused var
-const _emptyForm = emptyForm;
-void _emptyForm;
