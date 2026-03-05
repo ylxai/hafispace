@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { UPLOAD_COMPLETE_FEEDBACK_MS } from "@/lib/constants";
 import ViesusPreview from "@/components/admin/viesus-preview";
@@ -34,7 +34,57 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
   const [showSelections, setShowSelections] = useState(false);
   const [showViesus, setShowViesus] = useState(false);
   const [firstPhoto, setFirstPhoto] = useState<{ url: string; publicId: string; vendorId: string } | null>(null);
+  const [liveSelectionCount, setLiveSelectionCount] = useState(gallery.selectionCount);
+  const [clientSubmitted, setClientSubmitted] = useState(false);
+  const ablyRef = useRef<null>(null);
   const galleryUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/gallery/${gallery.clientToken}`;
+
+  // Ably realtime — subscribe untuk update count & notifikasi submit dari klien
+  useEffect(() => {
+    let mounted = true;
+
+    const connect = async () => {
+      try {
+        const Ably = (await import("ably")).default;
+        const ably = new Ably.Realtime({
+          authUrl: `/api/ably-token?gallery=${gallery.clientToken}`,
+        });
+        ablyRef.current = ably as null;
+
+        const channel = ably.channels.get(`gallery:${gallery.id}:selection`);
+
+        await channel.subscribe("count-updated", (msg: { data?: { count?: number } }) => {
+          if (!mounted) return;
+          if (typeof msg.data?.count === "number") {
+            setLiveSelectionCount(msg.data.count);
+            queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
+          }
+        });
+
+        await channel.subscribe("selection-submitted", (msg: { data?: { count?: number } }) => {
+          if (!mounted) return;
+          const count = msg.data?.count ?? liveSelectionCount;
+          setClientSubmitted(true);
+          setLiveSelectionCount(count);
+          toast.success(`🎉 Klien telah mengirim seleksi ${count} foto!`);
+          queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
+          queryClient.invalidateQueries({ queryKey: ["admin-selections", gallery.id] });
+        });
+      } catch {
+        // Ably tidak tersedia — silent fallback
+      }
+    };
+
+    connect();
+
+    return () => {
+      mounted = false;
+      if (ablyRef.current) {
+        (ablyRef.current as unknown as { close: () => void }).close();
+        ablyRef.current = null;
+      }
+    };
+  }, [gallery.id, gallery.clientToken]);
 
   async function handleShowViesus() {
     if (!showViesus && !firstPhoto) {
@@ -167,7 +217,7 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
                 className="hover:text-slate-700 hover:underline transition-colors"
                 title="View Selected Photos"
               >
-                {gallery.selectionCount} selections
+                {liveSelectionCount} seleksi
               </button>
               <span>{gallery.viewCount} views</span>
             </div>
