@@ -534,7 +534,7 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
         </div>
 
         {/* Footer Stats */}
-        <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
+        <div className="pt-4 border-t border-slate-200 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-4 text-sm">
             <span className="text-slate-600">
               <span className="font-semibold text-green-600">{stats.locked}</span> submitted
@@ -543,13 +543,41 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
               <span className="font-semibold text-slate-400">{stats.total - stats.locked}</span> menunggu
             </span>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full bg-slate-900 px-6 py-2 text-sm font-medium text-white hover:bg-slate-800 transition-colors"
-          >
-            Close
-          </button>
+          <div className="flex items-center gap-2 ml-auto">
+            {/* Download .txt daftar nama foto */}
+            {selections.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const content = selections
+                    .map((s, i) => `${i + 1}. ${s.filename}`)
+                    .join("\n");
+                  const blob = new Blob([content], { type: "text/plain" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `seleksi-foto.txt`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+                className="flex items-center gap-1.5 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download .txt
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full bg-slate-900 px-6 py-2 text-sm font-medium text-white hover:bg-slate-800 transition-colors"
+            >
+              Tutup
+            </button>
+          </div>
         </div>
       </div>
     </div>
