@@ -77,7 +77,6 @@ export default function AdminEventsPage() {
     return filtered;
   }, [data?.items, searchQuery, statusFilter, dateFrom, dateTo]);
 
-  // Show error toast if query fails (in useEffect to avoid render loop)
   useEffect(() => {
     if (error) {
       toast.error("Failed to load bookings. Please refresh the page.");
