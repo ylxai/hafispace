@@ -232,40 +232,70 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
           )}
         </div>
 
-        <div className="mt-6 flex flex-wrap justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => setShowUploadModal(true)}
-            className="rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-600 hover:border-slate-300"
-          >
-            Upload Photos
-          </button>
-          <button
-            type="button"
-            onClick={handleShowViesus}
-            className="rounded-full border border-sky-200 px-5 py-2 text-sm font-medium text-sky-600 hover:bg-sky-50"
-          >
-            {showViesus ? "Hide VIESUS" : "VIESUS Preview"}
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={isSaving}
-            className="rounded-full border border-red-200 px-5 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
-          >
-            Delete
-          </button>
-          <button type="button" onClick={onClose} className="rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-600 hover:border-slate-300">
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSaveStatus}
-            disabled={isSaving}
-            className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50"
-          >
-            {isSaving ? "Saving..." : "Save Changes"}
-          </button>
+        <div className="mt-8 flex flex-col gap-4">
+          {/* Main Actions */}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setShowUploadModal(true)}
+              className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-4 text-sm font-medium text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm"
+            >
+              <svg className="mb-2 h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Upload Photos
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowSelections(true)}
+              className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-4 text-sm font-medium text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm"
+            >
+              <svg className="mb-2 h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+              Lihat Seleksi
+            </button>
+          </div>
+
+          <div className="h-px w-full bg-slate-100 mt-2" />
+
+          {/* Secondary & Save Actions */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isSaving}
+                className="rounded-full border border-red-100 bg-red-50/50 px-4 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 hover:border-red-200 disabled:opacity-50"
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                onClick={handleShowViesus}
+                className="rounded-full border border-sky-100 bg-sky-50/50 px-4 py-2 text-xs font-medium text-sky-600 transition-colors hover:bg-sky-100 hover:border-sky-200"
+              >
+                {showViesus ? "Hide VIESUS" : "VIESUS Preview"}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2 ml-auto">
+              <button 
+                type="button" 
+                onClick={onClose} 
+                className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveStatus}
+                disabled={isSaving}
+                className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50 shadow-sm"
+              >
+                {isSaving ? "Saving..." : "Save Status"}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
