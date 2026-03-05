@@ -8,6 +8,19 @@ const PHOTOS_PER_PAGE = 50;
 // Key: SHA-256 hash (16 hex chars), Value: timestamp pertama kali view
 // Reset saat server restart — acceptable tradeoff tanpa Redis
 const viewFingerprintCache = new Map<string, number>();
+const FINGERPRINT_TTL_MS = 24 * 60 * 60 * 1000; // 24 jam
+
+// Cleanup periodic setiap jam agar Map tidak tumbuh tanpa batas (mencegah memory leak)
+const cleanupViewCache = () => {
+  const cutoff = Date.now() - FINGERPRINT_TTL_MS;
+  for (const [key, ts] of viewFingerprintCache.entries()) {
+    if (ts < cutoff) viewFingerprintCache.delete(key);
+  }
+};
+// Hanya jalankan interval di Node.js runtime (bukan Edge)
+if (typeof setInterval !== "undefined" && typeof (globalThis as Record<string, unknown>).EdgeRuntime === "undefined") {
+  setInterval(cleanupViewCache, 60 * 60 * 1000); // setiap 1 jam
+}
 
 export async function GET(
   _request: Request,
@@ -124,11 +137,6 @@ export async function GET(
     });
     // Simpan fingerprint ke cache dengan TTL 24 jam
     viewFingerprintCache.set(fingerprintHash, Date.now());
-    // Cleanup expired entries (lebih dari 24 jam)
-    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-    for (const [key, ts] of viewFingerprintCache.entries()) {
-      if (ts < cutoff) viewFingerprintCache.delete(key);
-    }
   }
 
   // Ambil selections sekaligus — count dihitung dari hasil query (1 query, bukan 2)

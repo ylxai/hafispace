@@ -15,10 +15,24 @@ export async function GET() {
   try {
     const bookings = await prisma.booking.findMany({
       where: { vendorId: session.user.id },
-      include: {
-        client: true,
-        paket: true,
-        galleries: true,
+      select: {
+        id: true,
+        kodeBooking: true,
+        namaClient: true,
+        hpClient: true,
+        emailClient: true,
+        paketCustom: true,
+        tanggalSesi: true,
+        lokasiSesi: true,
+        status: true,
+        dpAmount: true,
+        dpStatus: true,
+        hargaPaket: true,
+        createdAt: true,
+        notes: true,
+        maxSelection: true,
+        paket: { select: { namaPaket: true } },
+        _count: { select: { galleries: true } },
       },
       orderBy: { tanggalSesi: "desc" },
     });
@@ -36,8 +50,10 @@ export async function GET() {
       dpAmount: Number(booking.dpAmount ?? 0),
       dpStatus: booking.dpStatus ?? "UNPAID",
       hargaPaket: Number(booking.hargaPaket ?? 0),
-      galleryCount: booking.galleries.length,
+      galleryCount: booking._count.galleries,
       createdAt: booking.createdAt.toISOString(),
+      notes: booking.notes,
+      maxSelection: booking.maxSelection,
     }));
 
     return NextResponse.json({ items: formatted });
