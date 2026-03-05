@@ -37,6 +37,9 @@ model Vendor {
   successMessage          String?            @map("success_message")
   bookingFormActive       Boolean            @default(true) @map("booking_form_active")
   waAdmin                 String?            @map("wa_admin")
+  notifEmail              Boolean            @default(true) @map("notif_email")
+  notifNewBooking         Boolean            @default(true) @map("notif_new_booking")
+  notifGalleryDelivered   Boolean            @default(true) @map("notif_gallery_delivered")
   activityLogs            ActivityLog[]
   bookings                Booking[]
   clients                 Client[]
