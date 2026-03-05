@@ -15,6 +15,8 @@ export type AdminBooking = {
   hargaPaket: number;
   galleryCount: number;
   createdAt: string;
+  notes: string | null;
+  maxSelection: number | null;
 };
 
 type AdminBookingsResponse = {
