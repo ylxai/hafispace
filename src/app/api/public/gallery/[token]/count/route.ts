@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getSelectionCount } from "@/lib/redis";
+import { getSelectionCount } from "@/lib/selection-counter";
 
 export async function GET(
   _request: Request,
@@ -17,7 +17,7 @@ export async function GET(
     return NextResponse.json({ count: 0 });
   }
 
-  // Get count from database (Redis disabled)
+  // Get count from database (source of truth)
   const count = await getSelectionCount(gallery.id);
 
   return NextResponse.json({ count });

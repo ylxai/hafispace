@@ -5,6 +5,8 @@ import { useState } from "react";
 export function AccessControlPanel() {
   const [isOpen, setIsOpen] = useState(false);
 
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-lg font-semibold text-slate-900">Access Control</h2>
@@ -27,12 +29,12 @@ export function AccessControlPanel() {
             <div className="mt-3 flex items-center gap-2">
               <input
                 readOnly
-                value={`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/invite`}
+                value={`${baseUrl}/invite`}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 outline-none"
               />
               <button
                 type="button"
-                onClick={() => navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/invite`)}
+                onClick={() => navigator.clipboard.writeText(`${baseUrl}/invite`)}
                 className="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:border-slate-300"
               >
                 Copy

@@ -1,0 +1,64 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img [ref=e7]
+          - generic [ref=e10]:
+            - paragraph [ref=e11]: Hafispace
+            - paragraph [ref=e12]: Admin Dashboard
+        - navigation [ref=e13]:
+          - generic [ref=e14]:
+            - paragraph [ref=e15]: Menu Utama
+            - list [ref=e16]:
+              - listitem [ref=e17]:
+                - link "Dashboard" [ref=e18] [cursor=pointer]:
+                  - /url: /admin
+                  - img [ref=e20]
+                  - text: Dashboard
+              - listitem [ref=e22]:
+                - link "Events" [ref=e23] [cursor=pointer]:
+                  - /url: /admin/events
+                  - img [ref=e25]
+                  - text: Events
+          - generic [ref=e27]:
+            - paragraph [ref=e28]: Manajemen
+            - list [ref=e29]:
+              - listitem [ref=e30]:
+                - link "Packages" [ref=e31] [cursor=pointer]:
+                  - /url: /admin/packages
+                  - img [ref=e33]
+                  - text: Packages
+              - listitem [ref=e35]:
+                - link "Galleries" [ref=e36] [cursor=pointer]:
+                  - /url: /admin/galleries
+                  - img [ref=e38]
+                  - text: Galleries
+              - listitem [ref=e40]:
+                - link "Clients" [ref=e41] [cursor=pointer]:
+                  - /url: /admin/clients
+                  - img [ref=e43]
+                  - text: Clients
+          - generic [ref=e45]:
+            - paragraph [ref=e46]: Pengaturan
+            - list [ref=e47]:
+              - listitem [ref=e48]:
+                - link "Settings" [ref=e49] [cursor=pointer]:
+                  - /url: /admin/settings
+                  - img [ref=e51]
+                  - text: Settings
+        - generic [ref=e55]:
+          - generic [ref=e56]:
+            - generic [ref=e57]: H
+            - generic [ref=e58]:
+              - paragraph [ref=e59]: Hafiportrait Photography
+              - paragraph [ref=e85]: hafi@hafiportrait.photography
+          - button "Logout" [ref=e60]:
+            - img [ref=e61]
+    - main [ref=e63]:
+      - generic [ref=e67]:
+        - paragraph [ref=e71]: Maret 2026
+        - paragraph [ref=e72]: Selamat datang, Hafiportrait Photography
+  - button "Open Next.js Dev Tools" [ref=e91] [cursor=pointer]:
+    - img [ref=e92]
+  - alert [ref=e95]

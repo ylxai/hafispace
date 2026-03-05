@@ -19,6 +19,10 @@ const settingsSchema = z.object({
   themeColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Format warna tidak valid").optional(),
   successMessage: z.string().optional().nullable(),
   bookingFormActive: z.boolean().optional(),
+  // Notification preferences
+  notifEmail: z.boolean().optional(),
+  notifNewBooking: z.boolean().optional(),
+  notifGalleryDelivered: z.boolean().optional(),
 });
 
 export async function GET() {
@@ -46,6 +50,9 @@ export async function GET() {
       themeColor: true,
       successMessage: true,
       bookingFormActive: true,
+      notifEmail: true,
+      notifNewBooking: true,
+      notifGalleryDelivered: true,
     },
   });
 
@@ -73,7 +80,7 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const { namaStudio, phone, email, enableViesusEnhancement, waAdmin, dpPercentage, rekeningPembayaran, syaratKetentuan, themeColor, successMessage, bookingFormActive } = parsed.data;
+  const { namaStudio, phone, email, enableViesusEnhancement, waAdmin, dpPercentage, rekeningPembayaran, syaratKetentuan, themeColor, successMessage, bookingFormActive, notifEmail, notifNewBooking, notifGalleryDelivered } = parsed.data;
 
   await prisma.vendor.update({
     where: { id: session.user.id },
@@ -89,6 +96,9 @@ export async function PATCH(request: Request) {
       ...(themeColor !== undefined && { themeColor }),
       ...(successMessage !== undefined && { successMessage }),
       ...(bookingFormActive !== undefined && { bookingFormActive }),
+      ...(notifEmail !== undefined && { notifEmail }),
+      ...(notifNewBooking !== undefined && { notifNewBooking }),
+      ...(notifGalleryDelivered !== undefined && { notifGalleryDelivered }),
     },
   });
 
@@ -108,6 +118,9 @@ export async function PATCH(request: Request) {
       themeColor: true,
       successMessage: true,
       bookingFormActive: true,
+      notifEmail: true,
+      notifNewBooking: true,
+      notifGalleryDelivered: true,
     },
   });
 
