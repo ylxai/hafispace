@@ -161,7 +161,14 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
             <p className="text-sm text-slate-600">Client: {gallery.clientName}</p>
             <div className="flex gap-4 text-xs text-slate-500">
               <span>{gallery.photoCount} photos</span>
-              <span>{gallery.selectionCount} selections</span>
+              <button 
+                type="button" 
+                onClick={() => setShowSelections(true)} 
+                className="hover:text-slate-700 hover:underline transition-colors"
+                title="View Selected Photos"
+              >
+                {gallery.selectionCount} selections
+              </button>
               <span>{gallery.viewCount} views</span>
             </div>
           </div>
