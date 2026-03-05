@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast";
 import { formatRupiah } from "@/lib/format";
@@ -37,6 +37,16 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
   const toast = useToast();
   const [form, setForm] = useState({ jumlah: "", tipe: "DP" as "DP" | "PELUNASAN" | "LAINNYA", keterangan: "", buktiBayar: "" });
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Cleanup object URL saat previewUrl berubah atau komponen unmount — cegah memory leak
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   const { data, isLoading } = useQuery<PaymentData>({
     queryKey: ["booking-payments", bookingId],
@@ -47,6 +57,34 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
     },
   });
 
+  async function handleFileUpload(file: File) {
+    setIsUploading(true);
+    // Revoke URL lama sebelum buat yang baru
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(URL.createObjectURL(file));
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`/api/admin/bookings/${bookingId}/payments/upload`, {
+        method: "POST",
+        body: fd,
+      });
+      if (!res.ok) {
+        const err = await res.json() as { error?: string };
+        toast.error(err.error ?? "Gagal upload bukti");
+        setPreviewUrl(null);
+        return;
+      }
+      const { url } = await res.json() as { url: string };
+      setForm((f) => ({ ...f, buktiBayar: url }));
+    } catch {
+      toast.error("Gagal upload bukti transfer");
+      setPreviewUrl(null);
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.jumlah || Number(form.jumlah) <= 0) {
@@ -54,7 +92,7 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
       return;
     }
     if (!form.buktiBayar) {
-      toast.error("Bukti transfer wajib dilampirkan");
+      toast.error("Bukti transfer wajib diupload");
       return;
     }
     setIsSaving(true);
@@ -71,6 +109,8 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
       }
       toast.success("Pembayaran berhasil dicatat!");
       setForm({ jumlah: "", tipe: "DP", keterangan: "", buktiBayar: "" });
+      setPreviewUrl(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       await queryClient.invalidateQueries({ queryKey: ["booking-payments", bookingId] });
       await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
     } catch {
@@ -246,15 +286,53 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Link Bukti Transfer *</label>
-                <input
-                  type="url"
-                  value={form.buktiBayar}
-                  onChange={(e) => setForm((f) => ({ ...f, buktiBayar: e.target.value }))}
-                  placeholder="https://..."
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
-                  required
-                />
+                <label className="block text-xs font-medium text-slate-600 mb-1">Bukti Transfer *</label>
+                <div
+                  className={`relative rounded-xl border-2 border-dashed transition-colors cursor-pointer ${previewUrl ? "border-green-300 bg-green-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"}`}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/heic"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void handleFileUpload(file);
+                    }}
+                  />
+                  {previewUrl ? (
+                    <div className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={previewUrl} alt="Preview bukti" className="w-full max-h-40 object-cover rounded-xl" />
+                      {isUploading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-xl">
+                          <span className="text-white text-xs font-medium">Mengupload...</span>
+                        </div>
+                      )}
+                      {!isUploading && form.buktiBayar && (
+                        <div className="absolute top-2 right-2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">✓ Terupload</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-5 gap-1">
+                      <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                      </svg>
+                      <span className="text-xs text-slate-500">Tap untuk upload foto bukti</span>
+                      <span className="text-[10px] text-slate-400">JPG, PNG, WEBP · Maks 5MB</span>
+                    </div>
+                  )}
+                </div>
+                {previewUrl && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setPreviewUrl(null); setForm((f) => ({ ...f, buktiBayar: "" })); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                    className="mt-1 text-xs text-red-500 hover:text-red-600"
+                  >
+                    × Hapus foto
+                  </button>
+                )}
               </div>
               <button
                 type="submit"

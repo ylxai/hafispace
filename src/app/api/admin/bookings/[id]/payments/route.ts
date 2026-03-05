@@ -8,7 +8,13 @@ const paymentSchema = z.object({
   jumlah: z.coerce.number().positive("Jumlah harus lebih dari 0"),
   tipe: z.enum(["DP", "PELUNASAN", "LAINNYA"]).default("DP"),
   keterangan: z.string().optional(),
-  buktiBayar: z.string().url("Link bukti transfer harus berupa URL yang valid"),
+  buktiBayar: z
+    .string()
+    .url("Link bukti transfer harus berupa URL yang valid")
+    .refine(
+      (url) => url.startsWith("https://res.cloudinary.com/"),
+      "Bukti transfer harus diupload melalui sistem (Cloudinary URL)"
+    ),
 });
 
 // GET — list payments per booking

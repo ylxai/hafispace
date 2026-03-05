@@ -27,6 +27,6 @@ export default withAuth(
 );
 
 export const config = {
-  // Match semua route /admin/* dan /login
-  matcher: ["/admin/:path*", "/login"],
+  // Match /admin dan /admin/* (dengan dan tanpa trailing path)
+  matcher: ["/admin", "/admin/:path*", "/login"],
 };
