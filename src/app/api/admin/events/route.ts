@@ -110,7 +110,14 @@ export async function POST(request: Request) {
         where: { id: paketId, vendorId: session.user.id },
         select: { maxSelection: true },
       });
-      if (paket) resolvedMaxSelection = paket.maxSelection;
+      // Tolak jika paket tidak ditemukan atau bukan milik vendor
+      if (!paket) {
+        return NextResponse.json(
+          { code: "NOT_FOUND", message: "Package not found or unauthorized" },
+          { status: 404 }
+        );
+      }
+      resolvedMaxSelection = paket.maxSelection;
     }
 
     const booking = await prisma.booking.create({
@@ -243,6 +250,20 @@ export async function PUT(request: Request) {
         { code: "NOT_FOUND", message: "Booking not found" },
         { status: 404 }
       );
+    }
+
+    // Jika paketId diupdate (dan bukan null), verifikasi kepemilikan — cegah IDOR di PUT handler
+    if (paketId !== undefined && paketId !== null) {
+      const paket = await prisma.package.findFirst({
+        where: { id: paketId, vendorId: session.user.id },
+        select: { id: true },
+      });
+      if (!paket) {
+        return NextResponse.json(
+          { code: "NOT_FOUND", message: "Package not found or unauthorized" },
+          { status: 404 }
+        );
+      }
     }
 
     const updatedBooking = await prisma.booking.update({
