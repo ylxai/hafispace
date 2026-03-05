@@ -64,8 +64,9 @@ export function checkRateLimit(key: string, options: RateLimitOptions): RateLimi
  * Pastikan reverse proxy (Nginx/Vercel/Cloudflare) meng-override header ini.
  */
 export function getClientIp(request: Request): string {
-  // Prioritas x-real-ip (di-set trusted proxy, tidak bisa di-spoof klien)
-  // Fallback ke .pop() dari x-forwarded-for (ambil IP proxy terakhir, bukan klien)
+  // x-real-ip — di-set oleh trusted reverse proxy (Nginx/Vercel), tidak bisa di-spoof klien
+  // Fallback: ambil .pop() dari x-forwarded-for (IP terakhir = proxy, bukan klien)
+  // JANGAN gunakan [0] dari x-forwarded-for — itu bisa di-set oleh klien
   return (
     request.headers.get("x-real-ip") ??
     request.headers.get("x-forwarded-for")?.split(",").pop()?.trim() ??
