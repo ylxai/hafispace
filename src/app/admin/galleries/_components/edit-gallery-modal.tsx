@@ -148,13 +148,13 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="w-full max-w-md max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-xl">
+        <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-100">
           <h2 className="text-lg font-semibold text-slate-900">Manage Gallery</h2>
           <button type="button" onClick={onClose} className="rounded-full p-1 text-slate-400 hover:text-slate-600" aria-label="Close">✕</button>
         </div>
 
-        <div className="space-y-4">
+        <div className="overflow-y-auto p-6 pt-4 space-y-4">
           {/* Gallery Info */}
           <div className="rounded-xl bg-slate-50 p-4 space-y-2">
             <p className="text-base font-semibold text-slate-900">{gallery.namaProject}</p>
@@ -223,42 +223,42 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
               />
             </div>
           )}
-        </div>
 
-        <div className="mt-6 flex flex-wrap justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => setShowUploadModal(true)}
-            className="rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-600 hover:border-slate-300"
-          >
-            Upload Photos
-          </button>
-          <button
-            type="button"
-            onClick={handleShowViesus}
-            className="rounded-full border border-sky-200 px-5 py-2 text-sm font-medium text-sky-600 hover:bg-sky-50"
-          >
-            {showViesus ? "Hide VIESUS" : "VIESUS Preview"}
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={isSaving}
-            className="rounded-full border border-red-200 px-5 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
-          >
-            Delete
-          </button>
-          <button type="button" onClick={onClose} className="rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-600 hover:border-slate-300">
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSaveStatus}
-            disabled={isSaving}
-            className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50"
-          >
-            {isSaving ? "Saving..." : "Save Changes"}
-          </button>
+          <div className="mt-6 flex flex-wrap justify-end gap-3 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setShowUploadModal(true)}
+              className="rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-600 hover:border-slate-300"
+            >
+              Upload Photos
+            </button>
+            <button
+              type="button"
+              onClick={handleShowViesus}
+              className="rounded-full border border-sky-200 px-5 py-2 text-sm font-medium text-sky-600 hover:bg-sky-50"
+            >
+              {showViesus ? "Hide VIESUS" : "VIESUS Preview"}
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isSaving}
+              className="rounded-full border border-red-200 px-5 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              Delete
+            </button>
+            <button type="button" onClick={onClose} className="rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-600 hover:border-slate-300">
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveStatus}
+              disabled={isSaving}
+              className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50"
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
