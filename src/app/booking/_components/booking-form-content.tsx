@@ -272,7 +272,7 @@ export function BookingFormContent() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Nama Client</p>
                   <p className="font-semibold text-gray-900">{successData.namaClient}</p>
