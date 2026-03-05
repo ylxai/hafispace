@@ -54,7 +54,7 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
       paketId: paketIdValue || undefined,
       paketCustom: paketCustomValue || undefined,
       hargaPaket: hargaPaketValue ? parseFloat(hargaPaketValue) : undefined,
-      maxSelection: parseInt((form.elements.namedItem("maxSelection") as HTMLSelectElement).value),
+      maxSelection: parseInt((form.elements.namedItem("maxSelection") as HTMLInputElement).value),
       notes: (form.elements.namedItem("notes") as HTMLTextAreaElement).value || undefined,
     };
 

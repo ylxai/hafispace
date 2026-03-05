@@ -105,8 +105,9 @@ export async function POST(request: Request) {
     // Ambil maxSelection dari paket jika paketId dipilih
     let resolvedMaxSelection = maxSelection ?? 40;
     if (paketId) {
-      const paket = await prisma.package.findUnique({
-        where: { id: paketId },
+      // Pastikan paket milik vendor yang sedang login — cegah IDOR
+      const paket = await prisma.package.findFirst({
+        where: { id: paketId, vendorId: session.user.id },
         select: { maxSelection: true },
       });
       if (paket) resolvedMaxSelection = paket.maxSelection;
