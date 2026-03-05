@@ -20,6 +20,7 @@ interface Package {
   harga: number;
   deskripsi?: string | null;
   kuotaEdit?: number | null;
+  maxSelection: number;
   includeCetak?: IncludeCetak[] | null;
   urutan: number;
   status: string;
@@ -70,6 +71,7 @@ function PackageModal({
     harga: pkg?.harga ?? 0,
     deskripsi: pkg?.deskripsi ?? "",
     kuotaEdit: pkg?.kuotaEdit ?? ("" as string | number),
+    maxSelection: pkg?.maxSelection ?? 40,
     status: pkg?.status ?? "active",
     includeCetak: (pkg?.includeCetak ?? []) as IncludeCetak[],
   });
@@ -190,6 +192,18 @@ function PackageModal({
                 placeholder="Opsional"
                 className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
               />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Max Seleksi Foto</label>
+              <input
+                type="number"
+                value={form.maxSelection}
+                onChange={(e) => setForm((f) => ({ ...f, maxSelection: Number(e.target.value) }))}
+                min={1}
+                placeholder="40"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
+              />
+              <p className="mt-1 text-[10px] text-slate-400">Jumlah foto yang bisa dipilih klien di galeri</p>
             </div>
           </div>
 
@@ -411,6 +425,7 @@ export default function PackagesPage() {
 
               {/* Detail */}
               <div className="space-y-1 text-xs text-slate-500 mb-4">
+                <p>📷 Max seleksi: <span className="font-medium text-slate-700">{pkg.maxSelection} foto</span></p>
                 {pkg.kuotaEdit && (
                   <p>✏️ {pkg.kuotaEdit} file diedit</p>
                 )}

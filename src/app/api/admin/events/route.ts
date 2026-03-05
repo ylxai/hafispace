@@ -102,6 +102,16 @@ export async function POST(request: Request) {
     // Create date at noon UTC to avoid timezone issues
     const normalizedDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
 
+    // Ambil maxSelection dari paket jika paketId dipilih
+    let resolvedMaxSelection = maxSelection ?? 40;
+    if (paketId) {
+      const paket = await prisma.package.findUnique({
+        where: { id: paketId },
+        select: { maxSelection: true },
+      });
+      if (paket) resolvedMaxSelection = paket.maxSelection;
+    }
+
     const booking = await prisma.booking.create({
       data: {
         vendorId: session.user.id,
@@ -114,7 +124,7 @@ export async function POST(request: Request) {
         hargaPaket,
         tanggalSesi: normalizedDate,
         lokasiSesi,
-        maxSelection,
+        maxSelection: resolvedMaxSelection,
         notes,
         status: "PENDING",
       },
