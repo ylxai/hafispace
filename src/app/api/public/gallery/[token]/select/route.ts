@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { DEFAULT_MAX_SELECTION } from "@/lib/constants";
 import { getAblyRest, ABLY_CHANNEL_SELECTION } from "@/lib/ably";
 import { z } from "zod";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const selectSchema = z.object({
   fileId: z.string().min(1, "fileId is required"),
@@ -16,6 +17,16 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
+
+  // Rate limit: maks 120 seleksi per menit per IP+token
+  const ip = getClientIp(request);
+  const rl = checkRateLimit(`select:${ip}:${token}`, { limit: 120, windowMs: 60_000 });
+  if (!rl.success) {
+    return NextResponse.json(
+      { code: "RATE_LIMITED", message: "Terlalu banyak request. Coba lagi dalam 1 menit." },
+      { status: 429 }
+    );
+  }
 
   const gallery = await prisma.gallery.findUnique({
     where: { clientToken: token },
