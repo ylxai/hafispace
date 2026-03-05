@@ -102,12 +102,12 @@ export async function POST(
     },
   });
 
-  // Hitung total dari semua payments yang sudah ada + yang baru
-  const existingPayments = await prisma.payment.findMany({
+  // Hitung total dengan aggregate — 1 query, bukan N+1
+  const agg = await prisma.payment.aggregate({
     where: { bookingId },
-    select: { jumlah: true },
+    _sum: { jumlah: true },
   });
-  const totalBayar = existingPayments.reduce((sum, p) => sum + Number(p.jumlah), 0);
+  const totalBayar = Number(agg._sum.jumlah ?? 0);
   const hargaPaket = Number(booking.hargaPaket ?? 0);
 
   let dpStatus: "UNPAID" | "PAID" | "PARTIAL" = "UNPAID";
@@ -146,17 +146,19 @@ export async function DELETE(
 
   await prisma.payment.delete({ where: { id: paymentId } });
 
-  // Recalculate dpStatus
-  const remaining = await prisma.payment.findMany({
-    where: { bookingId },
-    select: { jumlah: true },
-  });
-  const booking = await prisma.booking.findUnique({
-    where: { id: bookingId },
-    select: { hargaPaket: true },
-  });
+  // Recalculate dpStatus dengan aggregate — 1 query, bukan N+1
+  const [aggResult, booking] = await Promise.all([
+    prisma.payment.aggregate({
+      where: { bookingId },
+      _sum: { jumlah: true },
+    }),
+    prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: { hargaPaket: true },
+    }),
+  ]);
 
-  const totalBayar = remaining.reduce((sum, p) => sum + Number(p.jumlah), 0);
+  const totalBayar = Number(aggResult._sum.jumlah ?? 0);
   const hargaPaket = Number(booking?.hargaPaket ?? 0);
 
   let dpStatus: "UNPAID" | "PAID" | "PARTIAL" = "UNPAID";
