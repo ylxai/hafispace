@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { StatusBadge } from "@/components/admin";
@@ -70,9 +70,11 @@ export default function AdminEventsPage() {
   }, [data?.items, searchQuery, statusFilter, dateFrom, dateTo]);
 
   // Show error toast if query fails
-  if (error) {
-    toast.error("Failed to load bookings. Please refresh the page.");
-  }
+  useEffect(() => {
+    if (error) {
+      toast.error("Failed to load bookings. Please refresh the page.");
+    }
+  }, [error, toast]);
 
   const eventSummary = useMemo(() => {
     const total = bookings.length;
