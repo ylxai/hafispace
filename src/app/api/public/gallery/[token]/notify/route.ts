@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { z } from "zod";
+
+const notifySchema = z.object({
+  type: z.enum(["selection_submitted"]),
+  photoCount: z.number().int().min(0).max(10000),
+  photos: z.array(z.string().max(500)).max(1000).optional(),
+});
 
 export async function POST(
   request: Request,
@@ -7,8 +15,24 @@ export async function POST(
 ) {
   try {
     const { token } = await params;
-    const body = await request.json();
-    const { type, photoCount, photos } = body;
+
+    // Rate limit: maks 5 notifikasi per jam per IP+token (cegah spam)
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(`notify:${ip}:${token}`, { limit: 5, windowMs: 60 * 60_000 });
+    if (!rl.success) {
+      return NextResponse.json(
+        { code: "RATE_LIMITED", message: "Terlalu banyak notifikasi. Coba lagi nanti." },
+        { status: 429 }
+      );
+    }
+
+    // Validasi input — cegah injection dan data tidak valid
+    const rawBody = await request.json();
+    const parsed = notifySchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
+    const { type, photoCount, photos } = parsed.data;
 
     const gallery = await prisma.gallery.findUnique({
       where: { clientToken: token },
@@ -20,20 +44,23 @@ export async function POST(
     }
 
     if (type === "selection_submitted") {
+      const previewPhotos = photos?.slice(0, 3).join(", ") ?? "";
+      const moreCount = (photos?.length ?? 0) > 3 ? ` +${(photos?.length ?? 0) - 3} more` : "";
+
       const notification = await prisma.notification.create({
         data: {
           vendorId: gallery.vendorId,
           type: "SELECTION_SUBMITTED",
           title: "New Photo Selection",
-          message: `${photoCount} photos selected from gallery "${gallery.namaProject}": ${photos?.slice(0, 3).join(", ")}${photos?.length > 3 ? ` +${photos.length - 3} more` : ""}`,
+          message: `${photoCount} photos selected from gallery "${gallery.namaProject}": ${previewPhotos}${moreCount}`,
           isRead: false,
         },
       });
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: "Notification sent",
-        notificationId: notification.id 
+        notificationId: notification.id,
       });
     }
 
