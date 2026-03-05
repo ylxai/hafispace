@@ -88,209 +88,214 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl bg-white shadow-xl">
+        {/* Header Fixed */}
+        <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-100">
           <h2 className="text-lg font-semibold text-slate-900">Create New Booking</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1 text-slate-400 hover:text-slate-600"
+            className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
             aria-label="Close"
           >
             ✕
           </button>
         </div>
 
-        {errors.form && (
-          <p className="mb-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{errors.form}</p>
-        )}
+        {/* Scrollable Content */}
+        <div className="overflow-y-auto p-6 pt-4">
+          {errors.form && (
+            <p className="mb-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{errors.form}</p>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="namaClient">
+                  Client Name *
+                </label>
+                <input
+                  id="namaClient"
+                  name="namaClient"
+                  type="text"
+                  required
+                  placeholder="e.g. Ridwan & Maya"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
+                />
+                {errors.namaClient && <p className="mt-1 text-xs text-red-500">{errors.namaClient}</p>}
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="hpClient">
+                  Phone *
+                </label>
+                <input
+                  id="hpClient"
+                  name="hpClient"
+                  type="tel"
+                  required
+                  placeholder="+6281234567890"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
+                />
+                {errors.hpClient && <p className="mt-1 text-xs text-red-500">{errors.hpClient}</p>}
+              </div>
+            </div>
+
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="namaClient">
-                Client Name *
+              <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="emailClient">
+                Email
               </label>
               <input
-                id="namaClient"
-                name="namaClient"
-                type="text"
-                required
-                placeholder="e.g. Ridwan & Maya"
+                id="emailClient"
+                name="emailClient"
+                type="email"
+                placeholder="client@example.com"
                 className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
               />
-              {errors.namaClient && <p className="mt-1 text-xs text-red-500">{errors.namaClient}</p>}
+              {errors.emailClient && <p className="mt-1 text-xs text-red-500">{errors.emailClient}</p>}
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="hpClient">
-                Phone *
-              </label>
-              <input
-                id="hpClient"
-                name="hpClient"
-                type="tel"
-                required
-                placeholder="+6281234567890"
-                className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
-              />
-              {errors.hpClient && <p className="mt-1 text-xs text-red-500">{errors.hpClient}</p>}
-            </div>
-          </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="emailClient">
-              Email
-            </label>
-            <input
-              id="emailClient"
-              name="emailClient"
-              type="email"
-              placeholder="client@example.com"
-              className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
-            />
-            {errors.emailClient && <p className="mt-1 text-xs text-red-500">{errors.emailClient}</p>}
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="tanggalSesi">
-                Session Date *
-              </label>
-              <input
-                id="tanggalSesi"
-                name="tanggalSesi"
-                type="date"
-                required
-                className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
-              />
-              {errors.tanggalSesi && <p className="mt-1 text-xs text-red-500">{errors.tanggalSesi}</p>}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="tanggalSesi">
+                  Session Date *
+                </label>
+                <input
+                  id="tanggalSesi"
+                  name="tanggalSesi"
+                  type="date"
+                  required
+                  className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
+                />
+                {errors.tanggalSesi && <p className="mt-1 text-xs text-red-500">{errors.tanggalSesi}</p>}
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="lokasiSesi">
+                  Location *
+                </label>
+                <input
+                  id="lokasiSesi"
+                  name="lokasiSesi"
+                  type="text"
+                  required
+                  placeholder="e.g. Gedung Serbaguna"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
+                />
+                {errors.lokasiSesi && <p className="mt-1 text-xs text-red-500">{errors.lokasiSesi}</p>}
+              </div>
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="lokasiSesi">
-                Location *
-              </label>
-              <input
-                id="lokasiSesi"
-                name="lokasiSesi"
-                type="text"
-                required
-                placeholder="e.g. Gedung Serbaguna"
-                className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
-              />
-              {errors.lokasiSesi && <p className="mt-1 text-xs text-red-500">{errors.lokasiSesi}</p>}
-            </div>
-          </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="paketId">
-              Pilih Paket
-            </label>
-            <select
-              id="paketId"
-              name="paketId"
-              value={selectedPackageId}
-              onChange={(e) => {
-                const pkgId = e.target.value;
-                setSelectedPackageId(pkgId);
-                if (pkgId) {
-                  const pkg = packagesData?.packages.find(p => p.id === pkgId);
-                  if (pkg) {
-                    setHargaPaket(pkg.harga.toString());
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="paketId">
+                Pilih Paket
+              </label>
+              <select
+                id="paketId"
+                name="paketId"
+                value={selectedPackageId}
+                onChange={(e) => {
+                  const pkgId = e.target.value;
+                  setSelectedPackageId(pkgId);
+                  if (pkgId) {
+                    const pkg = packagesData?.packages.find(p => p.id === pkgId);
+                    if (pkg) {
+                      setHargaPaket(pkg.harga.toString());
+                    }
+                  } else {
+                    setHargaPaket("");
                   }
-                } else {
-                  setHargaPaket("");
-                }
-              }}
-              className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400 bg-white"
-            >
-              <option value="">-- Pilih Paket --</option>
-              {packagesData?.packages.map(pkg => (
-                <option key={pkg.id} value={pkg.id}>
-                  {pkg.namaPaket} — Rp {new Intl.NumberFormat('id-ID').format(pkg.harga)}
-                </option>
-              ))}
-            </select>
-          </div>
+                }}
+                className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400 bg-white"
+              >
+                <option value="">-- Pilih Paket --</option>
+                {packagesData?.packages.map(pkg => (
+                  <option key={pkg.id} value={pkg.id}>
+                    {pkg.namaPaket} — Rp {new Intl.NumberFormat('id-ID').format(pkg.harga)}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="paketCustom">
-              Atau Nama Paket Custom
-            </label>
-            <input
-              id="paketCustom"
-              name="paketCustom"
-              type="text"
-              placeholder="e.g. Wedding Full Day (opsional)"
-              className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
-            />
-          </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="paketCustom">
+                Atau Nama Paket Custom
+              </label>
+              <input
+                id="paketCustom"
+                name="paketCustom"
+                type="text"
+                placeholder="e.g. Wedding Full Day (opsional)"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
+              />
+            </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="hargaPaket">
-              Harga Paket (Rp)
-            </label>
-            <input
-              id="hargaPaket"
-              name="hargaPaket"
-              type="number"
-              value={hargaPaket}
-              onChange={(e) => setHargaPaket(e.target.value)}
-              placeholder="0"
-              min="0"
-              className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
-            />
-          </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="hargaPaket">
+                Harga Paket (Rp)
+              </label>
+              <input
+                id="hargaPaket"
+                name="hargaPaket"
+                type="number"
+                value={hargaPaket}
+                onChange={(e) => setHargaPaket(e.target.value)}
+                placeholder="0"
+                min="0"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
+              />
+            </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="maxSelection">
-              Max Selections *
-            </label>
-            <select
-              id="maxSelection"
-              name="maxSelection"
-              required
-              defaultValue="40"
-              className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
-            >
-              <option value="40">40 photos</option>
-              <option value="80">80 photos</option>
-              <option value="120">120 photos</option>
-              <option value="160">160 photos</option>
-              <option value="200">200 photos</option>
-            </select>
-          </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="maxSelection">
+                Max Selections *
+              </label>
+              <select
+                id="maxSelection"
+                name="maxSelection"
+                required
+                defaultValue="40"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
+              >
+                <option value="40">40 photos</option>
+                <option value="80">80 photos</option>
+                <option value="120">120 photos</option>
+                <option value="160">160 photos</option>
+                <option value="200">200 photos</option>
+              </select>
+            </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="notes">
-              Notes
-            </label>
-            <textarea
-              id="notes"
-              name="notes"
-              rows={3}
-              placeholder="Additional notes..."
-              className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
-            />
-            {errors.notes && <p className="mt-1 text-xs text-red-500">{errors.notes}</p>}
-          </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="notes">
+                Notes
+              </label>
+              <textarea
+                id="notes"
+                name="notes"
+                rows={3}
+                placeholder="Additional notes..."
+                className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
+              />
+              {errors.notes && <p className="mt-1 text-xs text-red-500">{errors.notes}</p>}
+            </div>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-600 hover:border-slate-300"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50"
-            >
-              {isSubmitting ? "Creating..." : "Create Booking"}
-            </button>
-          </div>
-        </form>
+            {/* Footer Form Button, di-sticky / ditaruh paling bawah dalam scroll container agar tak bertumpuk */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-600 hover:border-slate-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50"
+              >
+                {isSubmitting ? "Creating..." : "Create Booking"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
