@@ -19,3 +19,17 @@ export function validationErrorResponse(details: unknown) {
     { status: 400 }
   );
 }
+
+export function notFoundResponse(message = "Resource not found") {
+  return NextResponse.json<ApiErrorResponse>(
+    { code: "NOT_FOUND", message },
+    { status: 404 }
+  );
+}
+
+export function internalErrorResponse(message = "Internal server error") {
+  return NextResponse.json<ApiErrorResponse>(
+    { code: "INTERNAL_ERROR", message },
+    { status: 500 }
+  );
+}
