@@ -53,6 +53,10 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
       toast.error("Jumlah harus lebih dari 0");
       return;
     }
+    if (!form.buktiBayar) {
+      toast.error("Bukti transfer wajib dilampirkan");
+      return;
+    }
     setIsSaving(true);
     try {
       const res = await fetch(`/api/admin/bookings/${bookingId}/payments`, {
@@ -144,43 +148,57 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
             ) : (
               <ul className="space-y-2">
                 {data?.payments.map((p) => (
-                  <li key={p.id} className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                          p.tipe === "DP" ? "bg-sky-100 text-sky-700" :
-                          p.tipe === "PELUNASAN" ? "bg-green-100 text-green-700" :
-                          "bg-slate-100 text-slate-600"
-                        }`}>{p.tipe}</span>
-                        <span className="text-sm font-semibold text-slate-900">{formatRupiah(Number(p.jumlah))}</span>
+                  <li key={p.id} className="rounded-xl border border-slate-100 px-4 py-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                            p.tipe === "DP" ? "bg-sky-100 text-sky-700" :
+                            p.tipe === "PELUNASAN" ? "bg-green-100 text-green-700" :
+                            "bg-slate-100 text-slate-600"
+                          }`}>{p.tipe}</span>
+                          <span className="text-sm font-semibold text-slate-900">{formatRupiah(Number(p.jumlah))}</span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {new Date(p.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
+                          {p.keterangan && ` · ${p.keterangan}`}
+                        </p>
                       </div>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {new Date(p.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
-                        {p.keterangan && ` · ${p.keterangan}`}
-                        {p.buktiBayar && (
-                          <>
-                            {" · "}
-                            <a
-                              href={p.buktiBayar}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sky-600 hover:text-sky-700 font-medium"
-                            >
-                              Lihat Bukti
-                            </a>
-                          </>
-                        )}
-                      </p>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(p.id)}
+                        className="text-red-400 hover:text-red-600 p-1 rounded-lg hover:bg-red-50"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(p.id)}
-                      className="text-red-400 hover:text-red-600 p-1 rounded-lg hover:bg-red-50"
-                    >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+                    {p.buktiBayar && (
+                      <a href={p.buktiBayar} target="_blank" rel="noopener noreferrer" className="block">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={p.buktiBayar}
+                          alt="Bukti transfer"
+                          className="w-full max-h-48 object-cover rounded-lg border border-slate-200 hover:opacity-90 transition-opacity cursor-zoom-in"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.style.display = "none";
+                            const fallback = target.nextElementSibling as HTMLElement | null;
+                            if (fallback) fallback.style.display = "inline-flex";
+                          }}
+                        />
+                        <span
+                          style={{ display: "none" }}
+                          className="items-center gap-1 text-xs text-sky-600 hover:text-sky-700 font-medium mt-1"
+                        >
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          Lihat Bukti
+                        </span>
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -228,13 +246,14 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Link Bukti Transfer (opsional)</label>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Link Bukti Transfer *</label>
                 <input
                   type="url"
                   value={form.buktiBayar}
                   onChange={(e) => setForm((f) => ({ ...f, buktiBayar: e.target.value }))}
                   placeholder="https://..."
                   className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                  required
                 />
               </div>
               <button

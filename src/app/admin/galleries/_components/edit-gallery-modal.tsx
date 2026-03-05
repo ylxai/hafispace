@@ -36,7 +36,7 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
   const [firstPhoto, setFirstPhoto] = useState<{ url: string; publicId: string; vendorId: string } | null>(null);
   const [liveSelectionCount, setLiveSelectionCount] = useState(gallery.selectionCount);
   const [clientSubmitted, setClientSubmitted] = useState(false);
-  const ablyRef = useRef<null>(null);
+  const ablyRef = useRef<unknown>(null);
   const galleryUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/gallery/${gallery.clientToken}`;
 
   // Ably realtime — subscribe untuk update count & notifikasi submit dari klien
@@ -49,7 +49,7 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
         const ably = new Ably.Realtime({
           authUrl: `/api/ably-token?gallery=${gallery.clientToken}`,
         });
-        ablyRef.current = ably as null;
+        ablyRef.current = ably;
 
         const channel = ably.channels.get(`gallery:${gallery.id}:selection`);
 

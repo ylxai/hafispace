@@ -8,7 +8,7 @@ const paymentSchema = z.object({
   jumlah: z.coerce.number().positive("Jumlah harus lebih dari 0"),
   tipe: z.enum(["DP", "PELUNASAN", "LAINNYA"]).default("DP"),
   keterangan: z.string().optional(),
-  buktiBayar: z.string().url().optional().nullable(),
+  buktiBayar: z.string().url("Link bukti transfer harus berupa URL yang valid"),
 });
 
 // GET — list payments per booking
