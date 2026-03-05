@@ -24,6 +24,8 @@ const eslintConfig = defineConfig([
       "@next/next": nextPlugin,
     },
     rules: {
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs["core-web-vitals"].rules,
       // TypeScript strict rules
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
@@ -37,25 +39,24 @@ const eslintConfig = defineConfig([
       
       // Next.js strict rules
       "@next/next/no-html-link-for-pages": "error",
-      "@next/next/no-img-element": "warn", // Warn about img tags (can be fixed later)
+      "@next/next/no-img-element": "warn",
       "@next/next/no-page-custom-font": "error",
       "@next/next/no-typos": "error",
       "@next/next/no-duplicate-head": "error",
       
       // General strict rules
-      "no-console": "off", // Allow console for development
+      "no-console": "off",
       "no-debugger": "warn",
       "no-var": "error",
       "prefer-const": "warn",
     },
   },
-  // Override default ignores of eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "node_modules/**",
   ]),
 ]);
 

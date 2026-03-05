@@ -1,9 +1,15 @@
 import type { NextConfig } from "next";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Allowed origins dari environment variable, fallback ke localhost untuk development
 const allowedOrigin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 const nextConfig: NextConfig = {
+  outputFileTracingRoot: resolve(__dirname, "./"),
   images: {
     remotePatterns: [
       {
