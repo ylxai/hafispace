@@ -2,14 +2,43 @@ import { config } from "dotenv";
 
 config({ path: ".env" });
 
+/**
+ * Seed script untuk membuat data awal vendor, paket, klien, booking, dan galeri.
+ *
+ * KEAMANAN: Kredensial admin dibaca dari environment variables.
+ * Jalankan dengan:
+ *   SEED_USERNAME=admin SEED_PASSWORD=password_kuat npx tsx scripts/seed-admin.ts
+ *
+ * Atau pastikan variabel berikut ada di .env:
+ *   SEED_USERNAME=your_username
+ *   SEED_PASSWORD=your_secure_password
+ */
+
 async function main() {
   const [{ prisma }, { hashPassword }] = await Promise.all([
     import("../src/lib/db"),
     import("../src/lib/auth/password"),
   ]);
 
-  const username = "nandika";
-  const password = "klp123";
+  // Baca kredensial dari environment variables
+  const username = process.env.SEED_USERNAME;
+  const password = process.env.SEED_PASSWORD;
+
+  if (!username || !password) {
+    console.error(
+      "❌ Error: SEED_USERNAME dan SEED_PASSWORD harus diisi di environment variables."
+    );
+    console.error(
+      "   Contoh: SEED_USERNAME=admin SEED_PASSWORD=password_kuat npx tsx scripts/seed-admin.ts"
+    );
+    process.exit(1);
+  }
+
+  if (password.length < 8) {
+    console.error("❌ Error: SEED_PASSWORD harus minimal 8 karakter.");
+    process.exit(1);
+  }
+
   const passwordHash = await hashPassword(password);
 
   // Create vendor (admin)
@@ -18,10 +47,10 @@ async function main() {
     update: { password: passwordHash },
     create: {
       username,
-      email: "nandika@example.com",
+      email: process.env.SEED_EMAIL ?? `${username}@example.com`,
       password: passwordHash,
-      namaStudio: "Detranium Photography",
-      phone: "+6281234567890",
+      namaStudio: process.env.SEED_STUDIO_NAME ?? "Photography Studio",
+      phone: process.env.SEED_PHONE ?? "+6281234567890",
       status: "ACTIVE",
       subscriptionType: "OMNISPACE",
     },
@@ -88,7 +117,7 @@ async function main() {
       emailClient: "lestari@example.com",
       paketId: pkg.id,
       hargaPaket: 10000000,
-      tanggalSesi: new Date("2024-04-18"),
+      tanggalSesi: new Date("2024-04-18T12:00:00.000Z"),
       lokasiSesi: "Gedung Serbaguna Bandung",
       status: "COMPLETED",
       dpAmount: 5000000,
@@ -103,7 +132,7 @@ async function main() {
       emailClient: "lestari@example.com",
       paketId: pkg.id,
       hargaPaket: 10000000,
-      tanggalSesi: new Date("2024-04-18"),
+      tanggalSesi: new Date("2024-04-18T12:00:00.000Z"),
       lokasiSesi: "Gedung Serbaguna Bandung",
       status: "COMPLETED",
       dpAmount: 5000000,
@@ -117,7 +146,7 @@ async function main() {
     update: {
       bookingId: booking.id,
       namaProject: "Lestari Wedding",
-      cloudinaryFolderId: "lestar wedding",
+      cloudinaryFolderId: "lestari_wedding",
       viewCount: 45,
       status: "DELIVERED",
     },
@@ -126,7 +155,7 @@ async function main() {
       bookingId: booking.id,
       namaProject: "Lestari Wedding",
       clientToken: "abc123def456",
-      cloudinaryFolderId: "lestar wedding",
+      cloudinaryFolderId: "lestari_wedding",
       viewCount: 45,
       status: "DELIVERED",
     },
