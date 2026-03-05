@@ -335,8 +335,8 @@ export default function PackagesPage() {
         <div className="flex items-center gap-3">
           <div className="h-10 w-1 rounded-full bg-gradient-to-b from-sky-500 to-sky-700" />
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Katalog</p>
-            <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">Packages</h1>
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Packages Manager</p>
+            <p className="mt-0.5 text-sm text-slate-500">Kelola paket foto dan harga untuk klien Anda.</p>
           </div>
         </div>
         <button

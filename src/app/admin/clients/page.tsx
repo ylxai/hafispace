@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAdminClients } from "@/hooks/use-admin-clients";
 import { useToast } from "@/components/ui/toast";
@@ -102,10 +102,12 @@ export default function AdminClientsPage() {
   const toast = useToast();
   const clients = data?.items ?? [];
 
-  // Show error toast if query fails
-  if (error) {
-    toast.error("Failed to load clients. Please refresh the page.");
-  }
+  // Show error toast if query fails (in useEffect to avoid render loop)
+  useEffect(() => {
+    if (error) {
+      toast.error("Failed to load clients. Please refresh the page.");
+    }
+  }, [error, toast]);
 
   const handleSelectClient = (clientId: string) => {
     const newSet = new Set(selectedClientIds);
@@ -218,9 +220,6 @@ export default function AdminClientsPage() {
             <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
               Client Manager
             </p>
-            <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">
-              Clients
-            </h1>
           </div>
         </div>
         <p className="text-sm text-slate-600 max-w-2xl">

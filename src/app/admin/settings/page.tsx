@@ -19,9 +19,7 @@ export default function AdminSettingsPage() {
             <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
               Studio Settings
             </p>
-            <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">
-              Settings
-            </h1>
+    
           </div>
         </div>
         <p className="text-sm text-slate-600 max-w-2xl">

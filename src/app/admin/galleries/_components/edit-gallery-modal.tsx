@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { UPLOAD_COMPLETE_FEEDBACK_MS } from "@/lib/constants";
 import ViesusPreview from "@/components/admin/viesus-preview";
@@ -34,7 +34,57 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
   const [showSelections, setShowSelections] = useState(false);
   const [showViesus, setShowViesus] = useState(false);
   const [firstPhoto, setFirstPhoto] = useState<{ url: string; publicId: string; vendorId: string } | null>(null);
+  const [liveSelectionCount, setLiveSelectionCount] = useState(gallery.selectionCount);
+  const [clientSubmitted, setClientSubmitted] = useState(false);
+  const ablyRef = useRef<null>(null);
   const galleryUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/gallery/${gallery.clientToken}`;
+
+  // Ably realtime — subscribe untuk update count & notifikasi submit dari klien
+  useEffect(() => {
+    let mounted = true;
+
+    const connect = async () => {
+      try {
+        const Ably = (await import("ably")).default;
+        const ably = new Ably.Realtime({
+          authUrl: `/api/ably-token?gallery=${gallery.clientToken}`,
+        });
+        ablyRef.current = ably;
+
+        const channel = ably.channels.get(`gallery:${gallery.id}:selection`);
+
+        // Update counter realtime saat klien pilih/batal foto
+        await channel.subscribe("count-updated", (msg) => {
+          if (!mounted) return;
+          if (typeof msg.data?.count === "number") {
+            setLiveSelectionCount(msg.data.count);
+            queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
+          }
+        });
+
+        // Notifikasi saat klien submit seleksi
+        await channel.subscribe("selection-submitted", (msg) => {
+          if (!mounted) return;
+          const count = msg.data?.count ?? liveSelectionCount;
+          setClientSubmitted(true);
+          setLiveSelectionCount(count);
+          toast.success(`🎉 Klien telah mengirim seleksi ${count} foto!`);
+          queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
+          queryClient.invalidateQueries({ queryKey: ["admin-selections", gallery.id] });
+        });
+      } catch {
+        // Ably tidak tersedia — silent fallback
+      }
+    };
+
+    connect();
+
+    return () => {
+      mounted = false;
+      ablyRef.current?.close();
+      ablyRef.current = null;
+    };
+  }, [gallery.id, gallery.clientToken]);
 
   async function handleShowViesus() {
     if (!showViesus && !firstPhoto) {
@@ -159,9 +209,24 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
           <div className="rounded-xl bg-slate-50 p-4 space-y-2">
             <p className="text-base font-semibold text-slate-900">{gallery.namaProject}</p>
             <p className="text-sm text-slate-600">Client: {gallery.clientName}</p>
-            <div className="flex gap-4 text-xs text-slate-500">
+            <div className="flex flex-wrap gap-3 text-xs text-slate-500">
               <span>{gallery.photoCount} photos</span>
-              <span>{gallery.selectionCount} selections</span>
+              {liveSelectionCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setShowSelections(true)}
+                  className="font-semibold text-sky-600 hover:text-sky-800 underline underline-offset-2 transition-colors flex items-center gap-1"
+                >
+                  {liveSelectionCount} seleksi →
+                  {clientSubmitted && (
+                    <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700">
+                      Submitted
+                    </span>
+                  )}
+                </button>
+              ) : (
+                <span>0 seleksi</span>
+              )}
               <span>{gallery.viewCount} views</span>
             </div>
           </div>
@@ -191,16 +256,16 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
           {/* Status Management */}
           <div>
             <p className="mb-2 text-xs font-medium text-slate-600">Gallery Status</p>
-            <div className="flex gap-2 flex-wrap">
+            <div className="grid grid-cols-3 gap-1.5">
               {STATUS_OPTIONS.map((s) => (
                 <button
                   key={s}
                   type="button"
                   onClick={() => setStatus(s)}
-                  className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition ${
+                  className={`rounded-lg border px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition ${
                     status === s
                       ? "border-slate-900 bg-slate-900 text-white"
-                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                      : "border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                   }`}
                 >
                   {s.replace("_", " ")}
@@ -225,40 +290,69 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
           )}
         </div>
 
-        <div className="mt-6 flex flex-wrap justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => setShowUploadModal(true)}
-            className="rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-600 hover:border-slate-300"
-          >
-            Upload Photos
-          </button>
-          <button
-            type="button"
-            onClick={handleShowViesus}
-            className="rounded-full border border-sky-200 px-5 py-2 text-sm font-medium text-sky-600 hover:bg-sky-50"
-          >
-            {showViesus ? "Hide VIESUS" : "VIESUS Preview"}
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={isSaving}
-            className="rounded-full border border-red-200 px-5 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
-          >
-            Delete
-          </button>
-          <button type="button" onClick={onClose} className="rounded-full border border-slate-200 px-5 py-2 text-sm font-medium text-slate-600 hover:border-slate-300">
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSaveStatus}
-            disabled={isSaving}
-            className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50"
-          >
-            {isSaving ? "Saving..." : "Save Changes"}
-          </button>
+        {/* Action Buttons — dibagi 2 baris: secondary actions atas, primary bawah */}
+        <div className="mt-5 space-y-2">
+          {/* Baris 1: secondary actions */}
+          <div className="grid grid-cols-3 gap-2">
+            {liveSelectionCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => setShowSelections(true)}
+                className={`rounded-lg border px-3 py-2 text-xs font-medium transition ${
+                  clientSubmitted
+                    ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
+                    : "border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100"
+                }`}
+              >
+                {clientSubmitted ? "✓" : "📋"} Seleksi ({liveSelectionCount})
+              </button>
+            ) : (
+              <div /> /* placeholder agar grid tetap 3 kolom */
+            )}
+            <button
+              type="button"
+              onClick={() => setShowUploadModal(true)}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
+            >
+              Upload Foto
+            </button>
+            <button
+              type="button"
+              onClick={handleShowViesus}
+              className="rounded-lg border border-purple-200 px-3 py-2 text-xs font-medium text-purple-600 hover:bg-purple-50 transition"
+            >
+              {showViesus ? "Tutup VIESUS" : "VIESUS"}
+            </button>
+          </div>
+
+          {/* Baris 2: primary actions */}
+          <div className="flex items-center justify-between gap-2 mt-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isSaving}
+              className="rounded-lg border border-red-200 px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 transition"
+            >
+              Hapus
+            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveStatus}
+                disabled={isSaving}
+                className="rounded-lg bg-slate-900 px-5 py-2 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-50 transition"
+              >
+                {isSaving ? "Menyimpan..." : "Simpan"}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

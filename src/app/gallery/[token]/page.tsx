@@ -72,7 +72,7 @@ function extractPublicId(url: string): string {
   }
 }
 
-function PhotoCard({ photo, onClick, isSelected }: { photo: Photo; onClick: () => void; isSelected?: boolean }) {
+function PhotoCard({ photo, index, onClick, isSelected }: { photo: Photo; index: number; onClick: () => void; isSelected?: boolean }) {
   const cloudName = extractCloudName(photo.url);
   const publicId = extractPublicId(photo.url);
   const thumbnailUrl = generateThumbnailUrl(cloudName, publicId);
@@ -81,13 +81,14 @@ function PhotoCard({ photo, onClick, isSelected }: { photo: Photo; onClick: () =
     <button
       type="button"
       onClick={onClick}
-      className="group relative aspect-square overflow-hidden bg-slate-800 transition-all duration-200 hover:opacity-95"
+      aria-label={`Lihat foto ${index + 1}`}
+      className="group relative aspect-square overflow-hidden bg-slate-800 transition-all duration-200 hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-2 focus:ring-offset-slate-950"
     >
       <Image
         src={thumbnailUrl}
-        alt={photo.filename}
+        alt={`Foto ${index + 1}`}
         fill
-        className="object-cover"
+        className="object-cover transition-transform duration-300 group-hover:scale-105"
         sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
         loading="lazy"
         onError={(e) => {
@@ -96,12 +97,16 @@ function PhotoCard({ photo, onClick, isSelected }: { photo: Photo; onClick: () =
         }}
       />
       {isSelected && (
-        <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-sky-500">
+        <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-sky-500 shadow-md">
           <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
         </div>
       )}
+      {/* Nomor foto — muncul saat hover */}
+      <div className="absolute bottom-1.5 left-1.5 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white/80 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+        {index + 1}
+      </div>
     </button>
   );
 }
@@ -112,6 +117,8 @@ export default function ViewspacePage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<"all" | "editing">("all");
+  const [bannerOpen, setBannerOpen] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery<GalleryData>({
     queryKey: ["gallery", token],
@@ -133,7 +140,7 @@ export default function ViewspacePage() {
     );
   }, [data?.gallery?.photos, data?.gallery?.selections]);
 
-  // Debounce timer ref untuk Ably refetch — cegah multiple refetch saat banyak event sekaligus
+  // Debounce timer ref untuk Ably refetch
   const refetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Ably real-time subscription for selection updates
@@ -145,13 +152,11 @@ export default function ViewspacePage() {
     const connect = async () => {
       try {
         const Ably = (await import('ably')).default;
-        // Pass gallery token to the API for authorization
         ably = new Ably.Realtime({ 
           authUrl: `/api/ably-token?gallery=${token}` 
         });
         const channel = ably.channels.get(`gallery:${data.gallery.id}:selection`);
         await channel.subscribe("count-updated", () => {
-          // Debounce refetch — tunggu 500ms setelah event terakhir sebelum refetch
           if (refetchDebounceRef.current) {
             clearTimeout(refetchDebounceRef.current);
           }
@@ -169,18 +174,27 @@ export default function ViewspacePage() {
 
     return () => {
       ably?.close();
-      // Cleanup debounce timer saat unmount
       if (refetchDebounceRef.current) {
         clearTimeout(refetchDebounceRef.current);
       }
     };
   }, [data?.gallery?.id, token, refetch]);
 
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4">
         <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-slate-400" />
-        <p className="text-sm text-slate-500">Loading gallery...</p>
+        <p className="text-sm text-slate-500">Memuat galeri...</p>
       </div>
     );
   }
@@ -194,9 +208,9 @@ export default function ViewspacePage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
-          <p className="text-lg font-semibold text-white">Gallery not found</p>
+          <p className="text-lg font-semibold text-white">Galeri tidak ditemukan</p>
           <p className="mt-2 text-sm text-slate-400">
-            The gallery link may be invalid or not published yet.
+            Link galeri tidak valid atau belum dipublikasikan.
           </p>
         </div>
       </div>
@@ -207,6 +221,7 @@ export default function ViewspacePage() {
   const hasPickspace = gallery.settings.maxSelection > 0;
   const hasDownload = gallery.settings.enableDownload;
   const isAllTab = activeTab === "all";
+  const hasBanner = !!(gallery.settings.welcomeMessage ?? gallery.settings.bannerClientName);
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
@@ -214,7 +229,6 @@ export default function ViewspacePage() {
   };
 
   const handleSubmitToWhatsApp = async () => {
-    // Send notification to admin first
     try {
       await fetch(`/api/public/gallery/${token}/notify`, {
         method: 'POST',
@@ -229,7 +243,6 @@ export default function ViewspacePage() {
       console.error('Failed to send notification:', e);
     }
 
-    // Open WhatsApp
     const phone = gallery.vendor.phone?.replace(/\D/g, '') ?? '';
     const message = `Hallo ${gallery.vendor.namaStudio ?? 'Admin'}, saya ingin submit ${selectedPhotos.length} foto dari gallery "${gallery.namaProject}":\n\n${selectedPhotos.map(p => `• ${p.filename}`).join('\n')}\n\nSilakan dicek ya, terima kasih!`;
     const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
@@ -239,7 +252,6 @@ export default function ViewspacePage() {
   const handleDownloadOriginal = async () => {
     if (!hasDownload || selectedPhotos.length === 0) return;
 
-    // Download each photo
     for (const photo of selectedPhotos) {
       const cloudName = extractCloudName(photo.url);
       const publicId = extractPublicId(photo.url);
@@ -253,7 +265,6 @@ export default function ViewspacePage() {
       link.click();
       document.body.removeChild(link);
       
-      // Small delay between downloads
       await new Promise(resolve => setTimeout(resolve, 500));
     }
   };
@@ -264,57 +275,103 @@ export default function ViewspacePage() {
       <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/95 backdrop-blur-md">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs uppercase tracking-wider text-slate-400">
+            {/* Studio name — elegant serif-inspired, semua lowercase dengan tracking */}
+            <p className="truncate text-[10px] font-medium uppercase tracking-[0.25em] text-slate-400">
               {gallery.vendor.namaStudio ?? "Photography"}
             </p>
-            <h1 className="truncate text-base font-bold text-white sm:text-lg">
-              {gallery.namaProject}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="truncate text-base font-bold text-white sm:text-lg">
+                {gallery.namaProject}
+              </h1>
+              {/* Jumlah foto */}
+              <span className="shrink-0 rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-400">
+                {gallery.photos.length} foto
+              </span>
+            </div>
           </div>
-          
-          {hasPickspace && (
-            <Link
-              href={`/gallery/${token}/select`}
-              className="ml-3 flex shrink-0 items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-200"
+
+          <div className="ml-3 flex shrink-0 items-center gap-2">
+            {/* Share / Copy Link */}
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              title={copied ? "Link disalin!" : "Salin link galeri"}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-800 text-slate-400 transition hover:bg-slate-700 hover:text-white"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              <span className="hidden sm:inline">Select</span>
-              {gallery.selectionCount > 0 && (
-                <span className="ml-1 rounded-full bg-slate-900 px-1.5 py-0.5 text-xs text-white">
-                  {gallery.selectionCount}
-                </span>
+              {copied ? (
+                <svg className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
               )}
-            </Link>
-          )}
+            </button>
+
+            {hasPickspace && (
+              <Link
+                href={`/gallery/${token}/select`}
+                className="flex shrink-0 items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-200"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <span className="hidden sm:inline">Pilih Foto</span>
+                {gallery.selectionCount > 0 && (
+                  <span className="ml-0.5 rounded-full bg-slate-900 px-1.5 py-0.5 text-xs text-white">
+                    {gallery.selectionCount}
+                  </span>
+                )}
+              </Link>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Welcome Banner */}
-      {(gallery.settings.welcomeMessage ?? gallery.settings.bannerClientName) && (
-        <div className="border-b border-white/5 bg-gradient-to-r from-slate-900 to-slate-800 py-6 text-center px-4">
-          {gallery.settings.bannerClientName && (
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
-              {gallery.settings.bannerClientName}
-            </p>
-          )}
-          {gallery.settings.welcomeMessage && (
-            <p className="mt-1 text-lg font-light text-white sm:text-xl">
-              {gallery.settings.welcomeMessage}
-            </p>
-          )}
-          {gallery.settings.bannerEventDate && (
-            <p className="mt-2 text-sm text-slate-400">{gallery.settings.bannerEventDate}</p>
-          )}
+      {/* Welcome Banner — collapsible */}
+      {hasBanner && (
+        <div className="border-b border-white/5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+          <div className="flex items-start justify-between px-4 py-4">
+            <div className="flex-1 text-center">
+              {gallery.settings.bannerClientName && (
+                <p className="text-xs font-medium uppercase tracking-[0.3em] text-rose-300/80">
+                  {gallery.settings.bannerClientName}
+                </p>
+              )}
+              {bannerOpen && (
+                <>
+                  {gallery.settings.welcomeMessage && (
+                    <p className="mt-1 text-sm font-light text-white/90 sm:text-base">
+                      {gallery.settings.welcomeMessage}
+                    </p>
+                  )}
+                  {gallery.settings.bannerEventDate && (
+                    <p className="mt-1.5 text-xs text-slate-400">{gallery.settings.bannerEventDate}</p>
+                  )}
+                </>
+              )}
+            </div>
+            {/* Toggle collapse banner */}
+            <button
+              type="button"
+              onClick={() => setBannerOpen(o => !o)}
+              className="ml-2 shrink-0 rounded-full p-1 text-slate-500 transition hover:text-slate-300"
+              aria-label={bannerOpen ? "Sembunyikan pesan" : "Tampilkan pesan"}
+            >
+              <svg className={`h-4 w-4 transition-transform duration-200 ${bannerOpen ? "" : "rotate-180"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+              </svg>
+            </button>
+          </div>
         </div>
       )}
 
       {/* Main Content */}
-      <main className="px-2 py-4 sm:px-4 sm:py-6">
+      <main className="px-1 py-3 sm:px-3 sm:py-5">
         {/* Tabs */}
         {hasPickspace && (
-          <div className="mb-4 flex gap-1 border-b border-white/10">
+          <div className="mb-3 flex gap-1 border-b border-white/10 px-2">
             <button
               type="button"
               onClick={() => setActiveTab("all")}
@@ -324,7 +381,7 @@ export default function ViewspacePage() {
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              All Photos
+              Semua Foto
               <span className="ml-2 rounded-full bg-slate-800 px-2 py-0.5 text-xs">
                 {gallery.photos.length}
               </span>
@@ -334,11 +391,11 @@ export default function ViewspacePage() {
               onClick={() => setActiveTab("editing")}
               className={`px-4 py-2.5 text-sm font-medium transition-colors ${
                 activeTab === "editing"
-                  ? "border-b-2 border-amber-500 text-amber-400"
+                  ? "border-b-2 border-rose-400 text-rose-400"
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              Editing List
+              Foto Pilihan Saya
               <span className="ml-2 rounded-full bg-slate-800 px-2 py-0.5 text-xs">
                 {gallery.selectionCount}
               </span>
@@ -351,17 +408,18 @@ export default function ViewspacePage() {
             <svg className="h-12 w-12 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <p className="mt-4 text-slate-500">No photos in this gallery yet.</p>
+            <p className="mt-4 text-slate-500">Belum ada foto di galeri ini.</p>
           </div>
         ) : isAllTab ? (
           /* All Photos - Grid */
-          <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 sm:gap-2 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 sm:gap-1.5 lg:grid-cols-4">
             {gallery.photos.map((photo, index) => {
               const isSelected = gallery.selections.includes(photo.storageKey);
               return (
                 <PhotoCard
                   key={photo.id}
                   photo={photo}
+                  index={index}
                   isSelected={isSelected}
                   onClick={() => openLightbox(index)}
                 />
@@ -369,29 +427,29 @@ export default function ViewspacePage() {
             })}
           </div>
         ) : (
-          /* Editing List Tab - List View */
-          <div className="space-y-4">
+          /* Tab: Foto Pilihan Saya */
+          <div className="space-y-4 px-2">
             {selectedPhotos.length === 0 ? (
               <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 py-16">
                 <svg className="h-12 w-12 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
-                <p className="mt-4 text-slate-500">No photos selected yet.</p>
+                <p className="mt-4 text-slate-500">Belum ada foto yang dipilih.</p>
                 <button
                   type="button"
                   onClick={() => setActiveTab("all")}
                   className="mt-4 text-sm text-sky-400 hover:text-sky-300"
                 >
-                  Browse all photos →
+                  Lihat semua foto →
                 </button>
               </div>
             ) : (
               <>
                 <p className="text-sm text-slate-400">
-                  📝 Photos ready to submit for editing:
+                  📝 {selectedPhotos.length} foto siap diproses:
                 </p>
                 <div className="space-y-2">
-                  {selectedPhotos.map((photo) => {
+                  {selectedPhotos.map((photo, idx) => {
                     const cloudName = extractCloudName(photo.url);
                     const publicId = extractPublicId(photo.url);
                     const thumbnailUrl = generateThumbnailUrl(cloudName, publicId);
@@ -402,6 +460,7 @@ export default function ViewspacePage() {
                         key={photo.id}
                         className="flex items-center gap-3 rounded-xl bg-slate-900/50 p-3 transition hover:bg-slate-900/70"
                       >
+                        <span className="w-5 shrink-0 text-center text-xs text-slate-600 font-medium">{idx + 1}</span>
                         <button
                           type="button"
                           onClick={() => openLightbox(originalIndex >= 0 ? originalIndex : 0)}
@@ -409,7 +468,7 @@ export default function ViewspacePage() {
                         >
                           <Image
                             src={thumbnailUrl}
-                            alt={photo.filename}
+                            alt={`Foto pilihan ${idx + 1}`}
                             width={56}
                             height={56}
                             className="h-14 w-14 object-cover"
@@ -422,7 +481,7 @@ export default function ViewspacePage() {
                         </button>
                         <div className="flex-1 min-w-0">
                           <p className="truncate text-sm font-medium text-white">
-                            {photo.filename}
+                            Foto {originalIndex + 1}
                           </p>
                           {photo.width && photo.height && (
                             <p className="text-xs text-slate-500">
@@ -434,6 +493,7 @@ export default function ViewspacePage() {
                           type="button"
                           onClick={() => openLightbox(originalIndex >= 0 ? originalIndex : 0)}
                           className="rounded-full p-2 text-slate-500 hover:bg-slate-800 hover:text-white"
+                          aria-label="Lihat foto"
                         >
                           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -446,62 +506,56 @@ export default function ViewspacePage() {
                 </div>
 
                 {/* Submit Section */}
-                <div className="mt-6 space-y-4 rounded-2xl border border-amber-500/30 bg-amber-900/20 p-5">
-                  <div className="text-center">
-                    <p className="text-lg font-semibold text-white">
-                      🎯 {selectedPhotos.length} photos selected
-                    </p>
-                    <p className="mt-1 text-sm text-slate-400">
-                      Submit your selection to start the editing process
-                    </p>
-                  </div>
-
-                  <div className="flex gap-3">
+                <div className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-900/10 p-4">
+                  <p className="mb-3 text-center text-sm text-slate-400">
+                    🎯 {selectedPhotos.length} foto siap — kirim untuk mulai editing
+                  </p>
+                  <div className="flex flex-wrap gap-2">
                     {hasDownload && selectedPhotos.length > 0 && (
                       <button
                         type="button"
                         onClick={handleDownloadOriginal}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-3 font-semibold text-white transition hover:bg-white/20"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
                       >
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
-                        Download Original
+                        Unduh Original
                       </button>
                     )}
-                    
                     {gallery.vendor.phone ? (
                       <button
                         type="button"
                         onClick={handleSubmitToWhatsApp}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-full bg-green-500 px-6 py-3 font-semibold text-white transition hover:bg-green-600"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-full bg-green-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-600"
                       >
-                        <WhatsappIcon className="h-5 w-5" />
-                        Submit
+                        <WhatsappIcon className="h-4 w-4" />
+                        Kirim via WhatsApp
                       </button>
                     ) : (
                       <a
-                        href={`mailto:${gallery.vendor.namaStudio}?subject=Photo Selection: ${gallery.namaProject}&body=${selectedPhotos.map(p => `${p.filename}`).join('\n')}`}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-full bg-sky-500 px-6 py-3 font-semibold text-white transition hover:bg-sky-600"
+                        href={`mailto:${gallery.vendor.namaStudio}?subject=Seleksi Foto: ${gallery.namaProject}&body=${selectedPhotos.map((_, i) => `Foto ${i + 1}`).join('\n')}`}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-full bg-sky-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-600"
                       >
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
-                        Submit
+                        Kirim via Email
                       </a>
                     )}
                   </div>
-                  
-                  <p className="text-center text-xs text-slate-500">
-                    {hasDownload 
-                      ? "You can download originals or submit your selection to start editing"
-                      : "Admin will review your selection and start the editing process"}
-                  </p>
                 </div>
               </>
             )}
           </div>
         )}
+
+        {/* Footer credit studio */}
+        <div className="mt-10 pb-6 text-center">
+          <p className="text-xs text-slate-600">
+            © {new Date().getFullYear()} {gallery.vendor.namaStudio ?? "Photography"} · Galeri foto eksklusif
+          </p>
+        </div>
       </main>
 
       {/* Lightbox */}

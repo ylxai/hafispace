@@ -261,7 +261,7 @@ export default async function InvoicePage({
             <div className="border-t border-slate-100 pt-4 text-center">
               <p className="text-xs text-slate-400">
                 Terima kasih telah mempercayakan momen berharga Anda kepada{" "}
-                <span className="font-medium text-slate-600">{vendor.namaStudio ?? "kami"}</span>. ❤️
+                <span className="font-medium text-slate-600">{vendor.namaStudio ?? "kami"}</span>.
               </p>
               <p className="mt-1 text-[10px] text-slate-300">Powered by Hafispace</p>
             </div>
