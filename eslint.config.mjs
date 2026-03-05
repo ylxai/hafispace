@@ -9,8 +9,26 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const eslintConfig = defineConfig([
+  // Next.js plugin untuk semua file (agar terdeteksi oleh next build checker)
   {
     files: ["**/*.{ts,tsx,js,jsx,mjs,cjs}"],
+    plugins: {
+      "@next/next": nextPlugin,
+      next: nextPlugin,
+    },
+    rules: {
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs["core-web-vitals"].rules,
+      "@next/next/no-html-link-for-pages": "error",
+      "@next/next/no-img-element": "warn",
+      "@next/next/no-page-custom-font": "error",
+      "@next/next/no-typos": "error",
+      "@next/next/no-duplicate-head": "error",
+    },
+  },
+  // TypeScript rules hanya untuk file TS
+  {
+    files: ["**/*.{ts,tsx}"],
     languageOptions: {
       parser: tsparser,
       parserOptions: {
@@ -21,14 +39,8 @@ const eslintConfig = defineConfig([
     },
     plugins: {
       "@typescript-eslint": tseslint,
-      // Daftarkan dengan kedua nama agar Next.js build mendeteksinya
-      "@next/next": nextPlugin,
-      next: nextPlugin,
     },
     rules: {
-      ...nextPlugin.configs.recommended.rules,
-      ...nextPlugin.configs["core-web-vitals"].rules,
-      // TypeScript strict rules
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/consistent-type-imports": [
@@ -38,15 +50,6 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-non-null-assertion": "warn",
       "@typescript-eslint/prefer-nullish-coalescing": "warn",
       "@typescript-eslint/prefer-optional-chain": "warn",
-
-      // Next.js strict rules
-      "@next/next/no-html-link-for-pages": "error",
-      "@next/next/no-img-element": "warn",
-      "@next/next/no-page-custom-font": "error",
-      "@next/next/no-typos": "error",
-      "@next/next/no-duplicate-head": "error",
-
-      // General strict rules
       "no-console": "off",
       "no-debugger": "warn",
       "no-var": "error",
