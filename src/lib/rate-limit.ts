@@ -12,7 +12,11 @@ type RateLimitEntry = {
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
 // Cleanup expired entries setiap 5 menit
-if (typeof setInterval !== "undefined") {
+// Guard eksplisit untuk Node.js runtime saja — EdgeRuntime tidak cocok untuk setInterval background
+if (
+  typeof setInterval !== "undefined" &&
+  typeof (globalThis as Record<string, unknown>).EdgeRuntime === "undefined"
+) {
   setInterval(() => {
     const now = Date.now();
     for (const [key, entry] of rateLimitStore.entries()) {
