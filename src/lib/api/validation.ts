@@ -14,6 +14,21 @@ export const bookingSchema = z.object({
   notes: z.string().optional(),
 });
 
+export const bookingUpdateSchema = z.object({
+  id: z.string().uuid("Booking ID must be a valid UUID"),
+  namaClient: z.string().min(2, "Client name must be at least 2 characters").optional(),
+  hpClient: z.string().min(6, "Phone number must be at least 6 characters").optional(),
+  emailClient: z.string().email("Invalid email").optional().nullable().or(z.literal("")),
+  paketId: z.string().uuid().optional().nullable(),
+  paketCustom: z.string().min(2).optional().nullable(),
+  hargaPaket: z.coerce.number().nonnegative().optional().nullable(),
+  tanggalSesi: z.string().optional(),
+  lokasiSesi: z.string().min(2, "Location must be at least 2 characters").optional(),
+  maxSelection: z.coerce.number().int().positive().min(1).max(MAX_SELECTION_LIMIT).optional(),
+  status: z.enum(["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"]).optional(),
+  notes: z.string().optional().nullable(),
+});
+
 export const clientSchema = z.object({
   name: z.string().min(2),
   email: z.string().email().optional(),
