@@ -40,11 +40,7 @@ export async function PATCH(
   const ownership = await verifyGalleryOwnership(galleryId, session.user.id);
   if (!ownership.found) return notFoundResponse("Gallery not found");
 
-  const galleryData = await prisma.gallery.findUnique({
-    where: { id: galleryId },
-    select: { id: true, clientToken: true, tokenExpiresAt: true },
-  });
-
+  // Build update data berdasarkan action — Zod enum sudah pastikan action valid
   let updateData: { clientToken?: string; tokenExpiresAt?: Date | null } = {};
 
   if (action === "regenerate") {
@@ -66,15 +62,13 @@ export async function PATCH(
       );
     }
     updateData = { tokenExpiresAt: expiry };
-  } else if (action === "clear-expiry") {
+  } else {
+    // action === "clear-expiry"
     updateData = { tokenExpiresAt: null };
   }
 
-  // galleryData digunakan untuk memastikan galeri ada sebelum update
-  if (!galleryData) return notFoundResponse("Gallery not found");
-
   const updated = await prisma.gallery.update({
-    where: { id: galleryId },
+    where: { id: galleryId, vendorId: session.user.id },
     data: updateData,
     select: { clientToken: true, tokenExpiresAt: true },
   });
