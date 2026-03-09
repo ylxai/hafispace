@@ -278,28 +278,32 @@ export default function PickspacePage() {
       }
       return res.json();
     },
-    onSuccess: (result, { photo, action }) => {
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        if (action === "add") next.add(photo.storageKey);
-        else next.delete(photo.storageKey);
-        return next;
-      });
+    onSuccess: (result, { action: _action }) => {
+      // onSuccess: sinkronisasi count dari server (optimistic UI sudah update selectedIds)
       setSelectionCount(result.selectionCount);
       queryClient.invalidateQueries({ queryKey: ["gallery", token] });
     },
     onSettled: () => setPendingId(null),
-    onError: (err) => {
+    onError: (err, { photo, action }) => {
+      // Rollback optimistic UI jika API gagal — kembalikan state ke kondisi sebelumnya
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (action === "add") next.delete(photo.storageKey); // rollback: batalkan add
+        else next.add(photo.storageKey); // rollback: batalkan remove
+        return next;
+      });
       alert(err instanceof Error ? err.message : "Gagal memperbarui pilihan");
     },
   });
 
   const handleToggle = useCallback(
     (photo: Photo) => {
-      if (isLocked || pendingId) return;
+      // Hanya cek isLocked — hapus global lock pendingId agar user bisa
+      // pilih foto lain saat satu request sedang berjalan (per-foto disabled sudah cukup)
+      if (isLocked) return;
       const action = selectedIds.has(photo.storageKey) ? "remove" : "add";
 
-      // Optimistic UI: langsung update state lokal
+      // Optimistic UI: langsung update state lokal tanpa tunggu API
       setSelectedIds((prev) => {
         const next = new Set(prev);
         if (action === "add") next.add(photo.storageKey);
@@ -320,7 +324,7 @@ export default function PickspacePage() {
 
       debounceTimerRef.current.set(photo.storageKey, timer);
     },
-    [isLocked, pendingId, selectedIds, toggleSelection]
+    [isLocked, selectedIds, toggleSelection] // hapus pendingId dari deps — tidak ada global lock
   );
 
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
