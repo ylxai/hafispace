@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { formatRupiah } from './format';
 
 function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
@@ -35,7 +36,6 @@ export async function sendBookingConfirmationEmail({
   }
 
   try {
-    const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
     const formatDate = (s: string) => new Date(s).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
     await getResend().emails.send({
@@ -61,7 +61,8 @@ export async function sendBookingConfirmationEmail({
     });
     return { success: true };
   } catch (error) {
-    console.error('Email error:', error);
-    return { success: false, error };
+    const message = error instanceof Error ? error.message : 'Unknown email error';
+    console.error('Email error:', message);
+    return { success: false, error: message };
   }
 }

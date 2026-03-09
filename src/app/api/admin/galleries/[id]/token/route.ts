@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse , parseRequestBody } from "@/lib/api/response";
+import { unauthorizedResponse, notFoundResponse, parseRequestBody } from "@/lib/api/response";
+import { verifyGalleryOwnershipWithSelect } from "@/lib/api/gallery-auth";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
@@ -34,17 +35,11 @@ export async function PATCH(
 
   const { action, expiresAt } = parsed.data;
 
-  const gallery = await prisma.gallery.findUnique({
-    where: { id: galleryId, vendorId: session.user.id },
-    select: { id: true, clientToken: true, tokenExpiresAt: true },
+  const ownership = await verifyGalleryOwnershipWithSelect(galleryId, session.user.id, {
+    clientToken: true,
+    tokenExpiresAt: true,
   });
-
-  if (!gallery) {
-    return NextResponse.json(
-      { code: "NOT_FOUND", message: "Gallery not found" },
-      { status: 404 }
-    );
-  }
+  if (!ownership.found) return notFoundResponse("Gallery not found");
 
   let updateData: { clientToken?: string; tokenExpiresAt?: Date | null } = {};
 
