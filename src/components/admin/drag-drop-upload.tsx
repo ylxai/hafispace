@@ -164,10 +164,10 @@ export function DragDropUpload({ galleryId, onUploadComplete, onCancel, onEditFi
 
       if (response.ok) {
         // Create lookup maps for performance (O(N+M) instead of O(N*M))
-        const uploadedMap = new Map(
+        const uploadedMap = new Map<string, { filename: string }>(
           result.photos.map((p: { filename: string }) => [p.filename, p])
         );
-        const failedMap = new Map(
+        const failedMap = new Map<string, { filename: string; error: string }>(
           result.failed.map((f: { filename: string; error: string }) => [f.filename, f])
         );
 
