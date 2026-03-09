@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { sendBookingConfirmationEmail } from "@/lib/email";
+import { randomInt } from "node:crypto";
 
 const bookingSchema = z.object({
   namaClient: z.string().min(1, "Nama wajib diisi"),
@@ -18,7 +19,10 @@ function generateKodeBooking(): string {
   const now = new Date();
   const year = now.getFullYear().toString().slice(-2);
   const month = String(now.getMonth() + 1).padStart(2, "0");
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  // Use a cryptographically secure random number generator (CSPRNG)
+  // to generate a 4-character base-36 string.
+  // 36^4 = 1,679,616 possible combinations.
+  const random = randomInt(0, 1679616).toString(36).padStart(4, "0").toUpperCase();
   return `BK${year}${month}-${random}`;
 }
 
