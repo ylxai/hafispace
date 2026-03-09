@@ -81,9 +81,16 @@ export async function PATCH(request: NextRequest) {
 
   const bodyResult = await parseRequestBody(request);
   if (!bodyResult.ok) return bodyResult.response;
-  const body = bodyResult.data as { id?: string; urutan?: number; isActive?: boolean; label?: string };
+  const patchSchema = z.object({
+    id: z.string().min(1, "Field ID required"),
+    urutan: z.number().optional(),
+    isActive: z.boolean().optional(),
+    label: z.string().optional(),
+  });
+  const patchParsed = patchSchema.safeParse(bodyResult.data);
+  if (!patchParsed.success) return validationErrorResponse(patchParsed.error.format());
+  const body = patchParsed.data;
   const { id } = body;
-  if (!id) return validationErrorResponse("Field ID required");
 
   const existing = await prisma.customField.findFirst({
     where: { id, vendorId: session.user.id },

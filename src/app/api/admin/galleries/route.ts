@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { gallerySchema } from "@/lib/api/validation";
-import { unauthorizedResponse, validationErrorResponse , parseRequestBody } from "@/lib/api/response";
+import { unauthorizedResponse, validationErrorResponse, notFoundResponse, parseRequestBody } from "@/lib/api/response";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -81,6 +81,13 @@ export async function POST(request: Request) {
     enableDownload,
     enablePrint,
   } = parsed.data;
+
+  // Verifikasi bookingId milik vendor — cegah IDOR (attacker bisa attach gallery ke booking vendor lain)
+  const booking = await prisma.booking.findFirst({
+    where: { id: bookingId, vendorId: session.user.id },
+    select: { id: true },
+  });
+  if (!booking) return notFoundResponse("Booking not found or unauthorized");
 
   // Generate unique token for client access
   const clientToken = crypto.randomUUID();

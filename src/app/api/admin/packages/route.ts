@@ -83,18 +83,18 @@ export async function PUT(request: NextRequest) {
 
   const bodyResult = await parseRequestBody(request);
   if (!bodyResult.ok) return bodyResult.response;
-  const { id } = bodyResult.data as { id?: string };
-  if (!id) return validationErrorResponse("Package ID required");
-
-  const parsed = packageSchema.safeParse(bodyResult.data);
+  const updatePackageSchema = packageSchema.extend({
+    id: z.string({ required_error: "Package ID required" }).min(1),
+  });
+  const parsed = updatePackageSchema.safeParse(bodyResult.data);
   if (!parsed.success) return validationErrorResponse(parsed.error.format());
+
+  const { id, namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak, urutan, status } = parsed.data;
 
   const existing = await prisma.package.findFirst({
     where: { id, vendorId: session.user.id },
   });
   if (!existing) return notFoundResponse("Package not found");
-
-  const { namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak, urutan, status } = parsed.data;
 
   const updated = await prisma.package.update({
     where: { id },
