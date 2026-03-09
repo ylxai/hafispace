@@ -364,16 +364,47 @@ export async function deletePhotosFromCloudinary(
     failed: number;
   };
 }> {
+  if (publicIds.length === 0) {
+    return { deleted: [], failed: [], summary: { total: 0, deleted: 0, failed: 0 } };
+  }
+
   const deleted: CloudinaryDeletionResult[] = [];
   const failed: CloudinaryDeletionResult[] = [];
 
-  for (const publicId of publicIds) {
-    const result = await deletePhotoFromCloudinary(vendorId, publicId, options);
-    
-    if (result.result === 'ok' || result.result === 'not found') {
-      deleted.push(result);
-    } else {
-      failed.push(result);
+  // Gunakan delete_resources batch API (max 100 IDs per call) — jauh lebih efisien
+  // dibanding loop N API calls per foto
+  const vendorConfig = await getVendorCloudinaryClient(vendorId);
+  const perRequestConfig = {
+    cloud_name: vendorConfig.cloudName,
+    api_key: vendorConfig.apiKey,
+    api_secret: vendorConfig.apiSecret,
+  };
+  const BATCH_SIZE = 100;
+
+  for (let i = 0; i < publicIds.length; i += BATCH_SIZE) {
+    const batch = publicIds.slice(i, i + BATCH_SIZE);
+    try {
+      const result = await cloudinary.api.delete_resources(batch, {
+        ...perRequestConfig,
+        resource_type: options.resourceType ?? 'image',
+        invalidate: true,
+      }) as { deleted: Record<string, string> };
+
+      for (const publicId of batch) {
+        const status = result.deleted[publicId];
+        const entry: CloudinaryDeletionResult = { public_id: publicId, result: status ?? 'not found' };
+        if (status === 'deleted' || status === 'not found') {
+          deleted.push(entry);
+        } else {
+          failed.push(entry);
+        }
+      }
+    } catch (err) {
+      // Jika batch gagal total, tandai semua sebagai failed
+      const errorMsg = err instanceof Error ? err.message : 'Batch delete failed';
+      for (const publicId of batch) {
+        failed.push({ public_id: publicId, result: errorMsg });
+      }
     }
   }
 

@@ -28,5 +28,7 @@ export function useAdminClients() {
   return useQuery({
     queryKey: ["admin-clients"],
     queryFn: fetchAdminClients,
+    staleTime: 60 * 1000,       // 1 menit — clients jarang berubah
+    gcTime: 10 * 60 * 1000,     // 10 menit — cache lebih lama
   });
 }
