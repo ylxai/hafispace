@@ -19,6 +19,9 @@
 .ralph-tui/reports/
 .ralph-tui/session-meta.json
 
+# Agent tool folders (tidak perlu di-commit)
+.gemini/
+
 # next.js
 /.next/
 /out/
