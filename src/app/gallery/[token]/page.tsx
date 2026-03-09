@@ -233,8 +233,10 @@ export default function ViewspacePage() {
     if (!hasDownload || selectedPhotos.length === 0) return;
 
     for (const photo of selectedPhotos) {
+      // generateDownloadUrl validasi URL — return "" jika bukan Cloudinary URL (XSS prevention)
       const downloadUrl = generateDownloadUrl(photo.url);
-      
+      if (!downloadUrl) continue; // skip foto dengan URL tidak valid
+
       const link = document.createElement('a');
       link.href = downloadUrl;
       link.download = photo.filename;
