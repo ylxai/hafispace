@@ -516,24 +516,20 @@ export async function testCloudinaryConnection(vendorId: string): Promise<Cloudi
 }
 
 // Test Cloudinary connection with provided credentials (before saving)
+// Menggunakan per-request config — tidak mutasi global state
 export async function testCloudinaryConnectionWithCredentials(
   cloudName: string,
   apiKey: string,
   apiSecret: string
 ): Promise<boolean> {
   try {
-    // Create a new Cloudinary instance with provided credentials
-    const cloudinaryLib = require('cloudinary').v2;
-    
-    cloudinaryLib.config({
+    // Kirim config langsung ke cloudinary.api.ping() tanpa mutasi global
+    const result = await cloudinary.api.ping({
       cloud_name: cloudName,
       api_key: apiKey,
       api_secret: apiSecret,
       secure: true,
     });
-
-    // Try to ping Cloudinary
-    const result = await cloudinaryLib.api.ping();
 
     return result.status === 'ok';
   } catch (error) {

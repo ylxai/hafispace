@@ -8,6 +8,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { Lightbox } from "@/components/gallery/lightbox";
 import type * as AblyModule from "ably";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
+import cloudinaryLoader from '@/lib/image-loader';
 
 
 type AblyRealtime = InstanceType<typeof AblyModule.Realtime>;
@@ -472,7 +473,8 @@ export default function ViewspacePage() {
                             width={56}
                             height={56}
                             className="h-14 w-14 object-cover"
-                            unoptimized
+                            loader={cloudinaryLoader}
+                            quality={75}
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               target.src = photo.url;

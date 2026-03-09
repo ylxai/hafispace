@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import * as Ably from "ably";
+import cloudinaryLoader from "@/lib/image-loader";
 
 function generateThumbnailUrl(cloudName: string, publicId: string): string {
   return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,g_auto,h_400,q_auto:good,w_400/${publicId}`;
@@ -146,7 +147,8 @@ function PhotoSelectCard({
           className="object-cover"
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           loading="lazy"
-          unoptimized
+          loader={cloudinaryLoader}
+          quality={80}
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.src = photo.url;

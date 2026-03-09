@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback, useState, useRef } from "react";
 import Image from "next/image";
+import cloudinaryLoader from "@/lib/image-loader";
 import { MIN_SWIPE_DISTANCE_PX } from "@/lib/constants";
 
 interface Photo {
@@ -260,7 +261,8 @@ export function Lightbox({
               }`}
               sizes="100vw"
               priority
-              unoptimized
+              loader={cloudinaryLoader}
+              quality={90}
             />
           </div>
         </div>
@@ -299,7 +301,8 @@ export function Lightbox({
                     fill
                     className="object-cover"
                     sizes="60px"
-                    unoptimized
+                    loader={cloudinaryLoader}
+                    quality={75}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = photo.url;

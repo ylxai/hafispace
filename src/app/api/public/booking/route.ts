@@ -178,22 +178,29 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  // Send confirmation email if emailClient is provided (fire and forget)
+  // Kirim email konfirmasi jika emailClient ada
+  // Gunakan await agar email pasti terkirim sebelum serverless function selesai
+  // (fire-and-forget tidak aman di serverless — function bisa terminate sebelum email terkirim)
   if (emailClient) {
     const invoiceUrl = `${process.env.NEXTAUTH_URL ?? ''}/invoice/${booking.kodeBooking}`;
-    sendBookingConfirmationEmail({
-      to: emailClient,
-      namaClient,
-      kodeBooking: booking.kodeBooking,
-      tanggalSesi,
-      namaPaket: paket.namaPaket,
-      hargaPaket,
-      dpAmount,
-      dpPercentage: vendor.dpPercentage,
-      namaStudio: vendor.namaStudio ?? 'Studio',
-      rekeningPembayaran: vendor.rekeningPembayaran,
-      invoiceUrl,
-    }).catch(console.error);
+    try {
+      await sendBookingConfirmationEmail({
+        to: emailClient,
+        namaClient,
+        kodeBooking: booking.kodeBooking,
+        tanggalSesi,
+        namaPaket: paket.namaPaket,
+        hargaPaket,
+        dpAmount,
+        dpPercentage: vendor.dpPercentage,
+        namaStudio: vendor.namaStudio ?? 'Studio',
+        rekeningPembayaran: vendor.rekeningPembayaran,
+        invoiceUrl,
+      });
+    } catch (emailError) {
+      // Email gagal tidak boleh batalkan booking yang sudah berhasil dibuat
+      console.error("Gagal mengirim email konfirmasi booking:", emailError);
+    }
   }
 
   return NextResponse.json({
