@@ -53,11 +53,18 @@ export const paymentSchema = z.object({
 });
 
 export const packageSchema = z.object({
-  namaPaket: z.string().min(2, "Package name must be at least 2 characters"),
-  harga: z.coerce.number().nonnegative("Price must be non-negative"),
+  namaPaket: z.string().min(1, "Nama paket wajib diisi"),
+  kategori: z.enum(["PREWED", "WEDDING", "PERSONAL", "EVENT", "LAINNYA"]).default("LAINNYA"),
+  harga: z.coerce.number().min(0).default(0),
   deskripsi: z.string().optional(),
-  maxSelection: z.coerce.number().int().positive().optional(),
-  cetakOptions: z.array(z.string()).optional(),
+  kuotaEdit: z.coerce.number().int().positive().optional().nullable(),
+  maxSelection: z.coerce.number().int().min(1).default(40),
+  includeCetak: z
+    .array(z.object({ nama: z.string(), jumlah: z.coerce.number().int().positive() }))
+    .optional()
+    .nullable(),
+  urutan: z.coerce.number().int().default(0),
+  status: z.enum(["active", "inactive"]).default("active"),
 });
 
 export const cloudinaryAccountSchema = z.object({

@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { gallerySchema } from "@/lib/api/validation";
-import { unauthorizedResponse, validationErrorResponse, notFoundResponse, parseRequestBody } from "@/lib/api/response";
+import { unauthorizedResponse, validationErrorResponse, notFoundResponse, parseAndValidate } from "@/lib/api/response";
+import { parsePaginationParams, createPaginationResponse } from "@/lib/api/pagination";
+import { verifyGalleryOwnership } from "@/lib/api/gallery-auth";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -13,9 +15,7 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
-  const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit") ?? "20", 10)));
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = parsePaginationParams(searchParams);
 
   const [galleries, total] = await Promise.all([
     prisma.gallery.findMany({
@@ -50,12 +50,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     items: formatted,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
+    pagination: createPaginationResponse(page, limit, total),
   });
 }
 
@@ -66,13 +61,8 @@ export async function POST(request: Request) {
     return unauthorizedResponse();
   }
 
-  const bodyResult = await parseRequestBody(request);
-  if (!bodyResult.ok) return bodyResult.response;
-  const parsed = gallerySchema.safeParse(bodyResult.data);
-
-  if (!parsed.success) {
-    return validationErrorResponse(parsed.error.format());
-  }
+  const result = await parseAndValidate(request, gallerySchema);
+  if (!result.ok) return result.response;
 
   const {
     namaProject,
@@ -80,16 +70,14 @@ export async function POST(request: Request) {
     cloudinaryFolderId,
     enableDownload,
     enablePrint,
-  } = parsed.data;
+  } = result.data;
 
-  // Verifikasi bookingId milik vendor — cegah IDOR (attacker bisa attach gallery ke booking vendor lain)
   const booking = await prisma.booking.findFirst({
     where: { id: bookingId, vendorId: session.user.id },
     select: { id: true },
   });
-  if (!booking) return notFoundResponse("Booking not found or unauthorized");
+  if (!booking) return notFoundResponse("Booking not found");
 
-  // Generate unique token for client access
   const clientToken = crypto.randomUUID();
 
   const gallery = await prisma.gallery.create({
@@ -124,45 +112,24 @@ export async function DELETE(request: Request) {
   const galleryId = searchParams.get("id");
 
   if (!galleryId) {
-    return NextResponse.json(
-      { code: "VALIDATION_ERROR", message: "Gallery ID is required" },
-      { status: 400 }
-    );
+    return validationErrorResponse("Gallery ID is required");
   }
 
-  // Verify gallery belongs to vendor
-  const gallery = await prisma.gallery.findFirst({
-    where: {
-      id: galleryId,
-      vendorId: session.user.id,
-    },
-    include: {
-      _count: {
-        select: { photos: true, selections: true },
-      },
-    },
+  const ownership = await verifyGalleryOwnership(galleryId, session.user.id);
+  if (!ownership.found) {
+    return notFoundResponse("Gallery not found");
+  }
+
+  const photoCount = await prisma.photo.count({
+    where: { galleryId },
   });
 
-  if (!gallery) {
-    return NextResponse.json(
-      { code: "NOT_FOUND", message: "Gallery not found" },
-      { status: 404 }
+  if (photoCount > 0) {
+    return validationErrorResponse(
+      `Cannot delete gallery with ${photoCount} photo(s). Delete photos first.`
     );
   }
 
-  // Check if gallery has photos
-  if (gallery._count.photos > 0) {
-    return NextResponse.json(
-      { 
-        code: "HAS_PHOTOS", 
-        message: `Cannot delete gallery with ${gallery._count.photos} photo(s). Delete photos first.` 
-      },
-      { status: 400 }
-    );
-  }
-
-  // Delete gallery (selections will be cascade deleted)
-  // Sertakan vendorId sebagai defense-in-depth — cegah IDOR jika logika di atas diubah
   await prisma.gallery.delete({
     where: { id: galleryId, vendorId: session.user.id },
   });
