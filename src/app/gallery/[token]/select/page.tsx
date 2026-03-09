@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import * as Ably from "ably";
@@ -247,6 +247,19 @@ export default function PickspacePage() {
     };
   }, [data?.gallery?.id, token]);
 
+  // Debounce ref: antrian pending action per photo storageKey
+  // Mencegah spam click → Ably quota exceeded (free tier: 6 msg/s)
+  const debounceTimerRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Cleanup semua debounce timer saat komponen unmount
+  useEffect(() => {
+    const timers = debounceTimerRef.current;
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+      timers.clear();
+    };
+  }, []);
+
   const { mutate: toggleSelection } = useMutation({
     mutationFn: async ({ photo, action }: { photo: Photo; action: "add" | "remove" }) => {
       const res = await fetch(`/api/public/gallery/${token}/select`, {
@@ -285,8 +298,27 @@ export default function PickspacePage() {
     (photo: Photo) => {
       if (isLocked || pendingId) return;
       const action = selectedIds.has(photo.storageKey) ? "remove" : "add";
-      setPendingId(photo.storageKey);
-      toggleSelection({ photo, action });
+
+      // Optimistic UI: langsung update state lokal
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (action === "add") next.add(photo.storageKey);
+        else next.delete(photo.storageKey);
+        return next;
+      });
+
+      // Debounce API call 400ms — mencegah spam click menghabiskan Ably quota
+      // Jika user klik berkali-kali dalam 400ms, hanya request terakhir yang dikirim
+      const existing = debounceTimerRef.current.get(photo.storageKey);
+      if (existing) clearTimeout(existing);
+
+      const timer = setTimeout(() => {
+        debounceTimerRef.current.delete(photo.storageKey);
+        setPendingId(photo.storageKey);
+        toggleSelection({ photo, action });
+      }, 400);
+
+      debounceTimerRef.current.set(photo.storageKey, timer);
     },
     [isLocked, pendingId, selectedIds, toggleSelection]
   );
