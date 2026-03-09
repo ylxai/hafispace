@@ -163,14 +163,22 @@ export function DragDropUpload({ galleryId, onUploadComplete, onCancel, onEditFi
       const result = await response.json();
 
       if (response.ok) {
+        // Create lookup maps for performance (O(N+M) instead of O(N*M))
+        const uploadedMap = new Map(
+          result.photos.map((p: { filename: string }) => [p.filename, p])
+        );
+        const failedMap = new Map(
+          result.failed.map((f: { filename: string; error: string }) => [f.filename, f])
+        );
+
         // Update file statuses
         setFiles((prev) =>
           prev.map((file) => {
-            const uploadedFile = result.photos.find((p: { filename: string }) => p.filename === file.filename);
+            const uploadedFile = uploadedMap.get(file.filename);
             if (uploadedFile) {
               return { ...file, status: "completed", progress: 100 };
             }
-            const failedFile = result.failed.find((f: { filename: string }) => f.filename === file.filename);
+            const failedFile = failedMap.get(file.filename);
             if (failedFile) {
               return { ...file, status: "error", progress: 0, error: failedFile.error };
             }
