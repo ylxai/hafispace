@@ -52,3 +52,14 @@ sound = "off"
 mode = "auto"
 maxWorkers = 2
 directMerge = true
+
+# ── Environment Variables ────────────────────────────────────
+# Blokir API keys dari .env agar tidak bocor ke agent subprocess
+# (Bun otomatis load .env, yang bisa menyebabkan unexpected billing)
+envExclude = [
+  "*_API_KEY",
+  "*_SECRET*",
+  "DATABASE_URL",
+  "NEXTAUTH_SECRET",
+  "NEXTAUTH_URL",
+]

@@ -11,7 +11,7 @@ import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import { PaymentModal } from "./_components/payment-modal";
 import { CreateBookingModal } from "./_components/create-booking-modal";
 import { ErrorState } from "@/components/ui/error-state";
-import { Pagination } from "@/components/ui";
+import { Pagination, Skeleton } from "@/components/ui";
 
 // ─── Format helpers ───────────────────────────────────────────────────────────
 
@@ -564,40 +564,7 @@ function AdminEventsContent() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td className="px-6 py-4">
-                      <div className="h-4 w-4 rounded bg-slate-200" />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="h-4 w-32 rounded bg-slate-200 mb-2" />
-                      <div className="h-3 w-20 rounded bg-slate-200" />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="h-6 w-24 rounded-xl bg-slate-200" />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="h-4 w-28 rounded bg-slate-200" />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="h-6 w-20 rounded-full bg-slate-200" />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="h-4 w-24 rounded bg-slate-200 mb-1" />
-                      <div className="h-4 w-16 rounded-full bg-slate-200" />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="h-6 w-16 rounded-xl bg-slate-200" />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="h-7 w-16 rounded-lg bg-slate-200" />
-                        <div className="h-7 w-16 rounded-lg bg-slate-200" />
-                        <div className="h-7 w-16 rounded-lg bg-slate-200" />
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                <Skeleton variant="table-row" count={5} />
               ) : bookings.length === 0 ? (
                 <tr>
                   <td

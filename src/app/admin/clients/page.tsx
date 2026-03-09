@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useAdminClients } from "@/hooks/use-admin-clients";
 import { useToast } from "@/components/ui/toast";
 import { ErrorState } from "@/components/ui/error-state";
@@ -95,7 +94,6 @@ function ClientViewModal({ client, onClose }: { client: AdminClient; onClose: ()
 
 export default function AdminClientsPage() {
   const { data, isLoading, error, refetch } = useAdminClients();
-  const queryClient = useQueryClient();
   const [selectedClient, setSelectedClient] = useState<AdminClient | null>(null);
   const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
@@ -162,7 +160,7 @@ export default function AdminClientsPage() {
       toast.success(result.message);
       setSelectedClientIds(new Set());
       setShowBulkActions(false);
-      await queryClient.invalidateQueries({ queryKey: ["admin-clients"] });
+      await refetch();
     } catch {
       toast.error("Failed to delete clients");
     } finally {

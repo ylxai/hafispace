@@ -92,23 +92,6 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
     const paketCustomValue = (form.elements.namedItem("paketCustom") as HTMLInputElement).value;
     const hargaPaketValue = (form.elements.namedItem("hargaPaket") as HTMLInputElement).value;
 
-    // Client-side validation
-    const selectedDate = new Date(tanggalSesiValue);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (selectedDate < today) {
-      setErrors({ tanggalSesi: "Session date cannot be in the past" });
-      return;
-    }
-
-    if (hargaPaketValue) {
-      const numValue = parseFloat(hargaPaketValue);
-      if (isNaN(numValue) || numValue < 0) {
-        setErrors({ hargaPaket: "Price must be a positive number" });
-        return;
-      }
-    }
-    
     // Fix timezone: Parse date in user's local timezone, then convert to UTC
     const sessionDate = new Date(tanggalSesiValue);
     // Set to noon to avoid timezone edge cases

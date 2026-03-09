@@ -144,6 +144,15 @@ export async function PATCH(
 
   const { status, lokasiSesi, tanggalSesi, hargaPaket, notes, paketId } = parsed.data;
 
+  // IDOR check: verifikasi paketId milik vendor yang sedang login
+  if (paketId) {
+    const paket = await prisma.package.findFirst({
+      where: { id: paketId, vendorId: session.user.id },
+      select: { id: true },
+    });
+    if (!paket) return notFoundResponse("Package not found or unauthorized");
+  }
+
   const updated = await prisma.booking.update({
     where: { id },
     data: {
