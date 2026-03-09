@@ -1,60 +1,64 @@
-# Laporan Audit Komprehensif: Keamanan, Bugs, dan Optimasi
+# Laporan Audit Komprehensif: Keamanan, Bugs, dan Optimasi (Deep Scan)
 Tanggal: Senin, 9 Maret 2026
-Analis: Gemini CLI (Manual Scan)
+Analis: Gemini CLI
 
 ---
 
 ## 1. Temuan Keamanan & Potential Bugs
 
-### 🚨 A. Insecure Direct Object Reference (IDOR) pada Operasi Delete
-- **Lokasi**: `src/app/api/admin/galleries/route.ts` (Metode `DELETE`)
-- **Masalah**: Meskipun ada pengecekan awal menggunakan `findFirst`, perintah penghapusan akhir `prisma.gallery.delete` hanya menggunakan filter `id`.
-- **Dampak**: Membuka celah (meskipun kecil) untuk penghapusan data antar vendor jika logika di atasnya diubah atau terjadi *race condition*.
-- **Rekomendasi**: Selalu gunakan filter gabungan `{ id, vendorId }` pada setiap operasi penulisan/penghapusan.
+### 🚨 A. Potensi Cross-Site Scripting (XSS) pada Pesan Galeri
+- **Lokasi**: `src/app/gallery/[token]/page.tsx`
+- **Masalah**: Kolom `welcomeMessage` dan `thankYouMessage` dirender langsung ke dalam elemen HTML tanpa proses sanitasi.
+- **Risiko**: Penyerang dengan akses admin dapat memasukkan tag `<script>` yang akan dieksekusi di browser klien (XSS Stored).
+- **Rekomendasi**: Gunakan library sanitasi seperti `dompurify` atau pastikan input disanitasi ketat di sisi server sebelum disimpan ke database.
 
-### ⚠️ B. Potensi Memory Leak pada View Counter
-- **Lokasi**: `src/app/api/public/gallery/[token]/route.ts`
-- **Masalah**: Penggunaan `viewFingerprintCache` (JavaScript `Map`) di dalam memori server untuk deduplikasi tayangan.
-- **Dampak**: Jika trafik membludak (misal link galeri viral), penggunaan RAM server akan terus meningkat secara linear hingga proses `cleanup` berjalan. Pembersihan berbasis interval mungkin tidak cukup cepat untuk mencegah *crash* di lingkungan dengan memori terbatas.
-- **Rekomendasi**: Implementasikan **Redis** atau gunakan sistem database (UPSERT dengan timestamp) untuk menangani deduplikasi ini secara lebih *scalable*.
+### 🔐 B. Lemahnya Verifikasi Identitas pada Seleksi Foto
+- **Lokasi**: `src/app/api/public/gallery/[token]/select/route.ts`
+- **Masalah**: Seleksi foto hanya mengandalkan `clientToken` di URL tanpa adanya binding sesi (seperti JWT ringan atau cookie identitas klien).
+- **Risiko**: Siapa pun yang memiliki link galeri dapat memanipulasi seleksi foto klien lain jika link tersebut bocor.
+- **Rekomendasi**: Implementasikan mekanisme "Enter Email" atau "Client Session" sebelum akses penuh ke galeri diberikan.
 
-### 🔍 C. Validasi Sisi Server (Server-side Validation)
-- **Masalah**: Validasi jumlah maksimal seleksi foto (`maxSelection`) sudah sangat baik di sisi UI (`/select`), namun belum terlihat adanya validasi serupa di rute API yang menyimpan pilihan tersebut.
-- **Dampak**: User teknis bisa mengirimkan request manual ke API untuk memilih foto melebihi kuota paket.
-- **Rekomendasi**: Tambahkan pengecekan kuota di dalam API rute seleksi foto sebelum melakukan `upsert` ke database.
-
----
-
-## 2. Peluang Optimasi (Optimization)
-
-### 📈 A. Database Denormalization (Photo Count)
-- **Masalah**: Saat ini jumlah foto dihitung secara real-time menggunakan `prisma.photo.count` di API publik.
-- **Saran**: Untuk galeri dengan ribuan foto, ini akan membebani database. Sebaiknya tambahkan kolom `photoCount` pada tabel `Gallery` dan lakukan pembaruan (+1/-1) saat proses upload/delete foto.
-
-### 📱 B. WhatsApp URL Limit (UX Optimization)
-- **Lokasi**: `src/app/gallery/[token]/page.tsx` pada `handleSubmitToWhatsApp`.
-- **Masalah**: Mengirimkan daftar panjang nama file (`photo.filename`) melalui parameter URL `wa.me` berisiko terpotong atau gagal kirim jika jumlah foto sangat banyak (limit URL browser ~2000 karakter).
-- **Saran**: Kirimkan pesan ringkasan: "Halo, saya telah memilih 50 foto. Lihat seleksi saya di: [Link_Halaman_Admin]".
-
-### ⚙️ C. Metadata Sanitization
-- **Masalah**: `storageKey` (Cloudinary public ID) diekspos ke publik di API rute galeri.
-- **Saran**: Jika tidak diperlukan untuk fungsionalitas sisi klien, sebaiknya dihapus dari payload JSON untuk meminimalkan informasi internal yang bocor.
+### 🧹 C. Masalah Orphan Files (Cloudinary vs Database)
+- **Lokasi**: `src/app/api/admin/galleries/[id]/upload/route.ts`
+- **Masalah**: Jika foto berhasil diupload ke Cloudinary tetapi penulisan ke database gagal (timeout/crash), file tersebut akan tertinggal sebagai sampah di Cloudinary.
+- **Rekomendasi**: Implementasikan mekanisme `rollback` (menghapus file dari Cloudinary jika DB fail) atau buat job sinkronisasi otomatis.
 
 ---
 
-## 3. Analisis Kualitas Kode (Code Quality)
+## 2. Performance Bottlenecks (Hambatan Performa)
 
-### ✅ Kelebihan:
-1. **Clean Architecture**: Pemisahan yang sangat baik antara *API Routes*, *Business Logic* di `lib/services`, dan *UI Components*.
-2. **Type Safety**: Penggunaan TypeScript yang konsisten dan pendefinisian skema Zod untuk validasi API adalah praktik terbaik.
-3. **Modern Tech Stack**: Menggunakan fitur terbaru Next.js 15 (Promise-based params) dan integrasi React Query yang efisien.
-4. **Middleware**: Implementasi proteksi rute admin yang solid dan mudah dipahami.
+### 🚀 A. Sequential Database Inserts (Bulk Upload)
+- **Lokasi**: `src/app/api/admin/galleries/[id]/upload/route.ts`
+- **Masalah**: Penggunaan `prisma.photo.create` di dalam loop untuk hasil upload Cloudinary.
+- **Dampak**: 100 foto = 100 round-trip ke database. Ini adalah bottleneck besar untuk skalabilitas.
+- **Rekomendasi**: Gunakan **`prisma.photo.createMany({ data: [...], skipDuplicates: true })`** untuk menyimpan semua data dalam satu query tunggal.
 
-### 🛠️ Area Peningkatan:
-1. **Consistency**: Pastikan semua rute API admin mengikuti pola verifikasi kepemilikan data yang sama (selalu menyertakan `vendorId` di setiap query `where`).
-2. **Logging**: Pertimbangkan penggunaan library logging terpusat (seperti `pino` atau `winston`) alih-alih `console.log` untuk memudahkan debugging di fase produksi.
+### ⛓️ B. Split Transactions pada Submit Seleksi
+- **Lokasi**: `src/app/api/public/gallery/[token]/submit/route.ts`
+- **Masalah**: Transaksi penguncian seleksi dan pembuatan notifikasi/log dipisah menjadi dua blok transaksi berbeda.
+- **Risiko**: Jika database sibuk, ada kemungkinan seleksi terkunci tetapi notifikasi gagal dibuat (partial success).
+- **Rekomendasi**: Gabungkan seluruh operasi (lock + notify + log) ke dalam satu blok `prisma.$transaction` tunggal.
 
 ---
 
-## Kesimpulan Akhir
-Kode ini dikembangkan dengan standar profesional yang tinggi. Fokus utama untuk pengembangan selanjutnya adalah meningkatkan **ketahanan terhadap trafik tinggi (scalability)** dan memperketat **keamanan multi-tenancy** pada operasi penghapusan data.
+## 3. Optimasi Skema & Kode (Logic Flaws)
+
+### 🔄 A. Redundansi Kredensial Cloudinary
+- **Lokasi**: `prisma/schema.prisma`
+- **Masalah**: Data API Key/Secret Cloudinary disimpan di dua tempat: tabel `Vendor` dan tabel `VendorCloudinary`.
+- **Dampak**: Ketidakkonsistenan data (Inconsistent State) jika salah satu diperbarui tetapi yang lain tidak.
+- **Rekomendasi**: Hapus kolom Cloudinary dari tabel `Vendor` dan gunakan tabel `VendorCloudinary` sebagai satu-satunya sumber data (*Single Source of Truth*).
+
+### 🔢 B. Inkonsistensi maxSelection
+- **Masalah**: Kolom `maxSelection` ada di tabel `Package` dan juga tabel `Booking`.
+- **Saran**: Pastikan saat pembuatan *Booking*, nilai dari *Package* disalin secara permanen ke *Booking* untuk menjaga riwayat data meskipun paket diubah di masa depan (sudah dilakukan, pastikan konsistensi logic di API).
+
+---
+
+## Kesimpulan & Prioritas
+Sistem saat ini sudah berjalan baik secara fungsional, namun memerlukan **optimasi pada level database (bulk operation)** dan **pengetatan keamanan pada input publik** untuk mencapai level siap produksi (*production-ready*).
+
+**Prioritas Perbaikan:**
+1.  **XSS Sanitization** (Security)
+2.  **`createMany` pada Upload** (Performance)
+3.  **Unified Transactions** (Integrity)

@@ -5,7 +5,7 @@ import {
   uploadMultipleImages,
   CLOUDINARY_FOLDERS,
 } from "@/lib/cloudinary-upload";
-import { getCloudinaryAccount } from "@/lib/cloudinary";
+import { getCloudinaryAccount, deletePhotoFromCloudinary } from "@/lib/cloudinary";
 import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 
 // Upload validation constants
@@ -207,50 +207,84 @@ export async function POST(
       uploadResults.push(...batchResults);
     }
 
-    // Save successful uploads to database
-    const savedPhotos = [];
-    const failedUploads = [];
+    // Pisahkan hasil upload yang sukses dan gagal
+    const failedUploads: Array<{ filename: string; error: string }> = [];
+    const successfulUploads = uploadResults.filter(r => {
+      if (r.success && r.data) return true;
+      failedUploads.push({ filename: r.filename, error: r.error ?? 'Upload failed' });
+      return false;
+    });
 
-    for (const result of uploadResults) {
-      if (result.success && result.data) {
-        try {
-          const photo = await prisma.photo.create({
-            data: {
-              galleryId: gallery.id,
-              storageKey: result.data.publicId,
-              filename: result.filename,
-              url: result.data.url,
-              thumbnailUrl: result.data.thumbnailUrl,
-              width: result.data.width,
-              height: result.data.height,
-              size: result.data.size,
-              mimeType: files.find(f => f?.name === result.filename)?.type ?? 'image/jpeg',
-              urutan: 0, // Will be sorted later if needed
-            },
-          });
+    // Simpan semua foto yang berhasil upload ke DB sekaligus (1 query, bukan N queries)
+    // Jika DB gagal, rollback dengan menghapus file dari Cloudinary (cegah orphan files)
+    let savedPhotos: Array<{
+      id: string;
+      storageKey: string;
+      filename: string;
+      url: string;
+      thumbnailUrl: string | null;
+      width: number | null;
+      height: number | null;
+      size: number | null;
+    }> = [];
 
-          savedPhotos.push({
-            id: photo.id,
-            storageKey: photo.storageKey,
-            filename: photo.filename,
-            url: photo.url,
-            thumbnailUrl: photo.thumbnailUrl,
-            width: photo.width,
-            height: photo.height,
-            size: photo.size,
-          });
-        } catch (error) {
-          console.error(`Error saving photo ${result.filename} to database:`, error);
-          failedUploads.push({
+    if (successfulUploads.length > 0) {
+      try {
+        // Mapping di dalam try — jika .map() throw, rollback Cloudinary tetap berjalan
+        const photoDataList = successfulUploads.map(result => {
+          const data = result.data;
+          if (!data) throw new Error(`Missing data for ${result.filename}`);
+          return {
+            galleryId: gallery.id,
+            storageKey: data.publicId,
             filename: result.filename,
-            error: 'Failed to save to database',
-          });
-        }
-      } else {
-        failedUploads.push({
-          filename: result.filename,
-          error: result.error ?? 'Upload failed',
+            url: data.url,
+            thumbnailUrl: data.thumbnailUrl,
+            width: data.width,
+            height: data.height,
+            size: data.size,
+            mimeType: files.find(f => f?.name === result.filename)?.type ?? 'image/jpeg',
+            urutan: 0,
+          };
         });
+
+        // createMany — satu round-trip ke DB untuk semua foto
+        await prisma.photo.createMany({
+          data: photoDataList,
+          skipDuplicates: true,
+        });
+
+        // Ambil data foto yang baru disimpan untuk response
+        savedPhotos = await prisma.photo.findMany({
+          where: {
+            galleryId: gallery.id,
+            storageKey: { in: photoDataList.map(p => p.storageKey) },
+          },
+          select: {
+            id: true,
+            storageKey: true,
+            filename: true,
+            url: true,
+            thumbnailUrl: true,
+            width: true,
+            height: true,
+            size: true,
+          },
+        });
+      } catch (dbError) {
+        // DB gagal — rollback dengan hapus semua file dari Cloudinary (cegah orphan files)
+        console.error("DB write failed after Cloudinary upload — rolling back:", dbError);
+        const rollbackResults = await Promise.allSettled(
+          successfulUploads
+            .filter(r => r.data?.publicId)
+            .map(r => deletePhotoFromCloudinary(session.user.id, r.data?.publicId ?? ""))
+        );
+        rollbackResults.forEach((r, i) => {
+          if (r.status === "rejected") {
+            console.error(`Rollback failed for upload[${i}]:`, r.reason);
+          }
+        });
+        return internalErrorResponse("Failed to save photos to database. Uploaded files have been cleaned up.");
       }
     }
 
