@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { clientSchema } from "@/lib/api/validation";
-import { unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
+import { unauthorizedResponse, validationErrorResponse , parseRequestBody } from "@/lib/api/response";
 
 export async function GET() {
   const session = await auth();
@@ -48,8 +48,9 @@ export async function POST(request: Request) {
     return unauthorizedResponse();
   }
 
-  const body = await request.json();
-  const parsed = clientSchema.safeParse(body);
+  const bodyResult = await parseRequestBody(request);
+  if (!bodyResult.ok) return bodyResult.response;
+  const parsed = clientSchema.safeParse(bodyResult.data);
 
   if (!parsed.success) {
     return validationErrorResponse(parsed.error.format());
@@ -135,9 +136,10 @@ export async function PUT(request: Request) {
     return unauthorizedResponse();
   }
 
-  const body = await request.json();
+  const bodyResult = await parseRequestBody(request);
+  if (!bodyResult.ok) return bodyResult.response;
 
-  const { id } = body as { id?: string };
+  const { id } = bodyResult.data as { id?: string };
 
   if (!id) {
     return NextResponse.json(
@@ -146,7 +148,7 @@ export async function PUT(request: Request) {
     );
   }
 
-  const parsed = clientSchema.safeParse(body);
+  const parsed = clientSchema.safeParse(bodyResult.data);
   if (!parsed.success) {
     return validationErrorResponse(parsed.error.format());
   }

@@ -1,14 +1,19 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { auth } from '@/lib/auth/options';
 import { prisma } from '@/lib/db';
-import { unauthorizedResponse, notFoundResponse, validationErrorResponse } from '@/lib/api/response';
+import { unauthorizedResponse, notFoundResponse, validationErrorResponse, parseRequestBody } from '@/lib/api/response';
+import { z } from 'zod';
 
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return unauthorizedResponse();
 
-  const { bookingId } = await request.json() as { bookingId?: string };
-  if (!bookingId) return validationErrorResponse('bookingId required');
+  const bodyResult = await parseRequestBody(request);
+  if (!bodyResult.ok) return bodyResult.response;
+  const reminderSchema = z.object({ bookingId: z.string().min(1, 'bookingId required') });
+  const reminderParsed = reminderSchema.safeParse(bodyResult.data);
+  if (!reminderParsed.success) return validationErrorResponse(reminderParsed.error.format());
+  const { bookingId } = reminderParsed.data;
 
   const booking = await prisma.booking.findFirst({
     where: { id: bookingId, vendorId: session.user.id },

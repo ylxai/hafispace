@@ -6,6 +6,28 @@ export type ApiErrorResponse = {
   details?: unknown;
 };
 
+/**
+ * Safely parse request body JSON.
+ * Returns { ok: true, data } atau { ok: false, response } jika body bukan valid JSON.
+ */
+export async function parseRequestBody(request: Request): Promise<
+  | { ok: true; data: unknown }
+  | { ok: false; response: NextResponse }
+> {
+  try {
+    const data = await request.json();
+    return { ok: true, data };
+  } catch {
+    return {
+      ok: false,
+      response: NextResponse.json<ApiErrorResponse>(
+        { code: "BAD_REQUEST", message: "Invalid JSON body" },
+        { status: 400 }
+      ),
+    };
+  }
+}
+
 export function unauthorizedResponse() {
   return NextResponse.json<ApiErrorResponse>(
     { code: "UNAUTHORIZED", message: "Unauthorized" },

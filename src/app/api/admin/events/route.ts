@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { bookingSchema, bookingUpdateSchema } from "@/lib/api/validation";
-import { unauthorizedResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
+import { unauthorizedResponse, validationErrorResponse, internalErrorResponse , parseRequestBody } from "@/lib/api/response";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -91,8 +91,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json();
-    const parsed = bookingSchema.safeParse(body);
+    const bodyResult = await parseRequestBody(request);
+    if (!bodyResult.ok) return bodyResult.response;
+    const parsed = bookingSchema.safeParse(bodyResult.data);
 
     if (!parsed.success) {
       return validationErrorResponse(parsed.error.format());
@@ -236,8 +237,9 @@ export async function PUT(request: Request) {
   }
 
   try {
-    const body = await request.json();
-    const parsed = bookingUpdateSchema.safeParse(body);
+    const bodyResult = await parseRequestBody(request);
+    if (!bodyResult.ok) return bodyResult.response;
+    const parsed = bookingUpdateSchema.safeParse(bodyResult.data);
 
     if (!parsed.success) {
       return validationErrorResponse(parsed.error.format());

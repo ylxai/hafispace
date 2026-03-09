@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse } from "@/lib/api/response";
+import { unauthorizedResponse , parseRequestBody } from "@/lib/api/response";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
@@ -22,8 +22,9 @@ export async function PATCH(
 
   const { id: galleryId } = await params;
 
-  const body = await request.json() as unknown;
-  const parsed = updateTokenSchema.safeParse(body);
+  const bodyResult = await parseRequestBody(request);
+  if (!bodyResult.ok) return bodyResult.response;
+  const parsed = updateTokenSchema.safeParse(bodyResult.data);
   if (!parsed.success) {
     return NextResponse.json(
       { code: "VALIDATION_ERROR", message: parsed.error.issues[0]?.message },

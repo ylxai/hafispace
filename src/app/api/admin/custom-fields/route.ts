@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse, notFoundResponse, validationErrorResponse } from "@/lib/api/response";
+import { unauthorizedResponse, notFoundResponse, validationErrorResponse , parseRequestBody } from "@/lib/api/response";
 import { z } from "zod";
 
 const customFieldSchema = z.object({
@@ -40,8 +40,9 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return unauthorizedResponse();
 
-  const body = await request.json();
-  const parsed = customFieldSchema.safeParse(body);
+  const bodyResult = await parseRequestBody(request);
+  if (!bodyResult.ok) return bodyResult.response;
+  const parsed = customFieldSchema.safeParse(bodyResult.data);
   if (!parsed.success) {
     return validationErrorResponse(parsed.error.format());
   }
@@ -78,9 +79,18 @@ export async function PATCH(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return unauthorizedResponse();
 
-  const body = await request.json() as { id?: string; urutan?: number; isActive?: boolean; label?: string };
+  const bodyResult = await parseRequestBody(request);
+  if (!bodyResult.ok) return bodyResult.response;
+  const patchSchema = z.object({
+    id: z.string().min(1, "Field ID required"),
+    urutan: z.number().optional(),
+    isActive: z.boolean().optional(),
+    label: z.string().optional(),
+  });
+  const patchParsed = patchSchema.safeParse(bodyResult.data);
+  if (!patchParsed.success) return validationErrorResponse(patchParsed.error.format());
+  const body = patchParsed.data;
   const { id } = body;
-  if (!id) return validationErrorResponse("Field ID required");
 
   const existing = await prisma.customField.findFirst({
     where: { id, vendorId: session.user.id },

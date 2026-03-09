@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse, validationErrorResponse, notFoundResponse } from "@/lib/api/response";
+import { unauthorizedResponse, validationErrorResponse, notFoundResponse, parseRequestBody } from "@/lib/api/response";
 import { z } from "zod";
 
 const packageSchema = z.object({
@@ -51,8 +51,9 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return unauthorizedResponse();
 
-  const body = await request.json();
-  const parsed = packageSchema.safeParse(body);
+  const bodyResult = await parseRequestBody(request);
+  if (!bodyResult.ok) return bodyResult.response;
+  const parsed = packageSchema.safeParse(bodyResult.data);
   if (!parsed.success) return validationErrorResponse(parsed.error.format());
 
   const { namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak, urutan, status } = parsed.data;
@@ -80,22 +81,24 @@ export async function PUT(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return unauthorizedResponse();
 
-  const body = await request.json();
-  const { id } = body as { id?: string };
-  if (!id) return validationErrorResponse("Package ID required");
-
-  const parsed = packageSchema.safeParse(body);
+  const bodyResult = await parseRequestBody(request);
+  if (!bodyResult.ok) return bodyResult.response;
+  const updatePackageSchema = packageSchema.extend({
+    id: z.string({ message: "Package ID required" }).min(1),
+  });
+  const parsed = updatePackageSchema.safeParse(bodyResult.data);
   if (!parsed.success) return validationErrorResponse(parsed.error.format());
+
+  const { id, namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak, urutan, status } = parsed.data;
 
   const existing = await prisma.package.findFirst({
     where: { id, vendorId: session.user.id },
   });
   if (!existing) return notFoundResponse("Package not found");
 
-  const { namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak, urutan, status } = parsed.data;
-
+  // Sertakan vendorId sebagai defense-in-depth — cegah IDOR
   const updated = await prisma.package.update({
-    where: { id },
+    where: { id, vendorId: session.user.id },
     data: { namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak: includeCetak ?? undefined, urutan, status },
   });
 
@@ -125,6 +128,7 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  await prisma.package.delete({ where: { id } });
+  // Sertakan vendorId sebagai defense-in-depth — cegah IDOR
+  await prisma.package.delete({ where: { id, vendorId: session.user.id } });
   return NextResponse.json({ success: true });
 }
