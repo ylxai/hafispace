@@ -22,43 +22,50 @@ export async function POST(
       return NextResponse.json({ error: "Gallery is not published" }, { status: 403 });
     }
 
-    // Lock semua seleksi yang belum di-lock (dalam satu transaksi)
-    const [result, allSelections] = await prisma.$transaction([
-      prisma.photoSelection.updateMany({
+    // Gabungkan lock + notifikasi + log dalam SATU transaksi
+    // Mencegah partial success (seleksi terkunci tapi notifikasi gagal dibuat)
+    const { lockedCount, allSelections } = await prisma.$transaction(async (tx) => {
+      // Lock semua seleksi yang belum di-lock
+      const lockResult = await tx.photoSelection.updateMany({
         where: { galleryId: gallery.id, isLocked: false },
         data: { isLocked: true, lockedAt: new Date() },
-      }),
-      prisma.photoSelection.findMany({
+      });
+
+      // Ambil semua seleksi yang sudah terkunci (termasuk yang baru dikunci)
+      const selections = await tx.photoSelection.findMany({
         where: { galleryId: gallery.id, isLocked: true },
         select: { filename: true },
         orderBy: { selectedAt: "asc" },
-      }),
-    ]);
+      });
 
-    // Hanya buat notifikasi & log jika ada seleksi baru yang dikunci
-    // Mencegah spam notifikasi jika endpoint dipanggil berulang kali
-    if (result.count > 0) {
-      await prisma.$transaction([
-        prisma.notification.create({
+      // Hanya buat notifikasi & log jika ada seleksi baru yang dikunci
+      // Mencegah spam notifikasi jika endpoint dipanggil berulang kali
+      if (lockResult.count > 0) {
+        await tx.notification.create({
           data: {
             vendorId: gallery.vendorId,
             type: "SELECTION_SUBMITTED",
             title: "Seleksi Foto Dikirim",
-            message: `${allSelections.length} foto dipilih dari galeri "${gallery.namaProject}"`,
+            message: `${selections.length} foto dipilih dari galeri "${gallery.namaProject}"`,
             isRead: false,
           },
-        }),
-        prisma.activityLog.create({
+        });
+
+        await tx.activityLog.create({
           data: {
             vendorId: gallery.vendorId,
             galleryId: gallery.id,
             action: "SELECTION_SUBMITTED",
-            details: `Client submitted ${allSelections.length} photo selection(s) for gallery "${gallery.namaProject}"`,
+            details: `Client submitted ${selections.length} photo selection(s) for gallery "${gallery.namaProject}"`,
           },
-        }),
-      ]);
+        });
+      }
 
-      // Publish realtime event ke admin via Ably
+      return { lockedCount: lockResult.count, allSelections: selections };
+    });
+
+    // Publish realtime event ke admin via Ably (di luar transaksi — non-critical)
+    if (lockedCount > 0) {
       try {
         const ably = getAblyRest();
         await ably.channels
@@ -75,10 +82,10 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      lockedCount: result.count,
+      lockedCount,
       totalSelections: allSelections.length,
-      message: result.count > 0
-        ? `${result.count} seleksi berhasil dikunci`
+      message: lockedCount > 0
+        ? `${lockedCount} seleksi berhasil dikunci`
         : "Semua seleksi sudah dikunci sebelumnya",
     });
   } catch (error) {
