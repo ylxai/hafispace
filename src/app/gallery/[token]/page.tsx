@@ -224,7 +224,10 @@ export default function ViewspacePage() {
     }
 
     const phone = gallery.vendor.phone?.replace(/\D/g, '') ?? '';
-    const message = `Hallo ${gallery.vendor.namaStudio ?? 'Admin'}, saya ingin submit ${selectedPhotos.length} foto dari gallery "${gallery.namaProject}":\n\n${selectedPhotos.map(p => `• ${p.filename}`).join('\n')}\n\nSilakan dicek ya, terima kasih!`;
+    // Kirim pesan ringkasan — bukan daftar filename (mencegah URL terpotong jika foto banyak)
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
+    const adminLink = `${appUrl}/admin/galleries`;
+    const message = `Halo ${gallery.vendor.namaStudio ?? 'Admin'}, saya telah memilih *${selectedPhotos.length} foto* dari galeri *"${gallery.namaProject}"*.\n\nSilakan cek seleksi saya di panel admin:\n${adminLink}\n\nTerima kasih! 🙏`;
     const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
     window.open(waUrl, '_blank');
   };

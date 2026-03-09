@@ -117,8 +117,9 @@ export async function DELETE(request: Request) {
     );
   }
 
+  // Sertakan vendorId sebagai defense-in-depth — cegah IDOR jika logika di atas diubah
   await prisma.client.delete({
-    where: { id: clientId },
+    where: { id: clientId, vendorId: session.user.id },
   });
 
   return NextResponse.json({ 
@@ -167,8 +168,9 @@ export async function PUT(request: Request) {
     );
   }
 
+  // Sertakan vendorId sebagai defense-in-depth — cegah IDOR jika logika di atas diubah
   const updatedClient = await prisma.client.update({
-    where: { id },
+    where: { id, vendorId: session.user.id },
     data: {
       name,
       email,

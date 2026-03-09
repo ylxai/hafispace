@@ -213,8 +213,9 @@ export async function DELETE(request: Request) {
       );
     }
 
+    // Sertakan vendorId sebagai defense-in-depth — cegah IDOR jika logika di atas diubah
     await prisma.booking.delete({
-      where: { id: bookingId },
+      where: { id: bookingId, vendorId: session.user.id },
     });
 
     return NextResponse.json({
@@ -286,8 +287,9 @@ export async function PUT(request: Request) {
       }
     }
 
+    // Sertakan vendorId sebagai defense-in-depth — cegah IDOR jika logika di atas diubah
     const updatedBooking = await prisma.booking.update({
-      where: { id },
+      where: { id, vendorId: session.user.id },
       data: {
         ...(namaClient !== undefined && { namaClient }),
         ...(hpClient !== undefined && { hpClient }),

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAblyRest, ABLY_CHANNEL_SELECTION } from "@/lib/ably";
+import { DEFAULT_MAX_SELECTION } from "@/lib/constants";
 import { z } from "zod";
 
 const BulkSelectSchema = z.object({
@@ -52,7 +53,7 @@ export async function POST(
       return NextResponse.json({ error: "Gallery is not published" }, { status: 403 });
     }
 
-    const maxSelection = gallery.booking?.maxSelection ?? 40;
+    const maxSelection = gallery.booking?.maxSelection ?? DEFAULT_MAX_SELECTION;
     let finalCount = 0;
 
     if (action === "remove-all") {

@@ -154,8 +154,9 @@ export async function DELETE(request: Request) {
   }
 
   // Delete gallery (selections will be cascade deleted)
+  // Sertakan vendorId sebagai defense-in-depth — cegah IDOR jika logika di atas diubah
   await prisma.gallery.delete({
-    where: { id: galleryId },
+    where: { id: galleryId, vendorId: session.user.id },
   });
 
   return NextResponse.json({ 
