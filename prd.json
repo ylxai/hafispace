@@ -1,141 +1,173 @@
 {
-  "title": "Peningkatan Sistem & Bug Fixes — Hafiportrait Platform",
-  "description": "Perbaikan bugs frontend+backend dan peningkatan sistem untuk meningkatkan stabilitas, reliability, dan UX platform Hafiportrait.",
-  "qualityGates": [
-    "npm run lint",
-    "npm run build"
-  ],
-  "stories": [
+  "name": "Peningkatan Sistem & Bug Fixes — Hafiportrait Platform",
+  "description": "PRD ini mencakup perbaikan bugs frontend+backend dan peningkatan sistem secara menyeluruh\nuntuk meningkatkan stabilitas, reliability, dan UX platform Hafiportrait. Fokus utama\nadalah error handling yang lebih baik, loading states yang konsisten, form validation\nyang jelas, dan eliminasi `any` type yang tersisa.",
+  "branchName": "feat/system-improvements-bug-fixes",
+  "userStories": [
     {
       "id": "US-001",
       "title": "Fix `any` type di revenue-chart.tsx",
-      "description": "Sebagai developer, saya ingin revenue-chart.tsx bebas dari `any` type agar TypeScript strict terpenuhi.",
+      "description": "Sebagai developer, saya ingin `revenue-chart.tsx` bebas dari `any` type agar TypeScript strict terpenuhi dan tidak ada potential runtime error.",
       "acceptanceCriteria": [
-        "CustomTooltip tidak menggunakan any[] untuk payload",
-        "Semua props di CustomTooltip punya type eksplisit dari Recharts",
-        "entry di payload.map() punya type yang tepat",
-        "File lulus npm run build tanpa TypeScript error"
+        "`CustomTooltip` tidak menggunakan `any[]` untuk `payload`",
+        "Semua props di `CustomTooltip` punya type yang eksplisit dari Recharts",
+        "`entry` di `payload.map()` punya type yang tepat",
+        "File lulus `npm run build` tanpa TypeScript error"
       ],
-      "dependencies": []
-    },
-    {
-      "id": "US-008",
-      "title": "Buat reusable <ErrorState /> dan <Skeleton /> components",
-      "description": "Sebagai developer, saya ingin ada komponen UI reusable untuk error state dan loading skeleton agar implementasi konsisten di semua halaman.",
-      "acceptanceCriteria": [
-        "Buat src/components/ui/error-state.tsx dengan props: message, onRetry",
-        "Buat src/components/ui/skeleton.tsx dengan variant: card, table-row, text",
-        "Kedua komponen menggunakan Tailwind CSS",
-        "Export dari src/components/ui/index.ts",
-        "Tidak ada any type di kedua komponen"
-      ],
-      "dependencies": []
+      "priority": 1,
+      "passes": false,
+      "labels": [],
+      "dependsOn": []
     },
     {
       "id": "US-002",
       "title": "Skeleton loading state di halaman admin events",
-      "description": "Sebagai admin, saya ingin melihat skeleton placeholder saat data events sedang di-fetch.",
+      "description": "Sebagai admin, saya ingin melihat skeleton placeholder saat data events sedang di-fetch agar halaman tidak terasa \"kosong\" atau \"freeze\".",
       "acceptanceCriteria": [
-        "Halaman /admin/events menampilkan skeleton cards saat isLoading = true",
+        "Halaman `/admin/events` menampilkan skeleton cards saat `isLoading = true`",
         "Skeleton punya dimensi yang mirip dengan card event sebenarnya",
-        "Skeleton menggunakan animasi pulse (Tailwind animate-pulse)",
+        "Skeleton menggunakan animasi pulse (Tailwind `animate-pulse`)",
         "Setelah data loaded, skeleton diganti dengan konten nyata",
-        "Tidak ada layout shift yang signifikan saat transisi"
+        "Tidak ada layout shift yang signifikan saat transisi loading → loaded"
       ],
-      "dependencies": ["US-008"]
+      "priority": 2,
+      "passes": false,
+      "labels": [],
+      "dependsOn": []
     },
     {
       "id": "US-003",
       "title": "Skeleton loading state di halaman admin galleries",
       "description": "Sebagai admin, saya ingin melihat skeleton placeholder saat data galleries sedang di-fetch.",
       "acceptanceCriteria": [
-        "Halaman /admin/galleries menampilkan skeleton saat isLoading = true",
+        "Halaman `/admin/galleries` menampilkan skeleton saat `isLoading = true`",
         "Skeleton merepresentasikan gallery card (thumbnail placeholder + text lines)",
         "Animasi pulse konsisten dengan US-002",
         "Tidak ada layout shift saat transisi"
       ],
-      "dependencies": ["US-008"]
+      "priority": 3,
+      "passes": false,
+      "labels": [],
+      "dependsOn": []
     },
     {
       "id": "US-004",
       "title": "Error state yang informatif di halaman admin",
-      "description": "Sebagai admin, saya ingin melihat pesan error yang jelas beserta tombol retry jika fetch data gagal.",
+      "description": "Sebagai admin, saya ingin melihat pesan error yang jelas beserta tombol retry jika fetch data gagal, bukan halaman kosong.",
       "acceptanceCriteria": [
-        "Halaman /admin/events menampilkan error state jika fetch gagal",
-        "Halaman /admin/galleries menampilkan error state jika fetch gagal",
-        "Halaman /admin/clients menampilkan error state jika fetch gagal",
-        "Error state berisi: ikon error, pesan singkat, tombol Coba Lagi",
-        "Tombol Coba Lagi trigger refetch query",
-        "Error state menggunakan komponen reusable <ErrorState />"
+        "Halaman `/admin/events` menampilkan error state jika fetch gagal",
+        "Halaman `/admin/galleries` menampilkan error state jika fetch gagal",
+        "Halaman `/admin/clients` menampilkan error state jika fetch gagal",
+        "Error state berisi: ikon error, pesan singkat, tombol \"Coba Lagi\"",
+        "Tombol \"Coba Lagi\" trigger refetch query",
+        "Error state menggunakan komponen yang reusable (`<ErrorState />`)"
       ],
-      "dependencies": ["US-008"]
-    },
-    {
-      "id": "US-007",
-      "title": "Konsistensi error response format di API admin",
-      "description": "Sebagai developer, saya ingin semua API admin route menggunakan response helper dari src/lib/api/response.ts secara konsisten.",
-      "acceptanceCriteria": [
-        "Semua catch blocks di /api/admin/ menggunakan internalErrorResponse() atau helper yang sesuai",
-        "Tidak ada catch block yang return raw error.message ke client",
-        "Semua 404 response menggunakan notFoundResponse()",
-        "Semua 401 response menggunakan unauthorizedResponse()",
-        "Tidak ada NextResponse.json({ error: ... }) manual yang tidak pakai helper"
-      ],
-      "dependencies": []
-    },
-    {
-      "id": "US-010",
-      "title": "Database query optimasi — hindari N+1 di listings",
-      "description": "Sebagai developer, saya ingin query di listing endpoints tidak melakukan N+1 query.",
-      "acceptanceCriteria": [
-        "GET /api/admin/events menggunakan single query dengan include yang tepat",
-        "GET /api/admin/galleries menggunakan single query dengan include yang tepat",
-        "GET /api/admin/clients menggunakan single query dengan include yang tepat",
-        "Tidak ada loop yang memanggil prisma.* di dalam array iteration",
-        "Query menggunakan select untuk membatasi field yang di-fetch"
-      ],
-      "dependencies": []
-    },
-    {
-      "id": "US-009",
-      "title": "Pagination di halaman admin events & galleries",
-      "description": "Sebagai admin, saya ingin data events dan galleries di-paginate agar halaman tidak lambat saat data sudah banyak.",
-      "acceptanceCriteria": [
-        "Halaman /admin/events menampilkan max 20 items per halaman",
-        "Halaman /admin/galleries menampilkan max 20 items per halaman",
-        "Ada kontrol navigasi halaman (Previous / Next / nomor halaman)",
-        "URL mengandung query param ?page=N agar bisa di-bookmark",
-        "Total count ditampilkan (misal: Menampilkan 1-20 dari 87 events)",
-        "API endpoint mendukung ?page=N&limit=20 query params"
-      ],
-      "dependencies": ["US-010"]
+      "priority": 4,
+      "passes": false,
+      "labels": [],
+      "dependsOn": []
     },
     {
       "id": "US-005",
       "title": "Form validation feedback di create-booking-modal",
-      "description": "Sebagai admin, saya ingin form booking memberikan feedback validasi per-field secara real-time.",
+      "description": "Sebagai admin, saya ingin form booking memberikan feedback validasi per-field secara real-time agar tidak harus submit dulu untuk tahu field mana yang salah.",
       "acceptanceCriteria": [
         "Setiap field required menampilkan pesan error di bawah field jika kosong saat submit",
-        "Field tanggalSesi validasi: tidak boleh tanggal yang sudah lewat",
-        "Field hargaPaket validasi: harus angka positif",
+        "Field `tanggalSesi` validasi: tidak boleh tanggal yang sudah lewat",
+        "Field `hargaPaket` validasi: harus angka positif",
         "Pesan error hilang ketika field sudah diisi dengan benar",
         "Tombol submit di-disable saat form belum valid",
         "Validasi menggunakan Zod schema yang konsisten dengan API validation"
       ],
-      "dependencies": []
+      "priority": 4,
+      "passes": false,
+      "labels": [],
+      "dependsOn": []
     },
     {
       "id": "US-006",
       "title": "Form validation feedback di payment-modal",
       "description": "Sebagai admin, saya ingin form input pembayaran memberikan feedback validasi yang jelas sebelum submit.",
       "acceptanceCriteria": [
-        "Field jumlah validasi: harus angka positif, tidak boleh kosong",
-        "Field tipe validasi: harus pilih salah satu (DP/PELUNASAN/LAINNYA)",
+        "Field `jumlah` validasi: harus angka positif, tidak boleh kosong",
+        "Field `tipe` validasi: harus pilih salah satu (DP/PELUNASAN/LAINNYA)",
         "Pesan error muncul di bawah field yang tidak valid",
         "Tombol simpan di-disable selama ada field tidak valid atau sedang loading",
         "Tidak bisa submit jika tidak ada bukti bayar untuk tipe DP"
       ],
-      "dependencies": []
+      "priority": 4,
+      "passes": false,
+      "labels": [],
+      "dependsOn": []
+    },
+    {
+      "id": "US-007",
+      "title": "Konsistensi error response format di API admin",
+      "description": "Sebagai developer, saya ingin semua API admin route menggunakan response helper dari `src/lib/api/response.ts` secara konsisten agar error handling di frontend lebih predictable.",
+      "acceptanceCriteria": [
+        "Semua catch blocks di `/api/admin/` menggunakan `internalErrorResponse()` atau helper yang sesuai",
+        "Tidak ada catch block yang return raw `error.message` ke client",
+        "Semua 404 response menggunakan `notFoundResponse()`",
+        "Semua 401 response menggunakan `unauthorizedResponse()`",
+        "Tidak ada `NextResponse.json({ error: ... })` manual yang tidak pakai helper"
+      ],
+      "priority": 4,
+      "passes": false,
+      "labels": [],
+      "dependsOn": []
+    },
+    {
+      "id": "US-008",
+      "title": "Reusable `<ErrorState />` dan `<Skeleton />` components",
+      "description": "Sebagai developer, saya ingin ada komponen UI reusable untuk error state dan loading skeleton agar implementasi US-002 hingga US-004 konsisten.",
+      "acceptanceCriteria": [
+        "Buat `src/components/ui/error-state.tsx` dengan props: `message`, `onRetry`",
+        "Buat `src/components/ui/skeleton.tsx` dengan variant: `card`, `table-row`, `text`",
+        "Kedua komponen menggunakan Tailwind CSS (konsisten dengan design system)",
+        "Export dari `src/components/ui/index.ts`",
+        "Tidak ada `any` type di kedua komponen"
+      ],
+      "priority": 4,
+      "passes": false,
+      "labels": [],
+      "dependsOn": []
+    },
+    {
+      "id": "US-009",
+      "title": "Pagination di halaman admin events & galleries",
+      "description": "Sebagai admin, saya ingin data events dan galleries di-paginate agar halaman tidak lambat saat data sudah banyak.",
+      "acceptanceCriteria": [
+        "Halaman `/admin/events` menampilkan max 20 items per halaman",
+        "Halaman `/admin/galleries` menampilkan max 20 items per halaman",
+        "Ada kontrol navigasi halaman (Previous / Next / nomor halaman)",
+        "URL mengandung query param `?page=N` agar bisa di-bookmark/share",
+        "Total count ditampilkan (misal: \"Menampilkan 1-20 dari 87 events\")",
+        "API endpoint mendukung `?page=N&limit=20` query params"
+      ],
+      "priority": 4,
+      "passes": false,
+      "labels": [],
+      "dependsOn": []
+    },
+    {
+      "id": "US-010",
+      "title": "Database query optimasi — hindari N+1 di listings",
+      "description": "Sebagai developer, saya ingin query di listing endpoints tidak melakukan N+1 query agar response API tetap cepat seiring bertambahnya data.",
+      "acceptanceCriteria": [
+        "`GET /api/admin/events` menggunakan single query dengan `include` yang tepat",
+        "`GET /api/admin/galleries` menggunakan single query dengan `include` yang tepat",
+        "`GET /api/admin/clients` menggunakan single query dengan `include` yang tepat",
+        "Tidak ada loop yang memanggil `prisma.*` di dalam array iteration",
+        "Query menggunakan `select` untuk membatasi field yang di-fetch"
+      ],
+      "priority": 4,
+      "passes": false,
+      "labels": [],
+      "dependsOn": []
     }
-  ]
+  ],
+  "metadata": {
+    "createdAt": "2026-03-09T19:06:10.697Z",
+    "version": "1.0.0",
+    "sourcePrd": "tasks/prd-system-improvements.md"
+  }
 }
