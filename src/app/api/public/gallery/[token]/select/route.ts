@@ -150,9 +150,24 @@ export async function POST(
     });
   } catch (err) {
     const error = err as { code?: string; message?: string; status?: number };
+    // Hanya expose error yang sudah kita define secara eksplisit (punya code + status)
+    // Pesan yang aman untuk ditampilkan ke client (tidak expose internal detail)
+    const SAFE_ERROR_MESSAGES: Record<string, string> = {
+      MAX_SELECTION_REACHED: "Jumlah maksimum foto yang dapat dipilih telah tercapai.",
+      SELECTION_LOCKED: "Seleksi foto sudah dikunci dan tidak dapat diubah.",
+      GALLERY_NOT_FOUND: "Galeri tidak ditemukan.",
+      PHOTO_NOT_FOUND: "Foto tidak ditemukan.",
+    };
+
     if (error.code && error.status) {
+      // Gunakan pesan dari whitelist jika ada, fallback ke pesan generik
+      const safeMessage = SAFE_ERROR_MESSAGES[error.code] ?? "Terjadi kesalahan. Silakan coba lagi.";
+      // Log internal message ke server untuk debugging
+      if (error.message && !SAFE_ERROR_MESSAGES[error.code]) {
+        console.error(`[select/route] Unwhitelisted error: code=${error.code}`, error.message);
+      }
       return NextResponse.json(
-        { code: error.code, message: error.message },
+        { code: error.code, message: safeMessage },
         { status: error.status }
       );
     }
