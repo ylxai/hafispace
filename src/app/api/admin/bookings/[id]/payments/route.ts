@@ -8,7 +8,13 @@ const paymentSchema = z.object({
   jumlah: z.coerce.number().positive("Jumlah harus lebih dari 0"),
   tipe: z.enum(["DP", "PELUNASAN", "LAINNYA"]).default("DP"),
   keterangan: z.string().optional(),
-  buktiBayar: z.string().url("Link bukti transfer harus berupa URL yang valid"),
+  buktiBayar: z
+    .string()
+    .url("Link bukti transfer harus berupa URL yang valid")
+    .refine(
+      (url) => url.startsWith("https://res.cloudinary.com/"),
+      "Bukti transfer harus diupload melalui sistem (Cloudinary URL)"
+    ),
 });
 
 // GET — list payments per booking
@@ -159,7 +165,11 @@ export async function DELETE(
   ]);
 
   const totalBayar = Number(aggResult._sum.jumlah ?? 0);
-  const hargaPaket = Number(booking?.hargaPaket ?? 0);
+
+  // Guard: booking mungkin sudah dihapus oleh proses lain (race condition)
+  if (!booking) return NextResponse.json({ success: true });
+
+  const hargaPaket = Number(booking.hargaPaket ?? 0);
 
   let dpStatus: "UNPAID" | "PAID" | "PARTIAL" = "UNPAID";
   if (totalBayar >= hargaPaket && hargaPaket > 0) dpStatus = "PAID";
