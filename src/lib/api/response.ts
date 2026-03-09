@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { z } from "zod";
 
 export type ApiErrorResponse = {
   code: string;
@@ -26,6 +27,31 @@ export async function parseRequestBody(request: Request): Promise<
       ),
     };
   }
+}
+
+/**
+ * Parse dan validasi request body dengan Zod schema.
+ * Returns { ok: true, data: T } atau { ok: false, response } jika parsing/validasi gagal.
+ */
+export async function parseAndValidate<T>(
+  request: Request,
+  schema: z.ZodSchema<T>
+): Promise<
+  | { ok: true; data: T }
+  | { ok: false; response: NextResponse }
+> {
+  const parseResult = await parseRequestBody(request);
+  if (!parseResult.ok) return parseResult;
+
+  const validation = schema.safeParse(parseResult.data);
+  if (!validation.success) {
+    return {
+      ok: false,
+      response: validationErrorResponse(validation.error.format()),
+    };
+  }
+
+  return { ok: true, data: validation.data };
 }
 
 export function unauthorizedResponse() {

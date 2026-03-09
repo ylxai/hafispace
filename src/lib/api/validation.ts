@@ -44,3 +44,42 @@ export const gallerySchema = z.object({
   enableDownload: z.boolean().optional(),
   enablePrint: z.boolean().optional(),
 });
+
+export const paymentSchema = z.object({
+  amount: z.coerce.number().positive("Amount must be positive"),
+  paymentMethod: z.enum(["CASH", "TRANSFER", "QRIS", "OTHER"]),
+  notes: z.string().optional(),
+  proofUrl: z.string().url().optional(),
+});
+
+export const packageSchema = z.object({
+  namaPaket: z.string().min(2, "Package name must be at least 2 characters"),
+  harga: z.coerce.number().nonnegative("Price must be non-negative"),
+  deskripsi: z.string().optional(),
+  maxSelection: z.coerce.number().int().positive().optional(),
+  cetakOptions: z.array(z.string()).optional(),
+});
+
+export const cloudinaryAccountSchema = z.object({
+  cloudName: z.string().min(1, "Cloud name is required"),
+  apiKey: z.string().min(1, "API key is required"),
+  apiSecret: z.string().min(1, "API secret is required"),
+  label: z.string().min(1, "Label is required"),
+  isDefault: z.boolean().optional(),
+});
+
+export const gallerySettingsSchema = z.object({
+  enableDownload: z.boolean().optional(),
+  enablePrint: z.boolean().optional(),
+  enableWatermark: z.boolean().optional(),
+  customMessage: z.string().optional(),
+  maxSelection: z.coerce.number().int().positive().min(1).max(MAX_SELECTION_LIMIT).optional(),
+});
+
+export const deleteResourceSchema = z.object({
+  id: z.string().uuid("ID must be a valid UUID"),
+});
+
+export const bulkDeleteSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1, "At least one ID is required"),
+});
