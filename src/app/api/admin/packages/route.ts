@@ -84,7 +84,7 @@ export async function PUT(request: NextRequest) {
   const bodyResult = await parseRequestBody(request);
   if (!bodyResult.ok) return bodyResult.response;
   const updatePackageSchema = packageSchema.extend({
-    id: z.string({ required_error: "Package ID required" }).min(1),
+    id: z.string({ message: "Package ID required" }).min(1),
   });
   const parsed = updatePackageSchema.safeParse(bodyResult.data);
   if (!parsed.success) return validationErrorResponse(parsed.error.format());
