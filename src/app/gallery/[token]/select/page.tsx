@@ -283,7 +283,11 @@ export default function PickspacePage() {
       setSelectionCount(result.selectionCount);
       queryClient.invalidateQueries({ queryKey: ["gallery", token] });
     },
-    onSettled: () => setPendingId(null),
+    onSettled: (_data, _error, { photo }) => {
+      // Gunakan functional updater untuk mencegah race condition
+      // Hanya clear pendingId jika foto ini yang sedang pending (bukan foto lain)
+      setPendingId((prev) => (prev === photo.storageKey ? null : prev));
+    },
     onError: (err, { photo, action }) => {
       // Rollback optimistic UI jika API gagal — kembalikan state ke kondisi sebelumnya
       setSelectedIds((prev) => {
