@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  type TooltipProps,
 } from "recharts";
 
 interface TrendData {
@@ -19,18 +20,18 @@ interface TrendData {
   pelunasan: number;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label }: TooltipProps<number, string>) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl border border-slate-100 bg-white p-3 shadow-lg text-xs">
       <p className="font-semibold text-slate-700 mb-2">{label}</p>
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      {payload.map((entry: any) => (
+      {payload.map((entry) => (
         <div key={entry.dataKey} className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full" style={{ background: entry.color }} />
           <span className="text-slate-500">{entry.name}:</span>
-          <span className="font-medium text-slate-800">{formatRupiah(entry.value)}</span>
+          <span className="font-medium text-slate-800">
+            {formatRupiah(entry.value as number)}
+          </span>
         </div>
       ))}
     </div>
