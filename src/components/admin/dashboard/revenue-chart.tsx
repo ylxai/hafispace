@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import type { TooltipProps } from "recharts";
 
 interface TrendData {
   bulan: string;
@@ -20,7 +21,7 @@ interface TrendData {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label }: TooltipProps<number, string> & { payload?: any[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl border border-slate-100 bg-white p-3 shadow-lg text-xs">
