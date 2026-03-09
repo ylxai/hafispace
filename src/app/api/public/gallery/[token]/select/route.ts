@@ -152,11 +152,12 @@ export async function POST(
     const error = err as { code?: string; message?: string; status?: number };
     // Hanya expose error yang sudah kita define secara eksplisit (punya code + status)
     // Pesan yang aman untuk ditampilkan ke client (tidak expose internal detail)
+    // Whitelist pesan aman sesuai error.code yang di-throw di try block
     const SAFE_ERROR_MESSAGES: Record<string, string> = {
-      MAX_SELECTION_REACHED: "Jumlah maksimum foto yang dapat dipilih telah tercapai.",
-      SELECTION_LOCKED: "Seleksi foto sudah dikunci dan tidak dapat diubah.",
-      GALLERY_NOT_FOUND: "Galeri tidak ditemukan.",
-      PHOTO_NOT_FOUND: "Foto tidak ditemukan.",
+      QUOTA_EXCEEDED: "Jumlah maksimum foto yang dapat dipilih telah tercapai.",
+      PHOTO_NOT_FOUND: "Foto tidak ditemukan di galeri ini.",
+      ALREADY_SELECTED: "Foto ini sudah dipilih sebelumnya.",
+      NOT_FOUND: "Foto atau seleksi tidak ditemukan.",
     };
 
     if (error.code && error.status) {
