@@ -96,8 +96,9 @@ export async function PUT(request: NextRequest) {
   });
   if (!existing) return notFoundResponse("Package not found");
 
+  // Sertakan vendorId sebagai defense-in-depth — cegah IDOR
   const updated = await prisma.package.update({
-    where: { id },
+    where: { id, vendorId: session.user.id },
     data: { namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak: includeCetak ?? undefined, urutan, status },
   });
 
@@ -127,6 +128,7 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  await prisma.package.delete({ where: { id } });
+  // Sertakan vendorId sebagai defense-in-depth — cegah IDOR
+  await prisma.package.delete({ where: { id, vendorId: session.user.id } });
   return NextResponse.json({ success: true });
 }
