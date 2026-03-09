@@ -16,17 +16,17 @@ export function ImageEditor({ file, onEditComplete, onCancel }: ImageEditorProps
   const [zoom, setZoom] = useState(100);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
-  const objectUrlRef = useRef<string | null>(null);
 
-  // Buat object URL sekali dan revoke saat unmount untuk mencegah memory leak
+  // Lazy initial state: URL dibuat sekali saat pertama render (bukan di useEffect)
+  // sehingga src tidak pernah kosong ("") — mencegah crash di next/image
+  const [objectUrl] = useState<string>(() => URL.createObjectURL(file));
+
+  // Revoke URL saat komponen unmount untuk mencegah memory leak
   useEffect(() => {
-    const url = URL.createObjectURL(file);
-    objectUrlRef.current = url;
     return () => {
-      URL.revokeObjectURL(url);
-      objectUrlRef.current = null;
+      URL.revokeObjectURL(objectUrl);
     };
-  }, [file]);
+  }, [objectUrl]);
 
   const handleRotate = (degrees: number) => {
     setRotation((prev) => (prev + degrees) % 360);
@@ -109,7 +109,7 @@ export function ImageEditor({ file, onEditComplete, onCancel }: ImageEditorProps
       {/* Image Preview */}
       <div className="relative overflow-hidden rounded-xl bg-slate-100">
         <Image
-          src={objectUrlRef.current ?? ""}
+          src={objectUrl}
           alt={file.name}
           width={800}
           height={600}
