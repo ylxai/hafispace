@@ -3,8 +3,25 @@
  * Business logic untuk dashboard metrics — dipisahkan dari API route handler
  */
 
+import { unstable_cache } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+
+// Cache TTL 5 menit — dibuat sekali di module level, bukan per-request
+const METRICS_CACHE_TTL_SECONDS = 300;
+
+/**
+ * Cached wrapper untuk fetchVendorMetrics.
+ * Dibuat per vendorId — revalidate setiap 5 menit.
+ * Definisi di module level agar tidak dibuat ulang setiap request.
+ */
+export function getCachedVendorMetrics(vendorId: string) {
+  return unstable_cache(
+    () => fetchVendorMetrics(vendorId),
+    [`metrics-${vendorId}`],
+    { revalidate: METRICS_CACHE_TTL_SECONDS, tags: [`metrics-${vendorId}`] }
+  )();
+}
 
 export async function fetchVendorMetrics(vendorId: string) {
   // Gunakan WIB (UTC+7) untuk perhitungan tanggal
@@ -25,7 +42,7 @@ export async function fetchVendorMetrics(vendorId: string) {
     totalBookings,
     bookingsBulanIni,
     totalClients,
-    allPayments,
+    totalOmsetAgg,
     paymentsBulanIni,
     topPackages,
     upcomingSessionsThisMonth,
@@ -37,7 +54,8 @@ export async function fetchVendorMetrics(vendorId: string) {
       where: { vendorId, createdAt: { gte: startOfMonth, lte: endOfMonth } },
     }),
     prisma.client.count({ where: { vendorId } }),
-    prisma.payment.findMany({ where: { vendorId }, select: { jumlah: true } }),
+    // Aggregate langsung di DB — jauh lebih efisien dari fetch semua rows
+    prisma.payment.aggregate({ where: { vendorId }, _sum: { jumlah: true } }),
     prisma.payment.findMany({
       where: { vendorId, createdAt: { gte: startOfMonth, lte: endOfMonth } },
       select: { jumlah: true, tipe: true },
@@ -91,10 +109,8 @@ export async function fetchVendorMetrics(vendorId: string) {
     }),
   ]);
 
-  // Hitung total menggunakan Prisma.Decimal untuk menghindari floating point error
-  const totalOmset = allPayments
-    .reduce((sum, p) => sum.add(p.jumlah), new Prisma.Decimal(0))
-    .toNumber();
+  // Total omset langsung dari aggregate DB result
+  const totalOmset = Number(totalOmsetAgg._sum.jumlah ?? 0);
   const pemasukanBulanIni = paymentsBulanIni
     .reduce((sum, p) => sum.add(p.jumlah), new Prisma.Decimal(0))
     .toNumber();
