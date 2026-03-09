@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAdminClients } from "@/hooks/use-admin-clients";
 import { useToast } from "@/components/ui/toast";
+import { ErrorState } from "@/components/ui/error-state";
 
 export const dynamic = "force-dynamic";
 
@@ -93,7 +94,7 @@ function ClientViewModal({ client, onClose }: { client: AdminClient; onClose: ()
 }
 
 export default function AdminClientsPage() {
-  const { data, isLoading, error } = useAdminClients();
+  const { data, isLoading, error, refetch } = useAdminClients();
   const queryClient = useQueryClient();
   const [selectedClient, setSelectedClient] = useState<AdminClient | null>(null);
   const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(new Set());
@@ -102,12 +103,7 @@ export default function AdminClientsPage() {
   const toast = useToast();
   const clients = data?.items ?? [];
 
-  // Show error toast if query fails (in useEffect to avoid render loop)
-  useEffect(() => {
-    if (error) {
-      toast.error("Failed to load clients. Please refresh the page.");
-    }
-  }, [error, toast]);
+
 
   const handleSelectClient = (clientId: string) => {
     const newSet = new Set(selectedClientIds);
@@ -227,8 +223,15 @@ export default function AdminClientsPage() {
         </p>
       </header>
 
+      {/* Error State */}
+      {error && (
+        <div className="rounded-3xl border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
+          <ErrorState message="Failed to load clients" onRetry={() => refetch()} />
+        </div>
+      )}
+
       {/* Clients Grid */}
-      <div className="grid gap-5 md:grid-cols-2">
+      {!error && <div className="grid gap-5 md:grid-cols-2">
         {isLoading ? (
           <>
             {[...Array(6)].map((_, i) => (
@@ -348,7 +351,7 @@ export default function AdminClientsPage() {
              ))}
            </div>
          )}
-       </div>
+       </div>}
      </section>
    );
  }

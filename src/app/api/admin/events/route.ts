@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { bookingSchema, bookingUpdateSchema } from "@/lib/api/validation";
 import { unauthorizedResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -13,29 +13,41 @@ export async function GET() {
   }
 
   try {
-    const bookings = await prisma.booking.findMany({
-      where: { vendorId: session.user.id },
-      select: {
-        id: true,
-        kodeBooking: true,
-        namaClient: true,
-        hpClient: true,
-        emailClient: true,
-        paketCustom: true,
-        tanggalSesi: true,
-        lokasiSesi: true,
-        status: true,
-        dpAmount: true,
-        dpStatus: true,
-        hargaPaket: true,
-        createdAt: true,
-        notes: true,
-        maxSelection: true,
-        paket: { select: { namaPaket: true } },
-        _count: { select: { galleries: true } },
-      },
-      orderBy: { tanggalSesi: "desc" },
-    });
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
+    const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit") ?? "20", 10)));
+    const skip = (page - 1) * limit;
+
+    const [bookings, total] = await Promise.all([
+      prisma.booking.findMany({
+        where: { vendorId: session.user.id },
+        select: {
+          id: true,
+          kodeBooking: true,
+          namaClient: true,
+          hpClient: true,
+          emailClient: true,
+          paketCustom: true,
+          tanggalSesi: true,
+          lokasiSesi: true,
+          status: true,
+          dpAmount: true,
+          dpStatus: true,
+          hargaPaket: true,
+          createdAt: true,
+          notes: true,
+          maxSelection: true,
+          paket: { select: { namaPaket: true } },
+          _count: { select: { galleries: true } },
+        },
+        orderBy: { tanggalSesi: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.booking.count({
+        where: { vendorId: session.user.id },
+      }),
+    ]);
 
     const formatted = bookings.map((booking) => ({
       id: booking.id,
@@ -56,7 +68,15 @@ export async function GET() {
       maxSelection: booking.maxSelection,
     }));
 
-    return NextResponse.json({ items: formatted });
+    return NextResponse.json({
+      items: formatted,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching bookings:", error);
     return internalErrorResponse("Failed to load bookings");

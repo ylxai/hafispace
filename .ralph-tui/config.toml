@@ -1,80 +1,54 @@
-# Ralph TUI Configuration — Hafiportrait Platform
-# Primary: Kiro CLI (coder) | Fallback: Gemini (saat rate limit)
-# Mode: Parallel Execution (auto, max 2 workers)
+configVersion = "2.1"
+maxIterations = 0
+iterationDelay = 3000
+outputDir = ".ralph-tui/iterations"
+agent = "kiro"
+tracker = "json"
+progressFile = ".ralph-tui/progress.md"
+autoCommit = false
+subagentTracingDetail = "full"
+defaultTracker = "json"
+defaultAgent = "kiro"
 
-# ── Eksekusi Utama ─────────────────────────────────────────
-agent         = "kiro"          # Primary agent: Kiro CLI
-tracker       = "json"          # Task tracker: prd.json
-maxIterations = 0               # Unlimited
-iterationDelay = 3000           # 3 detik — cukup untuk agent menyelesaikan operasi
-outputDir     = ".ralph-tui/iterations"
-progressFile  = ".ralph-tui/progress.md"
-autoCommit    = false           # Jangan auto-commit — agent harus lint+build dulu
-
-# ── Subagent Tracing ────────────────────────────────────────
-subagentTracingDetail = "moderate"   # Tampilkan events + durasi
-
-# ── Agents ─────────────────────────────────────────────────
 [[agents]]
-name    = "kiro"
-plugin  = "kiro"
+name = "kiro"
+plugin = "kiro"
+default = true
 command = "kiro-cli"
-default = true
 
+[agents.options]
 [[agents]]
-name    = "gemini"
-plugin  = "gemini"
-command = "gemini"              # Binary-nya 'gemini' bukan 'gemini-cli'
+name = "gemini"
+plugin = "gemini"
 default = false
+command = "gemini"
 
-# ── Tracker ─────────────────────────────────────────────────
+[agents.options]
 [[trackers]]
-name    = "json"
-plugin  = "json"
+name = "json"
+plugin = "json"
 default = true
 
-  [trackers.options]
-  path = "prd.json"
+[trackers.options]
+path = "prd.json"
 
-# ── Parallel Execution ──────────────────────────────────────
-# CATATAN: Project pakai feature branch per task (feat/, fix/, dll)
-# directMerge = true agar sesuai dengan Git workflow project (AGENTS.md)
-# maxWorkers = 2 — lebih aman untuk project dengan shared Prisma schema
-[parallel]
-mode        = "auto"            # Analisis dependencies, parallel jika menguntungkan
-maxWorkers  = 2                 # Max 2 task paralel — hindari conflict di shared files
-directMerge = true              # Merge langsung ke branch aktif (sesuai Git workflow)
-
-# ── Error Handling ──────────────────────────────────────────
 [errorHandling]
-strategy               = "retry"   # Retry dulu sebelum skip
-maxRetries             = 2
-retryDelayMs           = 5000      # 5 detik sebelum retry
-continueOnNonZeroExit  = true      # Lanjutkan meski exit non-zero (agent bisa fix sendiri)
-
-# ── Rate Limit Fallback ─────────────────────────────────────
-# Jika Kiro rate limit → fallback ke Gemini
-fallbackAgents = ["gemini"]
+strategy = "retry"
+maxRetries = 2
+retryDelayMs = 5000
+continueOnNonZeroExit = true
 
 [rateLimitHandling]
-enabled                         = true
-maxRetries                      = 3
-baseBackoffMs                   = 5000
+enabled = true
+maxRetries = 3
+baseBackoffMs = 5000
 recoverPrimaryBetweenIterations = true
 
-# ── Notifikasi ──────────────────────────────────────────────
 [notifications]
 enabled = true
-sound   = "off"
+sound = "off"
 
-# ── Environment Variables ────────────────────────────────────
-# Blokir API keys dari .env agar tidak bocor ke agent subprocess
-# (Bun otomatis load .env, yang bisa menyebabkan unexpected billing)
-envExclude = [
-  "*_API_KEY",
-  "*_SECRET*",
-  "DATABASE_URL",
-  "NEXTAUTH_SECRET",
-  "NEXTAUTH_URL",
-  "DATABASE_URL",
-]
+[parallel]
+mode = "auto"
+maxWorkers = 2
+directMerge = true

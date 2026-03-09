@@ -1,14 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { auth } from '@/lib/auth/options';
 import { prisma } from '@/lib/db';
-import { unauthorizedResponse } from '@/lib/api/response';
+import { unauthorizedResponse, notFoundResponse, validationErrorResponse } from '@/lib/api/response';
 
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return unauthorizedResponse();
 
   const { bookingId } = await request.json() as { bookingId?: string };
-  if (!bookingId) return NextResponse.json({ error: 'bookingId required' }, { status: 400 });
+  if (!bookingId) return validationErrorResponse('bookingId required');
 
   const booking = await prisma.booking.findFirst({
     where: { id: bookingId, vendorId: session.user.id },
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  if (!booking) return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+  if (!booking) return notFoundResponse('Booking not found');
 
   const tanggal = booking.tanggalSesi
     ? new Date(booking.tanggalSesi).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })

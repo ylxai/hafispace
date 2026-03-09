@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse } from "@/lib/api/response";
+import { unauthorizedResponse, notFoundResponse, validationErrorResponse } from "@/lib/api/response";
 import { z } from "zod";
 
 const customFieldSchema = z.object({
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const parsed = customFieldSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Validasi gagal", details: parsed.error.format() }, { status: 400 });
+    return validationErrorResponse(parsed.error.format());
   }
 
   const { label, tipe, isRequired, options } = parsed.data;
@@ -80,12 +80,12 @@ export async function PATCH(request: NextRequest) {
 
   const body = await request.json() as { id?: string; urutan?: number; isActive?: boolean; label?: string };
   const { id } = body;
-  if (!id) return NextResponse.json({ error: "Field ID required" }, { status: 400 });
+  if (!id) return validationErrorResponse("Field ID required");
 
   const existing = await prisma.customField.findFirst({
     where: { id, vendorId: session.user.id },
   });
-  if (!existing) return NextResponse.json({ error: "Field not found" }, { status: 404 });
+  if (!existing) return notFoundResponse("Field not found");
 
   const updated = await prisma.customField.update({
     where: { id },
@@ -106,12 +106,12 @@ export async function DELETE(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "Field ID required" }, { status: 400 });
+  if (!id) return validationErrorResponse("Field ID required");
 
   const existing = await prisma.customField.findFirst({
     where: { id, vendorId: session.user.id },
   });
-  if (!existing) return NextResponse.json({ error: "Field not found" }, { status: 404 });
+  if (!existing) return notFoundResponse("Field not found");
 
   await prisma.customField.delete({ where: { id } });
 

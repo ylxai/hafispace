@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { v2 as cloudinary } from "cloudinary";
-import { unauthorizedResponse } from "@/lib/api/response";
+import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 
 interface CloudinaryConfig {
   cloudName: string;
@@ -28,7 +28,7 @@ export async function GET() {
     });
 
     if (!vendor) {
-      return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
+      return notFoundResponse("Vendor not found");
     }
 
     // Return only public information (not the API secret)
@@ -41,7 +41,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Error fetching Cloudinary config:", error);
-    return NextResponse.json({ error: "Failed to fetch Cloudinary configuration" }, { status: 500 });
+    return internalErrorResponse("Failed to fetch Cloudinary configuration");
   }
 }
 
@@ -56,10 +56,7 @@ export async function POST(request: Request) {
     const { cloudName, apiKey, apiSecret }: CloudinaryConfig = await request.json();
 
     if (!cloudName || !apiKey || !apiSecret) {
-      return NextResponse.json(
-        { error: "Missing required fields: cloudName, apiKey, apiSecret" },
-        { status: 400 }
-      );
+      return validationErrorResponse("Missing required fields: cloudName, apiKey, apiSecret");
     }
 
     // Test the Cloudinary connection with the NEW credentials (not from database)
@@ -80,10 +77,7 @@ export async function POST(request: Request) {
     }
     
     if (!cloudinaryConnected) {
-      return NextResponse.json(
-        { error: "Failed to connect to Cloudinary with provided credentials" },
-        { status: 400 }
-      );
+      return validationErrorResponse("Failed to connect to Cloudinary with provided credentials");
     }
 
     // Update vendor with Cloudinary credentials
@@ -102,7 +96,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Error saving Cloudinary config:", error);
-    return NextResponse.json({ error: "Failed to save Cloudinary configuration" }, { status: 500 });
+    return internalErrorResponse("Failed to save Cloudinary configuration");
   }
 }
 
@@ -130,6 +124,6 @@ export async function DELETE() {
     });
   } catch (error) {
     console.error("Error removing Cloudinary config:", error);
-    return NextResponse.json({ error: "Failed to remove Cloudinary configuration" }, { status: 500 });
+    return internalErrorResponse("Failed to remove Cloudinary configuration");
   }
 }

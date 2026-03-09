@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse } from "@/lib/api/response";
+import { unauthorizedResponse, notFoundResponse, validationErrorResponse } from "@/lib/api/response";
 import { uploadImageToCloudinary } from "@/lib/cloudinary-upload";
 
 export async function POST(
@@ -18,21 +18,21 @@ export async function POST(
     where: { id: bookingId, vendorId: session.user.id },
     select: { id: true, kodeBooking: true },
   });
-  if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+  if (!booking) return notFoundResponse("Booking not found");
 
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
-  if (!file) return NextResponse.json({ error: "File wajib diupload" }, { status: 400 });
+  if (!file) return validationErrorResponse("File wajib diupload");
 
   // Validasi tipe file
   const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/heic"];
   if (!allowedTypes.includes(file.type)) {
-    return NextResponse.json({ error: "Format file tidak didukung. Gunakan JPG, PNG, atau WEBP." }, { status: 400 });
+    return validationErrorResponse("Format file tidak didukung. Gunakan JPG, PNG, atau WEBP.");
   }
 
   // Max 5MB
   if (file.size > 5 * 1024 * 1024) {
-    return NextResponse.json({ error: "Ukuran file maksimal 5MB" }, { status: 400 });
+    return validationErrorResponse("Ukuran file maksimal 5MB");
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());

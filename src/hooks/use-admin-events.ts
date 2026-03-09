@@ -21,10 +21,16 @@ export type AdminBooking = {
 
 type AdminBookingsResponse = {
   items: AdminBooking[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 };
 
-async function fetchAdminBookings(): Promise<AdminBookingsResponse> {
-  const response = await fetch("/api/admin/events");
+async function fetchAdminBookings(page: number, limit: number): Promise<AdminBookingsResponse> {
+  const response = await fetch(`/api/admin/events?page=${page}&limit=${limit}`);
 
   if (!response.ok) {
     throw new Error("Failed to load bookings");
@@ -33,9 +39,9 @@ async function fetchAdminBookings(): Promise<AdminBookingsResponse> {
   return response.json() as Promise<AdminBookingsResponse>;
 }
 
-export function useAdminEvents() {
+export function useAdminEvents(page = 1, limit = 20) {
   return useQuery({
-    queryKey: ["admin-bookings"],
-    queryFn: fetchAdminBookings,
+    queryKey: ["admin-bookings", page, limit],
+    queryFn: () => fetchAdminBookings(page, limit),
   });
 }

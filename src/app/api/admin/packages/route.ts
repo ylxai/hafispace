@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
+import { unauthorizedResponse, validationErrorResponse, notFoundResponse } from "@/lib/api/response";
 import { z } from "zod";
 
 const packageSchema = z.object({
@@ -82,7 +82,7 @@ export async function PUT(request: NextRequest) {
 
   const body = await request.json();
   const { id } = body as { id?: string };
-  if (!id) return NextResponse.json({ error: "Package ID required" }, { status: 400 });
+  if (!id) return validationErrorResponse("Package ID required");
 
   const parsed = packageSchema.safeParse(body);
   if (!parsed.success) return validationErrorResponse(parsed.error.format());
@@ -90,7 +90,7 @@ export async function PUT(request: NextRequest) {
   const existing = await prisma.package.findFirst({
     where: { id, vendorId: session.user.id },
   });
-  if (!existing) return NextResponse.json({ error: "Package not found" }, { status: 404 });
+  if (!existing) return notFoundResponse("Package not found");
 
   const { namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak, urutan, status } = parsed.data;
 
@@ -109,12 +109,12 @@ export async function DELETE(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "Package ID required" }, { status: 400 });
+  if (!id) return validationErrorResponse("Package ID required");
 
   const existing = await prisma.package.findFirst({
     where: { id, vendorId: session.user.id },
   });
-  if (!existing) return NextResponse.json({ error: "Package not found" }, { status: 404 });
+  if (!existing) return notFoundResponse("Package not found");
 
   // Cek apakah ada booking yang menggunakan paket ini
   const bookingCount = await prisma.booking.count({ where: { paketId: id } });
