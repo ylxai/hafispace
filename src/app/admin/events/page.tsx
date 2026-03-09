@@ -500,7 +500,7 @@ function AdminEventsContent() {
       )}
 
       {/* Stats Grid */}
-      {!error && <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+      {!error && <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         {eventSummary.map((card) => (
           <div
             key={card.label}
