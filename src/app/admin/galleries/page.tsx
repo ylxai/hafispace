@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSearchParams, useRouter } from "next/navigation";
 import { StatusBadge } from "@/components/admin";
 import { useAdminGalleries } from "@/hooks/use-admin-galleries";
 import { useToast } from "@/components/ui/toast";
+import { ErrorState } from "@/components/ui/error-state";
+import { Pagination } from "@/components/ui";
 
 type AdminGallery = {
   id: string;
@@ -21,8 +24,11 @@ type AdminGallery = {
 
 import { EditGalleryModal } from "./_components/edit-gallery-modal";
 
-export default function AdminGalleriesPage() {
-  const { data, isLoading } = useAdminGalleries();
+function AdminGalleriesContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const currentPage = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
+  const { data, isLoading, error, refetch } = useAdminGalleries(currentPage, 20);
   const [selectedGallery, setSelectedGallery] = useState<AdminGallery | null>(null);
   const [selectedGalleryIds, setSelectedGalleryIds] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
@@ -32,6 +38,12 @@ export default function AdminGalleriesPage() {
   const queryClient = useQueryClient();
   
   const galleries = data?.items ?? [];
+
+  const handlePageChange = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", page.toString());
+    router.push(`?${params.toString()}`);
+  };
 
   const handleSelectGallery = (galleryId: string) => {
     const newSet = new Set(selectedGalleryIds);
@@ -203,8 +215,15 @@ export default function AdminGalleriesPage() {
         </p>
       </header>
 
+      {/* Error State */}
+      {error && (
+        <div className="rounded-3xl border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
+          <ErrorState message="Failed to load galleries" onRetry={() => refetch()} />
+        </div>
+      )}
+
       {/* Select All Header — hanya tampil jika ada lebih dari 1 gallery */}
-      {!isLoading && galleries.length > 1 && (
+      {!error && !isLoading && galleries.length > 1 && (
         <div className="flex items-center justify-between px-1 -mb-3">
           <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
             <input
@@ -219,24 +238,26 @@ export default function AdminGalleriesPage() {
       )}
 
       {/* Gallery Grid */}
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+      {!error && <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {isLoading ? (
           <>
-            {[...Array(6)].map((_, i) => (
+            {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="group rounded-3xl border border-slate-200 bg-white/50 backdrop-blur-sm p-6 shadow-sm transition-all duration-300 hover:shadow-glass hover:border-white/30 animate-pulse"
+                className="group rounded-3xl border border-slate-200 bg-white/50 backdrop-blur-sm p-6 shadow-sm animate-pulse"
               >
-                <div className="flex items-start justify-between">
-                  <div className="space-y-3 flex-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="h-5 w-5 bg-slate-200/60 rounded shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0 space-y-2">
                     <div className="h-5 w-40 bg-slate-200/80 rounded-lg" />
                     <div className="h-4 w-28 bg-slate-200/60 rounded" />
                   </div>
                   <div className="h-7 w-24 bg-slate-200/60 rounded-full" />
                 </div>
-                <div className="mt-5 flex items-center gap-4">
-                  <div className="h-8 w-16 bg-slate-200/60 rounded-lg" />
-                  <div className="h-8 w-16 bg-slate-200/60 rounded-lg" />
+                <div className="mt-5 flex items-center gap-3 flex-wrap">
+                  <div className="h-8 w-16 bg-slate-200/60 rounded-xl" />
+                  <div className="h-8 w-16 bg-slate-200/60 rounded-xl" />
+                  <div className="h-8 w-16 bg-slate-200/60 rounded-xl" />
                 </div>
                 <div className="mt-5 h-10 w-full bg-slate-200/60 rounded-full" />
               </div>
@@ -339,7 +360,28 @@ export default function AdminGalleriesPage() {
             ))}
           </>
         )}
-      </div>
+      </div>}
+
+      {/* Pagination */}
+      {!error && data?.pagination && data.pagination.totalPages > 1 && (
+        <div className="rounded-3xl border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm overflow-hidden">
+          <Pagination
+            currentPage={data.pagination.page}
+            totalPages={data.pagination.totalPages}
+            totalItems={data.pagination.total}
+            itemsPerPage={data.pagination.limit}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
      </section>
    );
  }
+
+export default function AdminGalleriesPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading...</div>}>
+      <AdminGalleriesContent />
+    </Suspense>
+  );
+}

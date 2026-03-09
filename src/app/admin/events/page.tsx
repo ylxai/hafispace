@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, Suspense } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSearchParams, useRouter } from "next/navigation";
 
 import { StatusBadge } from "@/components/admin";
 import { useAdminEvents } from "@/hooks/use-admin-events";
@@ -9,6 +10,8 @@ import { useToast } from "@/components/ui/toast";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import { PaymentModal } from "./_components/payment-modal";
 import { CreateBookingModal } from "./_components/create-booking-modal";
+import { ErrorState } from "@/components/ui/error-state";
+import { Pagination, Skeleton } from "@/components/ui";
 
 // ─── Format helpers ───────────────────────────────────────────────────────────
 
@@ -27,8 +30,11 @@ const DP_STATUS_MAP: Record<string, { label: string; className: string }> = {
 
 // ─── Payment Modal ────────────────────────────────────────────────────────────
 
-export default function AdminEventsPage() {
-  const { data, isLoading, error } = useAdminEvents();
+function AdminEventsContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const currentPage = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
+  const { data, isLoading, error, refetch } = useAdminEvents(currentPage, 20);
   const [showModal, setShowModal] = useState(false);
   const [selectedBookingIds, setSelectedBookingIds] = useState<Set<string>>(
     new Set(),
@@ -48,6 +54,7 @@ export default function AdminEventsPage() {
   const queryClient = useQueryClient();
 
   const bookings = useMemo(() => {
+    if (error) return [];
     let filtered = data?.items ?? [];
 
     // Filter by search query
@@ -75,13 +82,15 @@ export default function AdminEventsPage() {
     }
 
     return filtered;
-  }, [data?.items, searchQuery, statusFilter, dateFrom, dateTo]);
+  }, [data?.items, searchQuery, statusFilter, dateFrom, dateTo, error]);
 
-  useEffect(() => {
-    if (error) {
-      toast.error("Failed to load bookings. Please refresh the page.");
-    }
-  }, [error, toast]);
+  const handlePageChange = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", page.toString());
+    router.push(`?${params.toString()}`);
+  };
+
+
 
   const eventSummary = useMemo(() => {
     const total = bookings.length;
@@ -477,14 +486,21 @@ export default function AdminEventsPage() {
           </span>{" "}
           dari{" "}
           <span className="font-semibold text-slate-900">
-            {data?.items.length ?? 0}
+            {data?.pagination.total ?? 0}
           </span>{" "}
           booking
         </div>
       </div>
 
+      {/* Error State */}
+      {error && (
+        <div className="rounded-3xl border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
+          <ErrorState message="Failed to load bookings" onRetry={() => refetch()} />
+        </div>
+      )}
+
       {/* Stats Grid */}
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+      {!error && <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {eventSummary.map((card) => (
           <div
             key={card.label}
@@ -502,10 +518,10 @@ export default function AdminEventsPage() {
             </p>
           </div>
         ))}
-      </div>
+      </div>}
 
       {/* Bookings Table — Desktop (hidden di mobile, pakai card list) */}
-      <div className="hidden sm:block overflow-hidden rounded-3xl border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
+      {!error && <div className="hidden sm:block overflow-hidden rounded-3xl border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[700px]">
             <thead className="bg-slate-50/80 backdrop-blur-sm">
@@ -548,14 +564,7 @@ export default function AdminEventsPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
-                <tr>
-                  <td className="px-6 py-8 text-sm text-slate-500" colSpan={9}>
-                    <div className="flex items-center gap-3">
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900" />
-                      Loading bookings...
-                    </div>
-                  </td>
-                </tr>
+                <Skeleton variant="table-row" count={5} />
               ) : bookings.length === 0 ? (
                 <tr>
                   <td
@@ -706,15 +715,60 @@ export default function AdminEventsPage() {
             </tbody>
           </table>
         </div>
-      </div>
+        {data?.pagination && (
+          <Pagination
+            currentPage={data.pagination.page}
+            totalPages={data.pagination.totalPages}
+            totalItems={data.pagination.total}
+            itemsPerPage={data.pagination.limit}
+            onPageChange={handlePageChange}
+          />
+        )}
+      </div>}
 
       {/* Bookings Card List — Mobile only (hidden di sm+) */}
-      <div className="sm:hidden space-y-3">
+      {!error && <div className="sm:hidden space-y-3">
         {isLoading ? (
-          <div className="flex items-center justify-center gap-3 py-10 text-sm text-slate-500">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900" />
-            Loading bookings...
-          </div>
+          Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-xl p-4 shadow-sm animate-pulse"
+            >
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-4 w-4 rounded bg-slate-200" />
+                  <div>
+                    <div className="h-4 w-32 rounded bg-slate-200 mb-2" />
+                    <div className="h-3 w-20 rounded bg-slate-200" />
+                  </div>
+                </div>
+                <div className="h-6 w-20 rounded-full bg-slate-200" />
+              </div>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div>
+                  <div className="h-3 w-12 rounded bg-slate-200 mb-1" />
+                  <div className="h-4 w-24 rounded bg-slate-200" />
+                </div>
+                <div>
+                  <div className="h-3 w-12 rounded bg-slate-200 mb-1" />
+                  <div className="h-4 w-28 rounded bg-slate-200" />
+                </div>
+                <div>
+                  <div className="h-3 w-16 rounded bg-slate-200 mb-1" />
+                  <div className="h-4 w-24 rounded bg-slate-200" />
+                </div>
+                <div>
+                  <div className="h-3 w-16 rounded bg-slate-200 mb-1" />
+                  <div className="h-4 w-20 rounded bg-slate-200" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                <div className="flex-1 h-11 rounded-xl bg-slate-200" />
+                <div className="flex-1 h-11 rounded-xl bg-slate-200" />
+                <div className="flex-1 h-11 rounded-xl bg-slate-200" />
+              </div>
+            </div>
+          ))
         ) : bookings.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100/80">
@@ -859,7 +913,15 @@ export default function AdminEventsPage() {
             </div>
           ))
         )}
-      </div>
+      </div>}
     </section>
+  );
+}
+
+export default function AdminEventsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading...</div>}>
+      <AdminEventsContent />
+    </Suspense>
   );
 }

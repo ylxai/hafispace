@@ -6,7 +6,7 @@ import {
   CLOUDINARY_FOLDERS,
 } from "@/lib/cloudinary-upload";
 import { getCloudinaryAccount } from "@/lib/cloudinary";
-import { unauthorizedResponse } from "@/lib/api/response";
+import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 
 // Upload validation constants
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB per file (increased for high-res)
@@ -91,10 +91,7 @@ export async function POST(
     });
 
     if (!gallery) {
-      return NextResponse.json(
-        { error: "Gallery not found or doesn't belong to current vendor" },
-        { status: 404 }
-      );
+      return notFoundResponse("Gallery not found or doesn't belong to current vendor");
     }
 
     // Get accountId from formData (optional)
@@ -116,10 +113,7 @@ export async function POST(
     }
 
     if (!files || files.length === 0) {
-      return NextResponse.json(
-        { error: "No files provided" },
-        { status: 400 }
-      );
+      return validationErrorResponse("No files provided");
     }
 
     // Validate number of files
@@ -278,13 +272,7 @@ export async function POST(
     });
   } catch (error) {
     console.error("Error uploading photos:", error);
-    return NextResponse.json(
-      { 
-        error: "Failed to upload photos",
-        message: 'Gagal mengupload foto. Silakan coba lagi.'
-      },
-      { status: 500 }
-    );
+    return internalErrorResponse("Failed to upload photos");
   }
 }
 
@@ -310,10 +298,7 @@ export async function PUT(
     });
 
     if (!gallery) {
-      return NextResponse.json(
-        { error: "Gallery not found" },
-        { status: 404 }
-      );
+      return notFoundResponse("Gallery not found");
     }
 
     // Sync logic can be implemented here if needed
@@ -322,9 +307,6 @@ export async function PUT(
     });
   } catch (error) {
     console.error("Error syncing photos:", error);
-    return NextResponse.json(
-      { error: "Failed to sync photos" },
-      { status: 500 }
-    );
+    return internalErrorResponse("Failed to sync photos");
   }
 }

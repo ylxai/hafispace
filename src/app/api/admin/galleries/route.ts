@@ -5,23 +5,35 @@ import { prisma } from "@/lib/db";
 import { gallerySchema } from "@/lib/api/validation";
 import { unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth();
 
   if (!session?.user?.id) {
     return unauthorizedResponse();
   }
 
-  const galleries = await prisma.gallery.findMany({
-    where: { vendorId: session.user.id },
-    include: {
-      booking: true,
-      _count: {
-        select: { photos: true, selections: true },
+  const { searchParams } = new URL(request.url);
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
+  const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit") ?? "20", 10)));
+  const skip = (page - 1) * limit;
+
+  const [galleries, total] = await Promise.all([
+    prisma.gallery.findMany({
+      where: { vendorId: session.user.id },
+      include: {
+        booking: true,
+        _count: {
+          select: { photos: true, selections: true },
+        },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.gallery.count({
+      where: { vendorId: session.user.id },
+    }),
+  ]);
 
   const formatted = galleries.map((gallery) => ({
     id: gallery.id,
@@ -29,14 +41,22 @@ export async function GET() {
     status: gallery.status,
     clientToken: gallery.clientToken,
     viewCount: gallery.viewCount,
-    photoCount: gallery._count.photos, // Get photo count from associated photos
+    photoCount: gallery._count.photos,
     selectionCount: gallery._count.selections,
     clientName: gallery.booking?.namaClient ?? "Unknown",
     storageProvider: gallery.storageProvider,
     createdAt: gallery.createdAt.toISOString(),
   }));
 
-  return NextResponse.json({ items: formatted });
+  return NextResponse.json({
+    items: formatted,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
 }
 
 export async function POST(request: Request) {

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { v2 as cloudinary } from "cloudinary";
-import { unauthorizedResponse } from "@/lib/api/response";
+import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 
 interface CloudinaryAccount {
   name: string;
@@ -46,7 +46,7 @@ export async function GET() {
     return NextResponse.json({ accounts: accountsWithMaskedKey });
   } catch (error) {
     console.error("Error fetching Cloudinary accounts:", error);
-    return NextResponse.json({ error: "Failed to fetch accounts" }, { status: 500 });
+    return internalErrorResponse("Failed to fetch accounts");
   }
 }
 
@@ -61,10 +61,7 @@ export async function POST(request: Request) {
     const { name, cloudName, apiKey, apiSecret, setAsDefault }: CloudinaryAccount & { setAsDefault?: boolean } = await request.json();
 
     if (!name || !cloudName || !apiKey || !apiSecret) {
-      return NextResponse.json(
-        { error: "Missing required fields: name, cloudName, apiKey, apiSecret" },
-        { status: 400 }
-      );
+      return validationErrorResponse("Missing required fields: name, cloudName, apiKey, apiSecret");
     }
 
     // Test Cloudinary connection first
@@ -80,17 +77,11 @@ export async function POST(request: Request) {
       cloudinaryConnected = result.status === 'ok';
     } catch (cloudinaryError) {
       console.error("Cloudinary connection test failed:", cloudinaryError);
-      return NextResponse.json(
-        { error: "Failed to connect to Cloudinary with provided credentials" },
-        { status: 400 }
-      );
+      return validationErrorResponse("Failed to connect to Cloudinary with provided credentials");
     }
     
     if (!cloudinaryConnected) {
-      return NextResponse.json(
-        { error: "Failed to connect to Cloudinary" },
-        { status: 400 }
-      );
+      return validationErrorResponse("Failed to connect to Cloudinary");
     }
 
     // If setAsDefault, unset other defaults first
@@ -132,7 +123,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Error adding Cloudinary account:", error);
-    return NextResponse.json({ error: "Failed to add Cloudinary account" }, { status: 500 });
+    return internalErrorResponse("Failed to add Cloudinary account");
   }
 }
 
@@ -147,7 +138,7 @@ export async function PUT(request: Request) {
     const { id, name, setAsDefault, isActive }: { id: string; name?: string; setAsDefault?: boolean; isActive?: boolean } = await request.json();
 
     if (!id) {
-      return NextResponse.json({ error: "Account ID is required" }, { status: 400 });
+      return validationErrorResponse("Account ID is required");
     }
 
     // Verify ownership
@@ -156,7 +147,7 @@ export async function PUT(request: Request) {
     });
 
     if (!existingAccount) {
-      return NextResponse.json({ error: "Account not found" }, { status: 404 });
+      return notFoundResponse("Account not found");
     }
 
     // If setting as default, unset other defaults
@@ -187,7 +178,7 @@ export async function PUT(request: Request) {
     });
   } catch (error) {
     console.error("Error updating Cloudinary account:", error);
-    return NextResponse.json({ error: "Failed to update account" }, { status: 500 });
+    return internalErrorResponse("Failed to update account");
   }
 }
 
@@ -203,7 +194,7 @@ export async function DELETE(request: Request) {
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json({ error: "Account ID is required" }, { status: 400 });
+      return validationErrorResponse("Account ID is required");
     }
 
     // Verify ownership
@@ -212,7 +203,7 @@ export async function DELETE(request: Request) {
     });
 
     if (!existingAccount) {
-      return NextResponse.json({ error: "Account not found" }, { status: 404 });
+      return notFoundResponse("Account not found");
     }
 
     // Don't allow deleting if it's the only account
@@ -246,6 +237,6 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ message: "Account deleted successfully" });
   } catch (error) {
     console.error("Error deleting Cloudinary account:", error);
-    return NextResponse.json({ error: "Failed to delete account" }, { status: 500 });
+    return internalErrorResponse("Failed to delete account");
   }
 }

@@ -4,8 +4,22 @@ import { useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast";
 import { formatRupiah } from "@/lib/format";
+import { z } from "zod";
 
 type PaymentType = "DP" | "PELUNASAN" | "LAINNYA";
+
+const paymentSchema = z.object({
+  jumlah: z.coerce.number().positive("Jumlah harus lebih dari 0"),
+  tipe: z.enum(["DP", "PELUNASAN", "LAINNYA"]).default("DP"),
+  keterangan: z.string().optional(),
+  buktiBayar: z
+    .string()
+    .url("Link bukti transfer harus berupa URL yang valid")
+    .refine(
+      (url) => url.startsWith("https://res.cloudinary.com/"),
+      "Bukti transfer harus diupload melalui sistem (Cloudinary URL)"
+    ),
+});
 
 interface Payment {
   id: string;
@@ -36,6 +50,7 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
   const queryClient = useQueryClient();
   const toast = useToast();
   const [form, setForm] = useState({ jumlah: "", tipe: "DP" as "DP" | "PELUNASAN" | "LAINNYA", keterangan: "", buktiBayar: "" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -91,14 +106,42 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
     }
   }
 
+  function validateField(field: keyof typeof form, value: string | number) {
+    try {
+      paymentSchema.shape[field].parse(value);
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        const firstIssue = err.issues[0];
+        if (firstIssue) {
+          setErrors((prev) => ({ ...prev, [field]: firstIssue.message }));
+        }
+      }
+    }
+  }
+
+  function handleFieldChange(field: keyof typeof form, value: string) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      validateField(field, field === "jumlah" ? Number(value) : value);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.jumlah || Number(form.jumlah) <= 0) {
-      toast.error("Jumlah harus lebih dari 0");
-      return;
-    }
-    if (!form.buktiBayar) {
-      toast.error("Bukti transfer wajib diupload");
+
+    const validationResult = paymentSchema.safeParse(form);
+    if (!validationResult.success) {
+      const fieldErrors: Record<string, string> = {};
+      validationResult.error.issues.forEach((issue) => {
+        const field = issue.path[0] as string;
+        fieldErrors[field] ??= issue.message;
+      });
+      setErrors(fieldErrors);
       return;
     }
     setIsSaving(true);
@@ -115,6 +158,7 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
       }
       toast.success("Pembayaran berhasil dicatat!");
       setForm({ jumlah: "", tipe: "DP", keterangan: "", buktiBayar: "" });
+      setErrors({});
       // Revoke object URL setelah berhasil submit
       if (previewObjectUrlRef.current) {
         URL.revokeObjectURL(previewObjectUrlRef.current);
@@ -266,24 +310,31 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
                   <input
                     type="number"
                     value={form.jumlah}
-                    onChange={(e) => setForm((f) => ({ ...f, jumlah: e.target.value }))}
+                    onChange={(e) => handleFieldChange("jumlah", e.target.value)}
+                    onBlur={(e) => validateField("jumlah", Number(e.target.value))}
                     placeholder="0"
                     min={1}
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
-                    required
+                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:border-slate-400 ${
+                      errors.jumlah ? "border-red-300 bg-red-50" : "border-slate-200"
+                    }`}
                   />
+                  {errors.jumlah && <p className="mt-1 text-xs text-red-600">{errors.jumlah}</p>}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Tipe *</label>
                   <select
                     value={form.tipe}
-                    onChange={(e) => setForm((f) => ({ ...f, tipe: e.target.value as "DP" | "PELUNASAN" | "LAINNYA" }))}
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400 bg-white"
+                    onChange={(e) => handleFieldChange("tipe", e.target.value)}
+                    onBlur={(e) => validateField("tipe", e.target.value)}
+                    className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:border-slate-400 bg-white ${
+                      errors.tipe ? "border-red-300 bg-red-50" : "border-slate-200"
+                    }`}
                   >
                     <option value="DP">DP</option>
                     <option value="PELUNASAN">Pelunasan</option>
                     <option value="LAINNYA">Lainnya</option>
                   </select>
+                  {errors.tipe && <p className="mt-1 text-xs text-red-600">{errors.tipe}</p>}
                 </div>
               </div>
               <div>
@@ -291,7 +342,7 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
                 <input
                   type="text"
                   value={form.keterangan}
-                  onChange={(e) => setForm((f) => ({ ...f, keterangan: e.target.value }))}
+                  onChange={(e) => handleFieldChange("keterangan", e.target.value)}
                   placeholder="Transfer BCA, tunai, dll."
                   className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
                 />
@@ -300,7 +351,11 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
                 <label className="block text-xs font-medium text-slate-600 mb-1">Bukti Transfer *</label>
                 <div
                   className={`relative rounded-xl border-2 border-dashed transition-colors cursor-pointer ${
-                    previewUrl ? "border-green-300 bg-green-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"
+                    errors.buktiBayar
+                      ? "border-red-300 bg-red-50"
+                      : previewUrl
+                      ? "border-green-300 bg-green-50"
+                      : "border-slate-200 bg-slate-50 hover:border-slate-300"
                   }`}
                   onClick={() => fileInputRef.current?.click()}
                 >
@@ -343,6 +398,7 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
                     </div>
                   )}
                 </div>
+                {errors.buktiBayar && <p className="mt-1 text-xs text-red-600">{errors.buktiBayar}</p>}
                 {previewUrl && (
                   <button
                     type="button"
@@ -354,6 +410,11 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
                       }
                       setPreviewUrl(null);
                       setForm((f) => ({ ...f, buktiBayar: "" }));
+                      setErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.buktiBayar;
+                        return next;
+                      });
                       if (fileInputRef.current) fileInputRef.current.value = "";
                     }}
                     className="mt-1 text-xs text-red-500 hover:text-red-600"
@@ -364,7 +425,7 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
               </div>
               <button
                 type="submit"
-                disabled={isSaving}
+                disabled={isSaving || isUploading || Object.keys(errors).length > 0 || !form.jumlah || !form.buktiBayar}
                 className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 transition"
               >
                 {isSaving ? "Menyimpan..." : "Catat Pembayaran"}

@@ -20,18 +20,23 @@ interface TrendData {
   pelunasan: number;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function CustomTooltip({ active, payload, label }: TooltipProps<number, string> & { payload?: any[]; label?: string }) {
+interface TooltipPayload {
+  dataKey?: string | number;
+  name?: string | number;
+  value?: number;
+  color?: string;
+}
+
+function CustomTooltip({ active, payload, label }: TooltipProps<number, string> & { payload?: TooltipPayload[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl border border-slate-100 bg-white p-3 shadow-lg text-xs">
       <p className="font-semibold text-slate-700 mb-2">{label}</p>
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      {payload.map((entry: any) => (
+      {payload.map((entry: TooltipPayload) => (
         <div key={entry.dataKey} className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full" style={{ background: entry.color }} />
           <span className="text-slate-500">{entry.name}:</span>
-          <span className="font-medium text-slate-800">{formatRupiah(entry.value)}</span>
+          <span className="font-medium text-slate-800">{formatRupiah(entry.value ?? 0)}</span>
         </div>
       ))}
     </div>

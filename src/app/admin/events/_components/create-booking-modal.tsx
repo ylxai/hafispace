@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { bookingSchema } from "@/lib/api/validation";
+import { z } from "zod";
 
 interface PackageOption {
   id: string;
@@ -18,6 +20,15 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
   const [selectedPackageId, setSelectedPackageId] = useState<string>("");
   const [hargaPaket, setHargaPaket] = useState<string>("");
   const [maxSelection, setMaxSelection] = useState<number>(40);
+  const [formData, setFormData] = useState({
+    namaClient: "",
+    hpClient: "",
+    emailClient: "",
+    tanggalSesi: "",
+    lokasiSesi: "",
+    paketCustom: "",
+    notes: "",
+  });
 
   const { data: packagesData } = useQuery<{ packages: PackageOption[] }>({
     queryKey: ['admin-packages'],
@@ -28,22 +39,63 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
     staleTime: 60_000,
   });
 
+  function validateField(name: string, value: string | number) {
+    const fieldSchema = bookingSchema.shape[name as keyof typeof bookingSchema.shape];
+    if (!fieldSchema) return;
+
+    try {
+      if (name === "tanggalSesi" && value) {
+        const selectedDate = new Date(value as string);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (selectedDate < today) {
+          setErrors(prev => ({ ...prev, [name]: "Session date cannot be in the past" }));
+          return;
+        }
+      }
+
+      if (name === "hargaPaket" && value !== "") {
+        const numValue = parseFloat(value as string);
+        if (isNaN(numValue) || numValue < 0) {
+          setErrors(prev => ({ ...prev, [name]: "Price must be a positive number" }));
+          return;
+        }
+      }
+
+      fieldSchema.parse(value);
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        setErrors(prev => ({ ...prev, [name]: err.issues[0]?.message ?? "Invalid value" }));
+      }
+    }
+  }
+
+  function handleFieldChange(name: string, value: string) {
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      validateField(name, value);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrors({});
-    setIsSubmitting(true);
 
     const form = e.currentTarget;
     const tanggalSesiValue = (form.elements.namedItem("tanggalSesi") as HTMLInputElement).value;
-    
+    const paketIdValue = (form.elements.namedItem("paketId") as HTMLSelectElement).value;
+    const paketCustomValue = (form.elements.namedItem("paketCustom") as HTMLInputElement).value;
+    const hargaPaketValue = (form.elements.namedItem("hargaPaket") as HTMLInputElement).value;
+
     // Fix timezone: Parse date in user's local timezone, then convert to UTC
     const sessionDate = new Date(tanggalSesiValue);
     // Set to noon to avoid timezone edge cases
     sessionDate.setHours(12, 0, 0, 0);
-    
-    const paketIdValue = (form.elements.namedItem("paketId") as HTMLSelectElement).value;
-    const paketCustomValue = (form.elements.namedItem("paketCustom") as HTMLInputElement).value;
-    const hargaPaketValue = (form.elements.namedItem("hargaPaket") as HTMLInputElement).value;
 
     const data = {
       namaClient: (form.elements.namedItem("namaClient") as HTMLInputElement).value,
@@ -57,6 +109,8 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
       maxSelection: parseInt((form.elements.namedItem("maxSelection") as HTMLInputElement).value),
       notes: (form.elements.namedItem("notes") as HTMLTextAreaElement).value || undefined,
     };
+
+    setIsSubmitting(true);
 
     try {
       const res = await fetch("/api/admin/events", {
@@ -129,6 +183,9 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
                     name="namaClient"
                     type="text"
                     required
+                    value={formData.namaClient}
+                    onChange={(e) => handleFieldChange("namaClient", e.target.value)}
+                    onBlur={(e) => validateField("namaClient", e.target.value)}
                     placeholder="e.g. Ridwan & Maya"
                     className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
                   />
@@ -143,6 +200,9 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
                     name="hpClient"
                     type="tel"
                     required
+                    value={formData.hpClient}
+                    onChange={(e) => handleFieldChange("hpClient", e.target.value)}
+                    onBlur={(e) => validateField("hpClient", e.target.value)}
                     placeholder="+6281234567890"
                     className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
                   />
@@ -158,6 +218,9 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
                   id="emailClient"
                   name="emailClient"
                   type="email"
+                  value={formData.emailClient}
+                  onChange={(e) => handleFieldChange("emailClient", e.target.value)}
+                  onBlur={(e) => e.target.value && validateField("emailClient", e.target.value)}
                   placeholder="client@example.com"
                   className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
                 />
@@ -174,6 +237,9 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
                     name="tanggalSesi"
                     type="date"
                     required
+                    value={formData.tanggalSesi}
+                    onChange={(e) => handleFieldChange("tanggalSesi", e.target.value)}
+                    onBlur={(e) => validateField("tanggalSesi", e.target.value)}
                     className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
                   />
                   {errors.tanggalSesi && <p className="mt-1 text-xs text-red-500">{errors.tanggalSesi}</p>}
@@ -187,6 +253,9 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
                     name="lokasiSesi"
                     type="text"
                     required
+                    value={formData.lokasiSesi}
+                    onChange={(e) => handleFieldChange("lokasiSesi", e.target.value)}
+                    onBlur={(e) => validateField("lokasiSesi", e.target.value)}
                     placeholder="e.g. Gedung Serbaguna"
                     className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
                   />
@@ -235,6 +304,8 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
                   id="paketCustom"
                   name="paketCustom"
                   type="text"
+                  value={formData.paketCustom}
+                  onChange={(e) => handleFieldChange("paketCustom", e.target.value)}
                   placeholder="e.g. Wedding Full Day (opsional)"
                   className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
                 />
@@ -249,11 +320,18 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
                   name="hargaPaket"
                   type="number"
                   value={hargaPaket}
-                  onChange={(e) => setHargaPaket(e.target.value)}
+                  onChange={(e) => {
+                    setHargaPaket(e.target.value);
+                    if (errors.hargaPaket) {
+                      validateField("hargaPaket", e.target.value);
+                    }
+                  }}
+                  onBlur={(e) => e.target.value && validateField("hargaPaket", e.target.value)}
                   placeholder="0"
                   min="0"
                   className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
                 />
+                {errors.hargaPaket && <p className="mt-1 text-xs text-red-500">{errors.hargaPaket}</p>}
               </div>
 
               {/* maxSelection — dari paket, tampilkan sebagai info */}
@@ -277,6 +355,8 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
                   id="notes"
                   name="notes"
                   rows={3}
+                  value={formData.notes}
+                  onChange={(e) => handleFieldChange("notes", e.target.value)}
                   placeholder="Additional notes..."
                   className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
                 />
@@ -296,8 +376,8 @@ export function CreateBookingModal({ onClose }: { onClose: () => void }) {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50"
+              disabled={isSubmitting || Object.keys(errors).length > 0 || !formData.namaClient || !formData.hpClient || !formData.tanggalSesi || !formData.lokasiSesi}
+              className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? "Creating..." : "Create Booking"}
             </button>

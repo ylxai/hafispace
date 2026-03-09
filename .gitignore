@@ -13,9 +13,11 @@
 # testing
 /coverage
 
-# Ralph TUI — hanya ignore iterations/logs, bukan config
+# Ralph TUI — hanya ignore iterations/logs/reports, bukan config
 .ralph-tui/iterations/
 .ralph-tui/worktrees/
+.ralph-tui/reports/
+.ralph-tui/session-meta.json
 
 # next.js
 /.next/

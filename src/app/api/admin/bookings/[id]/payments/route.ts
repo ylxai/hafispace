@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
+import { unauthorizedResponse, validationErrorResponse, notFoundResponse } from "@/lib/api/response";
 import { z } from "zod";
 
 const paymentSchema = z.object({
@@ -39,7 +39,7 @@ export async function GET(
     },
   });
 
-  if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+  if (!booking) return notFoundResponse("Booking not found");
 
   // Query payments terpisah (relasi baru, perlu migration ke DB dulu)
   const payments = await prisma.payment.findMany({
@@ -89,7 +89,7 @@ export async function POST(
     where: { id: bookingId, vendorId: session.user.id },
     select: { id: true, hargaPaket: true },
   });
-  if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+  if (!booking) return notFoundResponse("Booking not found");
 
   const body = await request.json();
   const parsed = paymentSchema.safeParse(body);
@@ -142,13 +142,13 @@ export async function DELETE(
   const { id: bookingId } = await params;
   const { searchParams } = new URL(request.url);
   const paymentId = searchParams.get("paymentId");
-  if (!paymentId) return NextResponse.json({ error: "Payment ID required" }, { status: 400 });
+  if (!paymentId) return validationErrorResponse("Payment ID required");
 
   // Verifikasi payment milik vendor
   const payment = await prisma.payment.findFirst({
     where: { id: paymentId, bookingId, vendorId: session.user.id },
   });
-  if (!payment) return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+  if (!payment) return notFoundResponse("Payment not found");
 
   await prisma.payment.delete({ where: { id: paymentId } });
 

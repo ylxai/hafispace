@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { uploadPhotoToCloudinary, listPhotosFromCloudinary } from "@/lib/cloudinary";
 import { CLOUDINARY_FOLDERS } from "@/lib/cloudinary-upload";
-import { unauthorizedResponse } from "@/lib/api/response";
+import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 
 export async function POST(
   request: Request,
@@ -27,29 +27,20 @@ export async function POST(
     });
 
     if (!gallery) {
-      return NextResponse.json(
-        { error: "Gallery not found or doesn't belong to current vendor" },
-        { status: 404 }
-      );
+      return notFoundResponse("Gallery not found or doesn't belong to current vendor");
     }
 
     // Check if the request is multipart/form-data for file upload
     const contentType = request.headers.get("content-type");
     if (!contentType?.includes("multipart/form-data")) {
-      return NextResponse.json(
-        { error: "Content-Type must be multipart/form-data" },
-        { status: 400 }
-      );
+      return validationErrorResponse("Content-Type must be multipart/form-data");
     }
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
 
     if (!file) {
-      return NextResponse.json(
-        { error: "No file provided" },
-        { status: 400 }
-      );
+      return validationErrorResponse("No file provided");
     }
 
     // Convert File to Buffer
@@ -98,10 +89,7 @@ export async function POST(
     });
   } catch (error) {
     console.error("Error uploading photo to Cloudinary:", error);
-    return NextResponse.json(
-      { error: "Failed to upload photo to Cloudinary" },
-      { status: 500 }
-    );
+    return internalErrorResponse("Failed to upload photo to Cloudinary");
   }
 }
 
@@ -128,10 +116,7 @@ export async function PUT(
     });
 
     if (!gallery) {
-      return NextResponse.json(
-        { error: "Gallery not found or doesn't belong to current vendor" },
-        { status: 404 }
-      );
+      return notFoundResponse("Gallery not found or doesn't belong to current vendor");
     }
 
     // Fetch photos from Cloudinary folder
@@ -181,9 +166,6 @@ export async function PUT(
     });
   } catch (error) {
     console.error("Error syncing photos from Cloudinary:", error);
-    return NextResponse.json(
-      { error: "Failed to sync photos from Cloudinary" },
-      { status: 500 }
-    );
+    return internalErrorResponse("Failed to sync photos from Cloudinary");
   }
 }

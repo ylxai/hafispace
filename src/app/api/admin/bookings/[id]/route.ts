@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse } from "@/lib/api/response";
+import { unauthorizedResponse, notFoundResponse, validationErrorResponse } from "@/lib/api/response";
 import { z } from "zod";
 
 // GET — detail booking lengkap
@@ -77,7 +77,7 @@ export async function GET(
     },
   });
 
-  if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+  if (!booking) return notFoundResponse("Booking not found");
 
   const totalBayar = booking.payments.reduce((sum, p) => sum + Number(p.jumlah), 0);
   const hargaPaket = Number(booking.hargaPaket ?? 0);
@@ -134,15 +134,24 @@ export async function PATCH(
   const existing = await prisma.booking.findFirst({
     where: { id, vendorId: session.user.id },
   });
-  if (!existing) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+  if (!existing) return notFoundResponse("Booking not found");
 
   const body = await request.json();
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Validasi gagal", details: parsed.error.format() }, { status: 400 });
+    return validationErrorResponse(parsed.error.format());
   }
 
   const { status, lokasiSesi, tanggalSesi, hargaPaket, notes, paketId } = parsed.data;
+
+  // IDOR check: verifikasi paketId milik vendor yang sedang login
+  if (paketId) {
+    const paket = await prisma.package.findFirst({
+      where: { id: paketId, vendorId: session.user.id },
+      select: { id: true },
+    });
+    if (!paket) return notFoundResponse("Package not found or unauthorized");
+  }
 
   const updated = await prisma.booking.update({
     where: { id },

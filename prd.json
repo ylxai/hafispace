@@ -14,9 +14,10 @@
         "File lulus `npm run build` tanpa TypeScript error"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "labels": [],
-      "dependsOn": []
+      "dependsOn": [],
+      "completionNotes": "Completed by agent"
     },
     {
       "id": "US-002",
@@ -30,9 +31,10 @@
         "Tidak ada layout shift yang signifikan saat transisi loading → loaded"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "labels": [],
-      "dependsOn": []
+      "dependsOn": [],
+      "completionNotes": "Completed by agent"
     },
     {
       "id": "US-003",
@@ -45,9 +47,10 @@
         "Tidak ada layout shift saat transisi"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "labels": [],
-      "dependsOn": []
+      "dependsOn": [],
+      "completionNotes": "Completed by agent"
     },
     {
       "id": "US-004",
@@ -62,9 +65,10 @@
         "Error state menggunakan komponen yang reusable (`<ErrorState />`)"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "labels": [],
-      "dependsOn": []
+      "dependsOn": [],
+      "completionNotes": "Completed by agent"
     },
     {
       "id": "US-005",
@@ -79,9 +83,10 @@
         "Validasi menggunakan Zod schema yang konsisten dengan API validation"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "labels": [],
-      "dependsOn": []
+      "dependsOn": [],
+      "completionNotes": "Completed by agent"
     },
     {
       "id": "US-006",
@@ -95,9 +100,10 @@
         "Tidak bisa submit jika tidak ada bukti bayar untuk tipe DP"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "labels": [],
-      "dependsOn": []
+      "dependsOn": [],
+      "completionNotes": "Completed by agent"
     },
     {
       "id": "US-007",
@@ -111,9 +117,10 @@
         "Tidak ada `NextResponse.json({ error: ... })` manual yang tidak pakai helper"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "labels": [],
-      "dependsOn": []
+      "dependsOn": [],
+      "completionNotes": "Completed by agent"
     },
     {
       "id": "US-008",
@@ -127,9 +134,10 @@
         "Tidak ada `any` type di kedua komponen"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "labels": [],
-      "dependsOn": []
+      "dependsOn": [],
+      "completionNotes": "Completed by agent"
     },
     {
       "id": "US-009",
@@ -144,9 +152,10 @@
         "API endpoint mendukung `?page=N&limit=20` query params"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "labels": [],
-      "dependsOn": []
+      "dependsOn": [],
+      "completionNotes": "Completed by agent"
     },
     {
       "id": "US-010",
@@ -160,14 +169,16 @@
         "Query menggunakan `select` untuk membatasi field yang di-fetch"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "labels": [],
-      "dependsOn": []
+      "dependsOn": [],
+      "completionNotes": "Completed by agent"
     }
   ],
   "metadata": {
     "createdAt": "2026-03-09T19:06:10.697Z",
     "version": "1.0.0",
-    "sourcePrd": "tasks/prd-system-improvements.md"
+    "sourcePrd": "tasks/prd-system-improvements.md",
+    "updatedAt": "2026-03-09T19:49:56.511Z"
   }
 }
