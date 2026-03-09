@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse } from "@/lib/api/response";
+import { unauthorizedResponse, notFoundResponse } from "@/lib/api/response";
+import { verifyGalleryOwnership } from "@/lib/api/gallery-auth";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
@@ -22,7 +23,10 @@ export async function PATCH(
 
   const { id: galleryId } = await params;
 
-  const body = await request.json() as unknown;
+  let body: unknown;
+  try { body = await request.json(); } catch {
+    return NextResponse.json({ code: "BAD_REQUEST", message: "Invalid JSON body" }, { status: 400 });
+  }
   const parsed = updateTokenSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
@@ -33,17 +37,13 @@ export async function PATCH(
 
   const { action, expiresAt } = parsed.data;
 
-  const gallery = await prisma.gallery.findUnique({
-    where: { id: galleryId, vendorId: session.user.id },
+  const ownership = await verifyGalleryOwnership(galleryId, session.user.id);
+  if (!ownership.found) return notFoundResponse("Gallery not found");
+
+  const galleryData = await prisma.gallery.findUnique({
+    where: { id: galleryId },
     select: { id: true, clientToken: true, tokenExpiresAt: true },
   });
-
-  if (!gallery) {
-    return NextResponse.json(
-      { code: "NOT_FOUND", message: "Gallery not found" },
-      { status: 404 }
-    );
-  }
 
   let updateData: { clientToken?: string; tokenExpiresAt?: Date | null } = {};
 
@@ -69,6 +69,9 @@ export async function PATCH(
   } else if (action === "clear-expiry") {
     updateData = { tokenExpiresAt: null };
   }
+
+  // galleryData digunakan untuk memastikan galeri ada sebelum update
+  if (!galleryData) return notFoundResponse("Gallery not found");
 
   const updated = await prisma.gallery.update({
     where: { id: galleryId },
