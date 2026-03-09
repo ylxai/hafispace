@@ -47,3 +47,20 @@ export function generateThumbnailUrlFromUrl(url: string): string {
   if (!cloudName || !publicId) return url;
   return generateThumbnailUrl(cloudName, publicId);
 }
+
+/**
+ * Generate thumbnail URL kecil untuk filmstrip di lightbox (200x200)
+ */
+export function generateLightboxThumbnailUrl(cloudName: string, publicId: string): string {
+  return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,g_auto,w_200,h_200,f_auto,q_auto/${publicId}`;
+}
+
+/**
+ * Generate download URL dengan fl_attachment dari Cloudinary URL
+ */
+export function generateDownloadUrl(url: string): string {
+  const cloudName = extractCloudName(url);
+  const publicId = extractPublicId(url);
+  if (!cloudName || !publicId) return url;
+  return `https://res.cloudinary.com/${cloudName}/image/upload/fl_attachment/${publicId}`;
+}

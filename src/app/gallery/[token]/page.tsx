@@ -9,6 +9,7 @@ import { Lightbox } from "@/components/gallery/lightbox";
 import type * as AblyModule from "ably";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import cloudinaryLoader from '@/lib/image-loader';
+import { extractCloudName, extractPublicId, generateThumbnailUrl, generateDownloadUrl } from '@/lib/cloudinary/utils';
 
 
 type AblyRealtime = InstanceType<typeof AblyModule.Realtime>;
@@ -50,28 +51,6 @@ type GalleryData = {
     selections: string[];
   };
 };
-
-function generateThumbnailUrl(cloudName: string, publicId: string): string {
-  return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,g_auto,h_400,q_auto:good,w_400/${publicId}`;
-}
-
-function extractCloudName(url: string): string {
-  try {
-    const match = url.match(/res\.cloudinary\.com\/([^/]+)\//);
-    return match?.[1] ?? process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? '';
-  } catch {
-    return process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? '';
-  }
-}
-
-function extractPublicId(url: string): string {
-  try {
-    const match = url.match(/\/upload\/(.+)$/);
-    return match?.[1] ?? '';
-  } catch {
-    return '';
-  }
-}
 
 function PhotoCard({ photo, index, onClick, isSelected }: { photo: Photo; index: number; onClick: () => void; isSelected?: boolean }) {
   const cloudName = extractCloudName(photo.url);
@@ -254,9 +233,7 @@ export default function ViewspacePage() {
     if (!hasDownload || selectedPhotos.length === 0) return;
 
     for (const photo of selectedPhotos) {
-      const cloudName = extractCloudName(photo.url);
-      const publicId = extractPublicId(photo.url);
-      const downloadUrl = `https://res.cloudinary.com/${cloudName}/image/upload/fl_attachment/${publicId}`;
+      const downloadUrl = generateDownloadUrl(photo.url);
       
       const link = document.createElement('a');
       link.href = downloadUrl;

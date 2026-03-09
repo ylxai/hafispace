@@ -7,28 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import * as Ably from "ably";
 import cloudinaryLoader from "@/lib/image-loader";
-
-function generateThumbnailUrl(cloudName: string, publicId: string): string {
-  return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,g_auto,h_400,q_auto:good,w_400/${publicId}`;
-}
-
-function extractCloudName(url: string): string {
-  try {
-    const match = url.match(/res\.cloudinary\.com\/([^/]+)\//);
-    return match?.[1] ?? 'doweertbx';
-  } catch {
-    return 'doweertbx';
-  }
-}
-
-function extractPublicId(url: string): string {
-  try {
-    const match = url.match(/\/upload\/(.+)$/);
-    return match?.[1] ?? '';
-  } catch {
-    return '';
-  }
-}
+import { extractCloudName, extractPublicId, generateThumbnailUrl } from "@/lib/cloudinary/utils";
 
 type Photo = {
   id: string;
@@ -278,22 +257,24 @@ export default function PickspacePage() {
       }
       return res.json();
     },
-    onSuccess: (result, { action: _action }) => {
-      // onSuccess: sinkronisasi count dari server (optimistic UI sudah update selectedIds)
+    onSuccess: (result, { photo, action }) => {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (action === "add") next.add(photo.storageKey);
+        else next.delete(photo.storageKey);
+        return next;
+      });
       setSelectionCount(result.selectionCount);
       queryClient.invalidateQueries({ queryKey: ["gallery", token] });
     },
-    onSettled: (_data, _error, { photo }) => {
-      // Gunakan functional updater untuk mencegah race condition
-      // Hanya clear pendingId jika foto ini yang sedang pending (bukan foto lain)
-      setPendingId((prev) => (prev === photo.storageKey ? null : prev));
-    },
+    onSettled: () => setPendingId(null),
     onError: (err, { photo, action }) => {
-      // Rollback optimistic UI jika API gagal — kembalikan state ke kondisi sebelumnya
+      // Revert optimistic update jika API gagal — kembalikan state ke kondisi sebelumnya
       setSelectedIds((prev) => {
         const next = new Set(prev);
-        if (action === "add") next.delete(photo.storageKey); // rollback: batalkan add
-        else next.add(photo.storageKey); // rollback: batalkan remove
+        // Balik aksi: jika tadi "add" yang gagal → hapus; jika "remove" yang gagal → tambah kembali
+        if (action === "add") next.delete(photo.storageKey);
+        else next.add(photo.storageKey);
         return next;
       });
       alert(err instanceof Error ? err.message : "Gagal memperbarui pilihan");
@@ -302,12 +283,12 @@ export default function PickspacePage() {
 
   const handleToggle = useCallback(
     (photo: Photo) => {
-      // Hanya cek isLocked — hapus global lock pendingId agar user bisa
-      // pilih foto lain saat satu request sedang berjalan (per-foto disabled sudah cukup)
+      // Hapus || pendingId dari guard — setiap foto punya tombol disabled sendiri
+      // Global lock hanya untuk isLocked (seleksi sudah dikirim)
       if (isLocked) return;
       const action = selectedIds.has(photo.storageKey) ? "remove" : "add";
 
-      // Optimistic UI: langsung update state lokal tanpa tunggu API
+      // Optimistic UI: langsung update state lokal agar UI responsif
       setSelectedIds((prev) => {
         const next = new Set(prev);
         if (action === "add") next.add(photo.storageKey);
@@ -328,7 +309,7 @@ export default function PickspacePage() {
 
       debounceTimerRef.current.set(photo.storageKey, timer);
     },
-    [isLocked, selectedIds, toggleSelection] // hapus pendingId dari deps — tidak ada global lock
+    [isLocked, selectedIds, toggleSelection]
   );
 
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
