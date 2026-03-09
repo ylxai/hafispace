@@ -5,28 +5,41 @@ import { prisma } from "@/lib/db";
 import { clientSchema } from "@/lib/api/validation";
 import { unauthorizedResponse, validationErrorResponse , parseRequestBody } from "@/lib/api/response";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth();
 
   if (!session?.user?.id) {
     return unauthorizedResponse();
   }
 
-  const clients = await prisma.client.findMany({
-    where: { vendorId: session.user.id },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-      instagram: true,
-      createdAt: true,
-      _count: {
-        select: { bookings: true },
+  const { searchParams } = new URL(request.url);
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
+  const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit") ?? "20", 10)));
+  const skip = (page - 1) * limit;
+
+  // Ekstrak whereClause untuk menghindari duplikasi kondisi filter
+  const whereClause = { vendorId: session.user.id };
+
+  const [clients, total] = await Promise.all([
+    prisma.client.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        instagram: true,
+        createdAt: true,
+        _count: {
+          select: { bookings: true },
+        },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.client.count({ where: whereClause }),
+  ]);
 
   const formatted = clients.map((client) => ({
     id: client.id,
@@ -38,7 +51,15 @@ export async function GET() {
     createdAt: client.createdAt.toISOString(),
   }));
 
-  return NextResponse.json({ items: formatted });
+  return NextResponse.json({
+    items: formatted,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
 }
 
 export async function POST(request: Request) {
