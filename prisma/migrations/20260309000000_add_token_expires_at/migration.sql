@@ -1,3 +1,3 @@
--- AlterTable: tambah kolom token_expires_at di Gallery
+-- AlterTable: tambah kolom token_expires_at di galleries
 -- Nullable (optional) — gallery yang tidak set expiry tetap aktif
-ALTER TABLE "Gallery" ADD COLUMN "token_expires_at" TIMESTAMP(3);
+ALTER TABLE "galleries" ADD COLUMN IF NOT EXISTS "token_expires_at" TIMESTAMP(3);
