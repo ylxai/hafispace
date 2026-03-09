@@ -1,6 +1,4 @@
 "use client";
-import { useState as useCollapseState } from "react";
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/toast";
 
@@ -245,7 +243,7 @@ function CloudinaryAddForm({
   setFormData: (f: { name: string; cloudName: string; apiKey: string; apiSecret: string; setAsDefault: boolean }) => void;
   isAdding: boolean;
 }) {
-  const [isOpen, setIsOpen] = useCollapseState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <div className="rounded-xl border border-slate-200 overflow-hidden">

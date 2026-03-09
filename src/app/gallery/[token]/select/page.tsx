@@ -427,7 +427,7 @@ export default function PickspacePage() {
           <div className="mt-2 flex items-center gap-2">
             <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
               <div
-                className="h-full rounded-full bg-slate-800 transition-all duration-300"
+                className={`h-full rounded-full transition-all duration-300 ${isLocked ? "bg-green-500" : isFull ? "bg-amber-500" : "bg-slate-800"}`}
                 style={{ width: `${Math.min((selectedIds.size / maxSelection) * 100, 100)}%` }}
               />
             </div>

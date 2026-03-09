@@ -143,6 +143,8 @@ model Booking {
   payments     Payment[]
 
   @@index([vendorId])
+  @@index([vendorId, status])
+  @@index([vendorId, tanggalSesi])
   @@index([clientId])
   @@index([paketId])
   @@index([tanggalSesi])
@@ -250,6 +252,7 @@ model PhotoSelection {
 
   @@unique([galleryId, fileId])
   @@index([galleryId, isLocked])
+  @@index([galleryId, selectedAt])
   @@index([fileId])
   @@index([selectionType])
   @@index([selectedAt])
