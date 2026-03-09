@@ -229,24 +229,25 @@ export async function POST(
     }> = [];
 
     if (successfulUploads.length > 0) {
-      const photoDataList = successfulUploads.map(result => {
-        const data = result.data;
-        if (!data) throw new Error(`Missing data for ${result.filename}`);
-        return {
-          galleryId: gallery.id,
-          storageKey: data.publicId,
-          filename: result.filename,
-          url: data.url,
-          thumbnailUrl: data.thumbnailUrl,
-          width: data.width,
-          height: data.height,
-          size: data.size,
-          mimeType: files.find(f => f?.name === result.filename)?.type ?? 'image/jpeg',
-          urutan: 0,
-        };
-      });
-
       try {
+        // Mapping di dalam try — jika .map() throw, rollback Cloudinary tetap berjalan
+        const photoDataList = successfulUploads.map(result => {
+          const data = result.data;
+          if (!data) throw new Error(`Missing data for ${result.filename}`);
+          return {
+            galleryId: gallery.id,
+            storageKey: data.publicId,
+            filename: result.filename,
+            url: data.url,
+            thumbnailUrl: data.thumbnailUrl,
+            width: data.width,
+            height: data.height,
+            size: data.size,
+            mimeType: files.find(f => f?.name === result.filename)?.type ?? 'image/jpeg',
+            urutan: 0,
+          };
+        });
+
         // createMany — satu round-trip ke DB untuk semua foto
         await prisma.photo.createMany({
           data: photoDataList,
