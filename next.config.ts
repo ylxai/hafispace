@@ -13,6 +13,7 @@ const allowedOrigins = getAllowedOrigins();
 // Di sini hanya set security headers statis
 const nextConfig: NextConfig = {
   outputFileTracingRoot: resolve(__dirname, "./"),
+  devIndicators: false,
   images: {
     remotePatterns: [
       {

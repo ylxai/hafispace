@@ -39,47 +39,6 @@ type GalleryData = {
   };
 };
 
-function SelectionCounter({
-  count,
-  max,
-  isLocked,
-}: {
-  count: number;
-  max: number;
-  isLocked: boolean;
-}) {
-  const pct = Math.min((count / max) * 100, 100);
-  const isFull = count >= max;
-
-  return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between text-sm">
-        <span className={`font-semibold ${isFull ? "text-amber-600" : "text-slate-900"}`}>
-          {count} / {max} dipilih
-        </span>
-        {isLocked && (
-          <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
-            ✓ Terkirim
-          </span>
-        )}
-        {isFull && !isLocked && (
-          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
-            Kuota penuh
-          </span>
-        )}
-      </div>
-      {/* Progress bar lebih tebal & informatif */}
-      <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${
-            isFull ? "bg-amber-500" : isLocked ? "bg-green-500" : "bg-slate-900"
-          }`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
-  );
-}
 
 function PhotoSelectCard({
   photo,
@@ -464,8 +423,17 @@ export default function PickspacePage() {
               Kirim Seleksi ({selectedIds.size})
             </button>
           </div>
-          <div className="mt-3">
-            <SelectionCounter count={selectionCount} max={maxSelection} isLocked={isLocked} />
+          {/* Counter tunggal di bawah header — hapus duplikat SelectionCounter */}
+          <div className="mt-2 flex items-center gap-2">
+            <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-slate-800 transition-all duration-300"
+                style={{ width: `${Math.min((selectedIds.size / maxSelection) * 100, 100)}%` }}
+              />
+            </div>
+            <span className="text-xs text-slate-500 shrink-0">
+              {selectedIds.size} / {maxSelection} dipilih
+            </span>
           </div>
         </div>
       </header>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
+import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
 import { StatusBadge } from "@/components/admin";
@@ -275,6 +276,18 @@ function AdminGalleriesContent() {
               <p className="mt-2 text-sm text-slate-600 max-w-md mx-auto">
                 Buat gallery pertama untuk mulai berbagi koleksi foto profesional dengan klien Anda.
               </p>
+              <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+                <Link
+                  href="/admin/events"
+                  className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-700 transition"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Buat Booking Dulu
+                </Link>
+                <p className="text-xs text-slate-400 self-center">Gallery dibuat otomatis dari booking</p>
+              </div>
             </div>
           </div>
         ) : (

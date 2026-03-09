@@ -38,8 +38,8 @@ model Vendor {
   bookingFormActive       Boolean            @default(true) @map("booking_form_active")
   waAdmin                 String?            @map("wa_admin")
   notifEmail              Boolean            @default(true) @map("notif_email")
-  notifNewBooking         Boolean            @default(true) @map("notif_new_booking")
   notifGalleryDelivered   Boolean            @default(true) @map("notif_gallery_delivered")
+  notifNewBooking         Boolean            @default(true) @map("notif_new_booking")
   activityLogs            ActivityLog[]
   bookings                Booking[]
   clients                 Client[]
@@ -84,8 +84,8 @@ model Package {
   createdAt    DateTime        @default(now()) @map("created_at")
   kategori     PackageCategory @default(LAINNYA)
   kuotaEdit    Int?            @map("kuota_edit")
-  maxSelection Int             @default(40) @map("max_selection")
   includeCetak Json?           @map("include_cetak")
+  maxSelection Int             @default(40) @map("max_selection")
   bookings     Booking[]
   vendor       Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
@@ -148,8 +148,6 @@ model Booking {
   @@index([tanggalSesi])
   @@index([status])
   @@index([createdAt])
-  @@index([vendorId, status])
-  @@index([vendorId, tanggalSesi])
   @@map("bookings")
 }
 
@@ -177,13 +175,13 @@ model Gallery {
   bookingId          String?          @map("booking_id") @db.Uuid
   namaProject        String           @map("nama_project")
   clientToken        String           @unique @map("client_token")
-  tokenExpiresAt     DateTime?        @map("token_expires_at")
   viewCount          Int              @default(0) @map("view_count")
   status             GalleryStatus    @default(DRAFT)
   createdAt          DateTime         @default(now()) @map("created_at")
   updatedAt          DateTime         @updatedAt @map("updated_at")
   cloudinaryFolderId String?          @map("cloudinary_folder_id")
   storageProvider    String           @default("Cloudinary") @map("storage_provider")
+  tokenExpiresAt     DateTime?        @map("token_expires_at")
   booking            Booking?         @relation(fields: [bookingId], references: [id])
   vendor             Vendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   settings           GallerySetting?
@@ -256,7 +254,6 @@ model PhotoSelection {
   @@index([selectionType])
   @@index([selectedAt])
   @@index([galleryId])
-  @@index([galleryId, selectedAt])
   @@map("photo_selections")
 }
 

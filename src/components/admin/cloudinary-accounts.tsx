@@ -1,4 +1,5 @@
 "use client";
+import { useState as useCollapseState } from "react";
 
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/toast";
@@ -225,86 +226,112 @@ export function CloudinaryAccountsPanel() {
         </div>
       )}
 
-      {/* Add New Account Form */}
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-200 p-4">
-        <h3 className="font-medium text-slate-900">Tambah Akun Cloudinary Baru</h3>
+      {/* Add New Account Form — collapsible untuk mengurangi visual noise di mobile */}
+      <CloudinaryAddForm onSubmit={handleSubmit} formData={formData} setFormData={setFormData} isAdding={isAdding} />
         
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-700">
-              Nama Akun
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Misal: Akun Utama, Akun Cadangan"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
-              required
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-700">
-              Cloud Name
-            </label>
-            <input
-              type="text"
-              value={formData.cloudName}
-              onChange={(e) => setFormData({ ...formData, cloudName: e.target.value })}
-              placeholder="Misal: doweertbx"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
-              required
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-700">
-              API Key
-            </label>
-            <input
-              type="text"
-              value={formData.apiKey}
-              onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
-              placeholder="Cloudinary API Key"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
-              required
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-700">
-              API Secret
-            </label>
-            <input
-              type="password"
-              value={formData.apiSecret}
-              onChange={(e) => setFormData({ ...formData, apiSecret: e.target.value })}
-              placeholder="Cloudinary API Secret"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
-              required
-            />
-          </div>
-        </div>
+    </div>
+  );
+}
 
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="setAsDefault"
-            checked={formData.setAsDefault}
-            onChange={(e) => setFormData({ ...formData, setAsDefault: e.target.checked })}
-            className="h-4 w-4 rounded border-slate-300 text-slate-900"
-          />
-          <label htmlFor="setAsDefault" className="text-sm text-slate-700">
-            Jadikan akun default
-          </label>
-        </div>
+// Komponen collapsible form tambah akun — mengurangi visual noise di mobile
+function CloudinaryAddForm({
+  onSubmit,
+  formData,
+  setFormData,
+  isAdding,
+}: {
+  onSubmit: (e: React.FormEvent) => void;
+  formData: { name: string; cloudName: string; apiKey: string; apiSecret: string; setAsDefault: boolean };
+  setFormData: (f: { name: string; cloudName: string; apiKey: string; apiSecret: string; setAsDefault: boolean }) => void;
+  isAdding: boolean;
+}) {
+  const [isOpen, setIsOpen] = useCollapseState(false);
 
-        <button
-          type="submit"
-          disabled={isAdding}
-          className="rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+  return (
+    <div className="rounded-xl border border-slate-200 overflow-hidden">
+      {/* Toggle button */}
+      <button
+        type="button"
+        onClick={() => setIsOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+      >
+        <span>+ Tambah Akun Cloudinary Baru</span>
+        <svg
+          className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
         >
-          {isAdding ? "Menambah..." : "Tambah Akun"}
-        </button>
-      </form>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {/* Collapsible form */}
+      {isOpen && (
+        <form onSubmit={onSubmit} className="space-y-4 border-t border-slate-200 p-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">Nama Akun</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Misal: Akun Utama, Akun Cadangan"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                required
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">Cloud Name</label>
+              <input
+                type="text"
+                value={formData.cloudName}
+                onChange={(e) => setFormData({ ...formData, cloudName: e.target.value })}
+                placeholder="Misal: doweertbx"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                required
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">API Key</label>
+              <input
+                type="text"
+                value={formData.apiKey}
+                onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
+                placeholder="Cloudinary API Key"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                required
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">API Secret</label>
+              <input
+                type="password"
+                value={formData.apiSecret}
+                onChange={(e) => setFormData({ ...formData, apiSecret: e.target.value })}
+                placeholder="Cloudinary API Secret"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                required
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="setAsDefault"
+              checked={formData.setAsDefault}
+              onChange={(e) => setFormData({ ...formData, setAsDefault: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300 text-slate-900"
+            />
+            <label htmlFor="setAsDefault" className="text-sm text-slate-700">Jadikan akun default</label>
+          </div>
+          <button
+            type="submit"
+            disabled={isAdding}
+            className="rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+          >
+            {isAdding ? "Menambah..." : "Tambah Akun"}
+          </button>
+        </form>
+      )}
     </div>
   );
 }

@@ -61,7 +61,7 @@ export function RecentBookings({ bookings }: { bookings: RecentBooking[] }) {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-xs text-slate-400 font-mono">{booking.kodeBooking}</p>
+                    <p className="text-xs text-slate-400 font-mono truncate max-w-[120px]">{booking.kodeBooking}</p>
                     {booking.namaPaket && (
                       <p className="text-xs text-slate-400 truncate">· {booking.namaPaket}</p>
                     )}

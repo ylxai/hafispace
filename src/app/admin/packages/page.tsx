@@ -239,7 +239,8 @@ function PackageModal({
                 ))}
               </ul>
             )}
-            <div className="flex gap-2">
+            {/* Stack vertikal di mobile agar tidak terpotong */}
+            <div className="flex flex-col gap-2 sm:flex-row">
               <input
                 type="text"
                 value={newCetak.nama}
@@ -247,20 +248,23 @@ function PackageModal({
                 placeholder="Ukuran (cth: 4R)"
                 className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
               />
-              <input
-                type="number"
-                value={newCetak.jumlah}
-                onChange={(e) => setNewCetak((n) => ({ ...n, jumlah: Number(e.target.value) }))}
-                min={1}
-                className="w-20 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
-              />
-              <button
-                type="button"
-                onClick={handleAddCetak}
-                className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200"
-              >
-                + Tambah
-              </button>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={newCetak.jumlah}
+                  onChange={(e) => setNewCetak((n) => ({ ...n, jumlah: Number(e.target.value) }))}
+                  min={1}
+                  placeholder="Qty"
+                  className="w-24 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCetak}
+                  className="flex-1 sm:flex-none rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200"
+                >
+                  + Tambah
+                </button>
+              </div>
             </div>
           </div>
 
