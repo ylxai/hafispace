@@ -31,6 +31,10 @@ export const env = {
   // Ably
   ABLY_API_KEY: optionalEnv("ABLY_API_KEY"),
 
+  // Upstash Redis
+  UPSTASH_REDIS_REST_URL: optionalEnv("UPSTASH_REDIS_REST_URL"),
+  UPSTASH_REDIS_REST_TOKEN: optionalEnv("UPSTASH_REDIS_REST_TOKEN"),
+
   // App
   NEXT_PUBLIC_APP_URL: optionalEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000"),
   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: optionalEnv("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME"),

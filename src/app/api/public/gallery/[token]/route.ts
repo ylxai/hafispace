@@ -1,25 +1,44 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { redis } from "@/lib/redis";
 import { DEFAULT_MAX_SELECTION, GALLERY_VIEW_COOKIE_TTL_SECONDS } from "@/lib/constants";
 
 const PHOTOS_PER_PAGE = 50;
+const FINGERPRINT_TTL_SECONDS = 24 * 60 * 60; // 24 jam
 
-// In-memory cache untuk view count deduplication via IP+UA fingerprint
-// Key: SHA-256 hash (16 hex chars), Value: timestamp pertama kali view
-// Reset saat server restart — acceptable tradeoff tanpa Redis
+// Fallback in-memory cache jika Redis tidak tersedia
 const viewFingerprintCache = new Map<string, number>();
-const FINGERPRINT_TTL_MS = 24 * 60 * 60 * 1000; // 24 jam
+const FINGERPRINT_TTL_MS = FINGERPRINT_TTL_SECONDS * 1000;
 
-// Cleanup periodic setiap jam agar Map tidak tumbuh tanpa batas (mencegah memory leak)
 const cleanupViewCache = () => {
   const cutoff = Date.now() - FINGERPRINT_TTL_MS;
   for (const [key, ts] of viewFingerprintCache.entries()) {
     if (ts < cutoff) viewFingerprintCache.delete(key);
   }
 };
-// Hanya jalankan interval di Node.js runtime (bukan Edge)
 if (typeof setInterval !== "undefined" && typeof (globalThis as Record<string, unknown>).EdgeRuntime === "undefined") {
   setInterval(cleanupViewCache, 60 * 60 * 1000); // setiap 1 jam
+}
+
+/**
+ * Cek apakah fingerprint sudah view dalam 24 jam.
+ * Prioritas: Redis → fallback in-memory Map.
+ * Returns true jika sudah viewed (skip increment).
+ */
+async function isAlreadyViewed(fingerprintHash: string): Promise<boolean> {
+  if (redis) {
+    const key = `view:${fingerprintHash}`;
+    // SET key 1 EX 86400 NX — hanya set jika belum ada, return null jika sudah ada
+    const result = await redis.set(key, 1, { ex: FINGERPRINT_TTL_SECONDS, nx: true });
+    // result === "OK" berarti baru pertama kali (belum viewed)
+    // result === null berarti sudah ada key (sudah viewed)
+    return result === null;
+  }
+
+  // Fallback: in-memory Map
+  if (viewFingerprintCache.has(fingerprintHash)) return true;
+  viewFingerprintCache.set(fingerprintHash, Date.now());
+  return false;
 }
 
 export async function GET(
@@ -93,7 +112,6 @@ export async function GET(
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     select: {
       id: true,
-      storageKey: true,
       filename: true,
       url: true,
       thumbnailUrl: true,
@@ -134,17 +152,14 @@ export async function GET(
         .slice(0, 16) // Ambil 16 hex char (64-bit) — cukup untuk dedup
     );
 
-  // Cek apakah fingerprint ini sudah view dalam 24 jam via in-memory cache
-  // (Simple Map-based cache — reset saat server restart, tapi sudah jauh lebih baik dari cookie-only)
-  const alreadyViewed = hasCookie || viewFingerprintCache.has(fingerprintHash);
+  // Cek apakah fingerprint ini sudah view dalam 24 jam via Redis (atau in-memory fallback)
+  const alreadyViewed = hasCookie || await isAlreadyViewed(fingerprintHash);
 
   if (!alreadyViewed) {
     await prisma.gallery.update({
       where: { id: gallery.id },
       data: { viewCount: { increment: 1 } },
     });
-    // Simpan fingerprint ke cache dengan TTL 24 jam
-    viewFingerprintCache.set(fingerprintHash, Date.now());
   }
 
   // Ambil selections sekaligus — count dihitung dari hasil query (1 query, bukan 2)
