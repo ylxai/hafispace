@@ -1,13 +1,15 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { auth } from '@/lib/auth/options';
 import { prisma } from '@/lib/db';
-import { unauthorizedResponse, notFoundResponse, validationErrorResponse } from '@/lib/api/response';
+import { unauthorizedResponse, notFoundResponse, validationErrorResponse, parseRequestBody } from '@/lib/api/response';
 
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return unauthorizedResponse();
 
-  const { bookingId } = await request.json() as { bookingId?: string };
+  const bodyResult = await parseRequestBody(request);
+  if (!bodyResult.ok) return bodyResult.response;
+  const { bookingId } = bodyResult.data as { bookingId?: string };
   if (!bookingId) return validationErrorResponse('bookingId required');
 
   const booking = await prisma.booking.findFirst({

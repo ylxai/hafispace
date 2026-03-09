@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse, notFoundResponse, validationErrorResponse } from "@/lib/api/response";
+import { unauthorizedResponse, notFoundResponse, validationErrorResponse, parseRequestBody } from "@/lib/api/response";
 import { z } from "zod";
 
 // GET — detail booking lengkap
@@ -136,8 +136,9 @@ export async function PATCH(
   });
   if (!existing) return notFoundResponse("Booking not found");
 
-  const body = await request.json();
-  const parsed = updateSchema.safeParse(body);
+  const bodyResult = await parseRequestBody(request);
+  if (!bodyResult.ok) return bodyResult.response;
+  const parsed = updateSchema.safeParse(bodyResult.data);
   if (!parsed.success) {
     return validationErrorResponse(parsed.error.format());
   }

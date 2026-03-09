@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { gallerySchema } from "@/lib/api/validation";
-import { unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
+import { unauthorizedResponse, validationErrorResponse , parseRequestBody } from "@/lib/api/response";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -66,8 +66,9 @@ export async function POST(request: Request) {
     return unauthorizedResponse();
   }
 
-  const body = await request.json();
-  const parsed = gallerySchema.safeParse(body);
+  const bodyResult = await parseRequestBody(request);
+  if (!bodyResult.ok) return bodyResult.response;
+  const parsed = gallerySchema.safeParse(bodyResult.data);
 
   if (!parsed.success) {
     return validationErrorResponse(parsed.error.format());

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse } from "@/lib/api/response";
+import { unauthorizedResponse, parseRequestBody } from "@/lib/api/response";
 import { z } from "zod";
 
 
@@ -70,8 +70,9 @@ export async function PATCH(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return unauthorizedResponse();
 
-  const body = await request.json();
-  const parsed = settingsSchema.safeParse(body);
+  const bodyResult = await parseRequestBody(request);
+  if (!bodyResult.ok) return bodyResult.response;
+  const parsed = settingsSchema.safeParse(bodyResult.data);
 
   if (!parsed.success) {
     return NextResponse.json(

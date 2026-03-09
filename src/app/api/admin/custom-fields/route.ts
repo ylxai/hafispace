@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse, notFoundResponse, validationErrorResponse } from "@/lib/api/response";
+import { unauthorizedResponse, notFoundResponse, validationErrorResponse , parseRequestBody } from "@/lib/api/response";
 import { z } from "zod";
 
 const customFieldSchema = z.object({
@@ -40,8 +40,9 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return unauthorizedResponse();
 
-  const body = await request.json();
-  const parsed = customFieldSchema.safeParse(body);
+  const bodyResult = await parseRequestBody(request);
+  if (!bodyResult.ok) return bodyResult.response;
+  const parsed = customFieldSchema.safeParse(bodyResult.data);
   if (!parsed.success) {
     return validationErrorResponse(parsed.error.format());
   }
@@ -78,7 +79,9 @@ export async function PATCH(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return unauthorizedResponse();
 
-  const body = await request.json() as { id?: string; urutan?: number; isActive?: boolean; label?: string };
+  const bodyResult = await parseRequestBody(request);
+  if (!bodyResult.ok) return bodyResult.response;
+  const body = bodyResult.data as { id?: string; urutan?: number; isActive?: boolean; label?: string };
   const { id } = body;
   if (!id) return validationErrorResponse("Field ID required");
 
