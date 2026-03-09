@@ -17,9 +17,12 @@ export async function GET(request: Request) {
   const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit") ?? "20", 10)));
   const skip = (page - 1) * limit;
 
+  // Ekstrak whereClause untuk menghindari duplikasi kondisi filter
+  const whereClause = { vendorId: session.user.id };
+
   const [clients, total] = await Promise.all([
     prisma.client.findMany({
-      where: { vendorId: session.user.id },
+      where: whereClause,
       select: {
         id: true,
         name: true,
@@ -35,7 +38,7 @@ export async function GET(request: Request) {
       skip,
       take: limit,
     }),
-    prisma.client.count({ where: { vendorId: session.user.id } }),
+    prisma.client.count({ where: whereClause }),
   ]);
 
   const formatted = clients.map((client) => ({

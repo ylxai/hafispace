@@ -3,6 +3,7 @@
  * Digunakan di semua API admin route yang butuh verifikasi kepemilikan galeri.
  */
 
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
 type GalleryOwnershipResult =
@@ -28,13 +29,21 @@ export async function verifyGalleryOwnership(
 }
 
 /**
- * Verifikasi gallery ownership dengan include tambahan.
- * Untuk kasus yang butuh data gallery lebih dari sekedar id & vendorId.
+ * Verifikasi gallery ownership dengan select tambahan.
+ * Validasi field dilakukan oleh Prisma runtime — field tidak valid akan error saat runtime.
+ *
+ * @example
+ * const result = await verifyGalleryOwnershipWithSelect(galleryId, vendorId, {
+ *   clientToken: true,
+ *   tokenExpiresAt: true,
+ * });
+ * if (!result.found) return notFoundResponse();
+ * const gallery = result.gallery as { id: string; vendorId: string; clientToken: string | null; tokenExpiresAt: Date | null };
  */
-export async function verifyGalleryOwnershipWithSelect<T extends Record<string, unknown>>(
+export async function verifyGalleryOwnershipWithSelect(
   galleryId: string,
   vendorId: string,
-  select: T
+  select: Prisma.GallerySelect
 ): Promise<{ found: true; gallery: Record<string, unknown> } | { found: false }> {
   const gallery = await prisma.gallery.findUnique({
     where: { id: galleryId, vendorId },
@@ -42,5 +51,5 @@ export async function verifyGalleryOwnershipWithSelect<T extends Record<string, 
   });
 
   if (!gallery) return { found: false };
-  return { found: true, gallery };
+  return { found: true, gallery: gallery as Record<string, unknown> };
 }

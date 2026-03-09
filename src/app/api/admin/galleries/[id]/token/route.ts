@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { unauthorizedResponse, notFoundResponse } from "@/lib/api/response";
-import { verifyGalleryOwnership } from "@/lib/api/gallery-auth";
+import { verifyGalleryOwnershipWithSelect } from "@/lib/api/gallery-auth";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
@@ -37,7 +37,10 @@ export async function PATCH(
 
   const { action, expiresAt } = parsed.data;
 
-  const ownership = await verifyGalleryOwnership(galleryId, session.user.id);
+  const ownership = await verifyGalleryOwnershipWithSelect(galleryId, session.user.id, {
+    clientToken: true,
+    tokenExpiresAt: true,
+  });
   if (!ownership.found) return notFoundResponse("Gallery not found");
 
   // Build update data berdasarkan action — Zod enum sudah pastikan action valid
