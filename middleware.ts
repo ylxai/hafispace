@@ -1,18 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-
-// Daftar allowed origins — multi-origin dari ALLOWED_ORIGINS (comma-separated)
-// Fallback ke NEXT_PUBLIC_APP_URL, lalu localhost untuk development
-function getAllowedOrigins(): string[] {
-  const envOrigins = process.env.ALLOWED_ORIGINS;
-  if (envOrigins) {
-    return envOrigins.split(",").map((o) => o.trim()).filter(Boolean);
-  }
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (appUrl) return [appUrl];
-  return ["http://localhost:3000"];
-}
+import { getAllowedOrigins } from "@/lib/cors";
 
 const allowedOrigins = getAllowedOrigins();
 
@@ -37,22 +26,24 @@ export async function middleware(request: NextRequest) {
     return preflightResponse;
   }
 
-  // Auth check untuk admin routes
-  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+  // Auth check — panggil getToken sekali untuk semua path yang butuh auth
+  const needsAuth = pathname.startsWith("/admin") || pathname.startsWith("/api/admin") || pathname === "/";
+
+  if (needsAuth) {
     const token = await getToken({ req: request });
 
     if (!token) {
       if (pathname.startsWith("/api/admin")) {
         return NextResponse.json({ code: "UNAUTHORIZED", message: "Unauthorized" }, { status: 401 });
       }
+      // Redirect ke login untuk semua halaman protected termasuk root
       return NextResponse.redirect(new URL("/login", request.url));
     }
-  }
 
-  // Redirect root ke admin
-  if (pathname === "/") {
-    const token = await getToken({ req: request });
-    if (!token) return NextResponse.redirect(new URL("/login", request.url));
+    // User sudah login di root → redirect ke /admin
+    if (pathname === "/") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
   }
 
   const response = NextResponse.next();

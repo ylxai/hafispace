@@ -62,14 +62,17 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "regenerate" }),
       });
-      if (!res.ok) throw new Error("Gagal regenerate token");
+      if (!res.ok) {
+        const err = await res.json() as { message?: string };
+        throw new Error(err.message ?? "Gagal regenerate token");
+      }
       const data = await res.json() as { clientToken: string; tokenExpiresAt: string | null };
       setCurrentToken(data.clientToken);
       setTokenExpiresAt(data.tokenExpiresAt);
       queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
       toast.success("Token berhasil di-generate ulang! Bagikan link baru ke klien.");
-    } catch {
-      toast.error("Gagal generate token baru");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal generate token baru");
     } finally {
       setIsTokenLoading(false);
     }
@@ -107,13 +110,16 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "clear-expiry" }),
       });
-      if (!res.ok) throw new Error("Gagal hapus expiry");
+      if (!res.ok) {
+        const err = await res.json() as { message?: string };
+        throw new Error(err.message ?? "Gagal hapus expiry");
+      }
       setTokenExpiresAt(null);
       setExpiryInput("");
       queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
       toast.success("Tanggal kedaluwarsa berhasil dihapus.");
-    } catch {
-      toast.error("Gagal hapus expiry");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal hapus expiry");
     } finally {
       setIsTokenLoading(false);
     }
