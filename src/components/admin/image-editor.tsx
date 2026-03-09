@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 
 interface ImageEditorProps {
@@ -16,6 +16,17 @@ export function ImageEditor({ file, onEditComplete, onCancel }: ImageEditorProps
   const [zoom, setZoom] = useState(100);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
+
+  // Buat object URL sekali dan revoke saat unmount untuk mencegah memory leak
+  useEffect(() => {
+    const url = URL.createObjectURL(file);
+    objectUrlRef.current = url;
+    return () => {
+      URL.revokeObjectURL(url);
+      objectUrlRef.current = null;
+    };
+  }, [file]);
 
   const handleRotate = (degrees: number) => {
     setRotation((prev) => (prev + degrees) % 360);
@@ -98,7 +109,7 @@ export function ImageEditor({ file, onEditComplete, onCancel }: ImageEditorProps
       {/* Image Preview */}
       <div className="relative overflow-hidden rounded-xl bg-slate-100">
         <Image
-          src={URL.createObjectURL(file)}
+          src={objectUrlRef.current ?? ""}
           alt={file.name}
           width={800}
           height={600}

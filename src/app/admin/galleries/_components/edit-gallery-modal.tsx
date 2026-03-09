@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { UPLOAD_COMPLETE_FEEDBACK_MS } from "@/lib/constants";
 import ViesusPreview from "@/components/admin/viesus-preview";
@@ -37,7 +37,11 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
   const [liveSelectionCount, setLiveSelectionCount] = useState(gallery.selectionCount);
   const [clientSubmitted, setClientSubmitted] = useState(false);
   const ablyRef = useRef<unknown>(null);
-  const galleryUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/gallery/${gallery.clientToken}`;
+  // Gunakan env var untuk SSR-safe URL — hindari window.location yang menyebabkan hydration mismatch
+  const galleryUrl = useMemo(
+    () => `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/gallery/${gallery.clientToken}`,
+    [gallery.clientToken]
+  );
 
   // Ably realtime — subscribe untuk update count & notifikasi submit dari klien
   useEffect(() => {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { unauthorizedResponse } from "@/lib/api/response";
+import { deletePhotoFromCloudinary } from "@/lib/cloudinary";
 import { z } from "zod";
 
 const toggleLockSchema = z.object({
@@ -184,9 +185,19 @@ export async function DELETE(request: Request) {
       );
     }
 
+    // Hapus dari database dulu
     await prisma.photoSelection.delete({
       where: { id: selectionId },
     });
+
+    // Coba hapus foto dari Cloudinary (non-critical — jangan gagalkan request jika Cloudinary error)
+    // fileId menyimpan public_id Cloudinary
+    try {
+      await deletePhotoFromCloudinary(selection.gallery.vendorId, selection.fileId);
+    } catch (cloudinaryError) {
+      console.error("Gagal menghapus foto dari Cloudinary:", cloudinaryError);
+      // Lanjutkan — database sudah dihapus, Cloudinary cleanup bisa dilakukan manual
+    }
 
     await prisma.activityLog.create({
       data: {

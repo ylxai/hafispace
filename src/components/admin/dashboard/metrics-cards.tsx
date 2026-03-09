@@ -1,5 +1,3 @@
-"use client";
-
 import { formatRupiah } from "@/lib/format";
 interface Overview {
   totalBookings: number;

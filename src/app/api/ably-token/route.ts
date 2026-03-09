@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Ably from "ably";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
+import { randomBytes } from "node:crypto";
 
 export async function GET(request: Request) {
   // Get gallery token from query params (required for both admin and client)
@@ -59,7 +60,8 @@ export async function GET(request: Request) {
   } else {
     // Client access (no admin session) - this is OK for public gallery access
     // The gallery token itself is the authorization
-    clientId = `client-${gallery.id}-${Math.random().toString(36).slice(2, 8)}`;
+    // Gunakan randomBytes (CSPRNG) agar client ID tidak bisa ditebak
+    clientId = `client-${gallery.id}-${randomBytes(4).toString("hex")}`;
   }
 
   // Create Ably token with the appropriate client ID

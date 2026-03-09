@@ -40,6 +40,7 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewObjectUrlRef = useRef<string | null>(null);
 
   const { data, isLoading } = useQuery<PaymentData>({
     queryKey: ["booking-payments", bookingId],
@@ -52,8 +53,13 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
 
   async function handleFileUpload(file: File) {
     setIsUploading(true);
-    // Show local preview immediately
-    setPreviewUrl(URL.createObjectURL(file));
+    // Revoke URL lama sebelum membuat yang baru untuk mencegah memory leak
+    if (previewObjectUrlRef.current) {
+      URL.revokeObjectURL(previewObjectUrlRef.current);
+    }
+    const objectUrl = URL.createObjectURL(file);
+    previewObjectUrlRef.current = objectUrl;
+    setPreviewUrl(objectUrl);
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -64,6 +70,10 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
       if (!res.ok) {
         const err = await res.json() as { error?: string };
         toast.error(err.error ?? "Gagal upload bukti");
+        if (previewObjectUrlRef.current) {
+          URL.revokeObjectURL(previewObjectUrlRef.current);
+          previewObjectUrlRef.current = null;
+        }
         setPreviewUrl(null);
         return;
       }
@@ -71,6 +81,10 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
       setForm((f) => ({ ...f, buktiBayar: url }));
     } catch {
       toast.error("Gagal upload bukti transfer");
+      if (previewObjectUrlRef.current) {
+        URL.revokeObjectURL(previewObjectUrlRef.current);
+        previewObjectUrlRef.current = null;
+      }
       setPreviewUrl(null);
     } finally {
       setIsUploading(false);
@@ -101,6 +115,11 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
       }
       toast.success("Pembayaran berhasil dicatat!");
       setForm({ jumlah: "", tipe: "DP", keterangan: "", buktiBayar: "" });
+      // Revoke object URL setelah berhasil submit
+      if (previewObjectUrlRef.current) {
+        URL.revokeObjectURL(previewObjectUrlRef.current);
+        previewObjectUrlRef.current = null;
+      }
       setPreviewUrl(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       await queryClient.invalidateQueries({ queryKey: ["booking-payments", bookingId] });
@@ -329,6 +348,10 @@ export function PaymentModal({ bookingId, onClose }: { bookingId: string; onClos
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (previewObjectUrlRef.current) {
+                        URL.revokeObjectURL(previewObjectUrlRef.current);
+                        previewObjectUrlRef.current = null;
+                      }
                       setPreviewUrl(null);
                       setForm((f) => ({ ...f, buktiBayar: "" }));
                       if (fileInputRef.current) fileInputRef.current.value = "";
