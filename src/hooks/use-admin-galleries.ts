@@ -36,5 +36,7 @@ export function useAdminGalleries(page = 1, limit = 20) {
   return useQuery({
     queryKey: ["admin-galleries", page, limit],
     queryFn: () => fetchAdminGalleries(page, limit),
+    staleTime: 30 * 1000,       // 30 detik — data dianggap fresh
+    gcTime: 5 * 60 * 1000,      // 5 menit — cache dibersihkan setelah tidak digunakan
   });
 }

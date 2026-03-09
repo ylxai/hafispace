@@ -249,9 +249,8 @@ export function getResponsiveImageUrls(publicId: string, options?: {
 }
 
 /**
- * Delete image from Cloudinary
- * Gunakan deletePhotoFromCloudinary dari lib/cloudinary/core.ts untuk multi-tenant.
- * Fungsi ini hanya untuk backward compat dengan single-account setup.
+ * @deprecated Gunakan `deletePhotoFromCloudinary` dari `@/lib/cloudinary` untuk multi-tenant.
+ * Fungsi ini hanya untuk backward compat dengan single-account setup (tanpa vendorId).
  */
 export async function deleteImageFromCloudinary(
   publicId: string,
@@ -273,7 +272,7 @@ export async function deleteImageFromCloudinary(
 }
 
 /**
- * Delete multiple images
+ * @deprecated Gunakan `deletePhotosFromCloudinary` dari `@/lib/cloudinary` untuk multi-tenant.
  */
 export async function deleteMultipleImages(
   publicIds: string[],
@@ -299,7 +298,7 @@ export async function deleteMultipleImages(
 }
 
 /**
- * Get image metadata from Cloudinary
+ * @deprecated Gunakan `getPhotoFromCloudinary` dari `@/lib/cloudinary` untuk multi-tenant.
  */
 export async function getImageMetadata(publicId: string): Promise<{
   publicId: string;
@@ -334,7 +333,7 @@ export async function getImageMetadata(publicId: string): Promise<{
 }
 
 /**
- * List images in a folder
+ * @deprecated Gunakan `listPhotosFromCloudinary` dari `@/lib/cloudinary` untuk multi-tenant.
  */
 export async function listImagesInFolder(options: {
   folder: string;
@@ -392,8 +391,7 @@ export async function listImagesInFolder(options: {
 }
 
 /**
- * Generate upload signature for client-side uploads
- * This allows secure direct uploads from browser
+ * @deprecated Gunakan `generateUploadSignature` dari `@/lib/cloudinary` untuk multi-tenant.
  */
 export function generateUploadSignature(
   params: Record<string, unknown>,
