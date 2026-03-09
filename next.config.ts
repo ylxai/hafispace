@@ -5,9 +5,24 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Allowed origins dari environment variable, fallback ke localhost untuk development
-const allowedOrigin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+// Daftar allowed origins dari environment variable (comma-separated)
+// Contoh: ALLOWED_ORIGINS=https://hafiportrait.com,https://www.hafiportrait.com
+// Fallback ke NEXT_PUBLIC_APP_URL, lalu localhost untuk development
+function getAllowedOrigins(): string[] {
+  const envOrigins = process.env.ALLOWED_ORIGINS;
+  if (envOrigins) {
+    return envOrigins.split(",").map((o) => o.trim()).filter(Boolean);
+  }
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (appUrl) return [appUrl];
+  return ["http://localhost:3000"];
+}
 
+const allowedOrigins = getAllowedOrigins();
+
+// next.config headers() tidak mendukung dynamic origin per-request,
+// jadi CORS per-request origin check ditangani di middleware.ts
+// Di sini hanya set security headers statis
 const nextConfig: NextConfig = {
   outputFileTracingRoot: resolve(__dirname, "./"),
   images: {
@@ -30,17 +45,10 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],
       },
-      {
-        source: "/api/:path*",
-        headers: [
-          { key: "Access-Control-Allow-Origin", value: allowedOrigin },
-          { key: "Access-Control-Allow-Methods", value: "GET, POST, PUT, DELETE, OPTIONS" },
-          { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" },
-          { key: "Access-Control-Allow-Credentials", value: "true" },
-        ],
-      },
     ];
   },
 };
+
+export { allowedOrigins };
 
 export default nextConfig;

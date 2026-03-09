@@ -177,6 +177,7 @@ model Gallery {
   bookingId          String?          @map("booking_id") @db.Uuid
   namaProject        String           @map("nama_project")
   clientToken        String           @unique @map("client_token")
+  tokenExpiresAt     DateTime?        @map("token_expires_at")
   viewCount          Int              @default(0) @map("view_count")
   status             GalleryStatus    @default(DRAFT)
   createdAt          DateTime         @default(now()) @map("created_at")

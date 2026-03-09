@@ -77,6 +77,14 @@ export async function GET(
     );
   }
 
+  // Cek apakah token sudah expired
+  if (gallery.tokenExpiresAt && gallery.tokenExpiresAt < new Date()) {
+    return NextResponse.json(
+      { code: "TOKEN_EXPIRED", message: "Link galeri ini sudah tidak aktif. Hubungi fotografer untuk mendapatkan link baru." },
+      { status: 410 }
+    );
+  }
+
   // Ambil photos dengan pagination
   const photos = await prisma.photo.findMany({
     where: { galleryId: gallery.id },
