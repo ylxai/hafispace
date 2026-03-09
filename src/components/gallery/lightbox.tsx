@@ -4,6 +4,7 @@ import { useEffect, useCallback, useState, useRef } from "react";
 import Image from "next/image";
 import cloudinaryLoader from "@/lib/image-loader";
 import { MIN_SWIPE_DISTANCE_PX } from "@/lib/constants";
+import { generateLightboxThumbnailUrl } from "@/lib/cloudinary/utils";
 
 interface Photo {
   id: string;
@@ -13,28 +14,6 @@ interface Photo {
   thumbnailUrl: string | null;
   width: number | null;
   height: number | null;
-}
-
-function generateThumbnailUrl(cloudName: string, publicId: string): string {
-  return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,g_auto,h_200,q_auto:good,w_200/${publicId}`;
-}
-
-function extractCloudName(url: string): string {
-  try {
-    const match = url.match(/res\.cloudinary\.com\/([^/]+)\//);
-    return match?.[1] ?? 'doweertbx';
-  } catch {
-    return 'doweertbx';
-  }
-}
-
-function extractPublicId(url: string): string {
-  try {
-    const match = url.match(/\/upload\/(.+)$/);
-    return match?.[1] ?? '';
-  } catch {
-    return '';
-  }
 }
 
 interface LightboxProps {
@@ -292,11 +271,7 @@ export function Lightbox({
               >
                 <div className="h-12 w-12 sm:h-14 sm:w-14">
                   <Image
-                    src={(() => {
-                      const cloudName = extractCloudName(photo.url);
-                      const publicId = extractPublicId(photo.url);
-                      return generateThumbnailUrl(cloudName, publicId);
-                    })()}
+                    src={generateLightboxThumbnailUrl(photo.url)}
                     alt={photo.filename}
                     fill
                     className="object-cover"

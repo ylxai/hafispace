@@ -47,3 +47,28 @@ export function generateThumbnailUrlFromUrl(url: string): string {
   if (!cloudName || !publicId) return url;
   return generateThumbnailUrl(cloudName, publicId);
 }
+
+/**
+ * Generate thumbnail URL kecil untuk filmstrip di lightbox (200x200)
+ * Menerima full Cloudinary URL untuk konsistensi API dengan fungsi lain
+ */
+export function generateLightboxThumbnailUrl(url: string): string {
+  const cloudName = extractCloudName(url);
+  const publicId = extractPublicId(url);
+  if (!cloudName || !publicId) return url;
+  return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,g_auto,w_200,h_200,f_auto,q_auto/${publicId}`;
+}
+
+/**
+ * Generate download URL dengan fl_attachment dari Cloudinary URL
+ * Validasi URL untuk mencegah XSS — hanya izinkan Cloudinary URL
+ */
+export function generateDownloadUrl(url: string): string {
+  // Validasi: hanya proses URL Cloudinary yang valid untuk mencegah XSS
+  // jika url bukan Cloudinary (misal javascript:...), kembalikan string kosong
+  if (!url.startsWith("https://res.cloudinary.com/")) return "";
+  const cloudName = extractCloudName(url);
+  const publicId = extractPublicId(url);
+  if (!cloudName || !publicId) return "";
+  return `https://res.cloudinary.com/${cloudName}/image/upload/fl_attachment/${publicId}`;
+}
