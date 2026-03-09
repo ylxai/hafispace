@@ -169,8 +169,15 @@ export async function POST(
         fileId,
         action,
       });
-  } catch {
-    // Non-critical — don't fail the request if Ably publish fails
+  } catch (ablyError) {
+    // Non-critical — jangan gagalkan request jika Ably publish gagal
+    // Log untuk monitoring supaya tim tahu jika Ably bermasalah
+    console.warn("[Ably] Gagal publish count-updated:", {
+      galleryId: gallery.id,
+      fileId,
+      action,
+      error: ablyError instanceof Error ? ablyError.message : String(ablyError),
+    });
   }
 
   return NextResponse.json({
