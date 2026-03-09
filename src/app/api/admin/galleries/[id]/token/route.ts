@@ -1,0 +1,83 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth/options";
+import { prisma } from "@/lib/db";
+import { unauthorizedResponse } from "@/lib/api/response";
+import { randomBytes } from "node:crypto";
+import { z } from "zod";
+
+const updateTokenSchema = z.object({
+  action: z.enum(["regenerate", "set-expiry", "clear-expiry"]),
+  // expiresAt dalam ISO string, hanya required untuk action "set-expiry"
+  expiresAt: z.string().datetime().optional(),
+});
+
+// PATCH /api/admin/galleries/:id/token
+// Actions: regenerate token, set expiry, clear expiry
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user?.id) return unauthorizedResponse();
+
+  const { id: galleryId } = await params;
+
+  const body = await request.json() as unknown;
+  const parsed = updateTokenSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { code: "VALIDATION_ERROR", message: parsed.error.issues[0]?.message },
+      { status: 400 }
+    );
+  }
+
+  const { action, expiresAt } = parsed.data;
+
+  const gallery = await prisma.gallery.findUnique({
+    where: { id: galleryId, vendorId: session.user.id },
+    select: { id: true, clientToken: true, tokenExpiresAt: true },
+  });
+
+  if (!gallery) {
+    return NextResponse.json(
+      { code: "NOT_FOUND", message: "Gallery not found" },
+      { status: 404 }
+    );
+  }
+
+  let updateData: { clientToken?: string; tokenExpiresAt?: Date | null } = {};
+
+  if (action === "regenerate") {
+    // Generate token baru yang kriptografis aman (32 hex chars = 128 bit entropy)
+    const newToken = randomBytes(16).toString("hex");
+    updateData = { clientToken: newToken };
+  } else if (action === "set-expiry") {
+    if (!expiresAt) {
+      return NextResponse.json(
+        { code: "VALIDATION_ERROR", message: "expiresAt diperlukan untuk action set-expiry" },
+        { status: 400 }
+      );
+    }
+    const expiry = new Date(expiresAt);
+    if (expiry <= new Date()) {
+      return NextResponse.json(
+        { code: "VALIDATION_ERROR", message: "Tanggal expiry harus di masa depan" },
+        { status: 400 }
+      );
+    }
+    updateData = { tokenExpiresAt: expiry };
+  } else if (action === "clear-expiry") {
+    updateData = { tokenExpiresAt: null };
+  }
+
+  const updated = await prisma.gallery.update({
+    where: { id: galleryId },
+    data: updateData,
+    select: { clientToken: true, tokenExpiresAt: true },
+  });
+
+  return NextResponse.json({
+    clientToken: updated.clientToken,
+    tokenExpiresAt: updated.tokenExpiresAt?.toISOString() ?? null,
+  });
+}

@@ -13,6 +13,7 @@ type AdminGallery = {
   namaProject: string;
   status: "DRAFT" | "IN_REVIEW" | "DELIVERED";
   clientToken: string;
+  tokenExpiresAt?: string | null;
   viewCount: number;
   photoCount: number;
   selectionCount: number;
@@ -37,11 +38,92 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
   const [liveSelectionCount, setLiveSelectionCount] = useState(gallery.selectionCount);
   const [clientSubmitted, setClientSubmitted] = useState(false);
   const ablyRef = useRef<unknown>(null);
+
+  // Token management state
+  const [currentToken, setCurrentToken] = useState(gallery.clientToken);
+  const [tokenExpiresAt, setTokenExpiresAt] = useState<string | null>(gallery.tokenExpiresAt ?? null);
+  const [expiryInput, setExpiryInput] = useState(
+    gallery.tokenExpiresAt ? new Date(gallery.tokenExpiresAt).toISOString().slice(0, 16) : ""
+  );
+  const [isTokenLoading, setIsTokenLoading] = useState(false);
+
   // Gunakan env var untuk SSR-safe URL — hindari window.location yang menyebabkan hydration mismatch
   const galleryUrl = useMemo(
-    () => `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/gallery/${gallery.clientToken}`,
-    [gallery.clientToken]
+    () => `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/gallery/${currentToken}`,
+    [currentToken]
   );
+
+  async function handleRegenerateToken() {
+    if (!confirm("Yakin ingin generate token baru? Link lama akan langsung tidak bisa diakses!")) return;
+    setIsTokenLoading(true);
+    try {
+      const res = await fetch(`/api/admin/galleries/${gallery.id}/token`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "regenerate" }),
+      });
+      if (!res.ok) {
+        const err = await res.json() as { message?: string };
+        throw new Error(err.message ?? "Gagal regenerate token");
+      }
+      const data = await res.json() as { clientToken: string; tokenExpiresAt: string | null };
+      setCurrentToken(data.clientToken);
+      setTokenExpiresAt(data.tokenExpiresAt);
+      queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
+      toast.success("Token berhasil di-generate ulang! Bagikan link baru ke klien.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal generate token baru");
+    } finally {
+      setIsTokenLoading(false);
+    }
+  }
+
+  async function handleSetExpiry() {
+    if (!expiryInput) return;
+    setIsTokenLoading(true);
+    try {
+      const res = await fetch(`/api/admin/galleries/${gallery.id}/token`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "set-expiry", expiresAt: new Date(expiryInput).toISOString() }),
+      });
+      if (!res.ok) {
+        const err = await res.json() as { message?: string };
+        throw new Error(err.message ?? "Gagal set expiry");
+      }
+      const data = await res.json() as { clientToken: string; tokenExpiresAt: string | null };
+      setTokenExpiresAt(data.tokenExpiresAt);
+      queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
+      toast.success("Tanggal kedaluwarsa berhasil disimpan.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal set expiry");
+    } finally {
+      setIsTokenLoading(false);
+    }
+  }
+
+  async function handleClearExpiry() {
+    setIsTokenLoading(true);
+    try {
+      const res = await fetch(`/api/admin/galleries/${gallery.id}/token`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "clear-expiry" }),
+      });
+      if (!res.ok) {
+        const err = await res.json() as { message?: string };
+        throw new Error(err.message ?? "Gagal hapus expiry");
+      }
+      setTokenExpiresAt(null);
+      setExpiryInput("");
+      queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
+      toast.success("Tanggal kedaluwarsa berhasil dihapus.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal hapus expiry");
+    } finally {
+      setIsTokenLoading(false);
+    }
+  }
 
   // Ably realtime — subscribe untuk update count & notifikasi submit dari klien
   useEffect(() => {
@@ -245,6 +327,66 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
                 className="shrink-0 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:border-slate-300"
               >
                 Copy
+              </button>
+            </div>
+          </div>
+
+          {/* Token Management — Regenerate & Expiry */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-3">
+            <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Keamanan Akses Link</p>
+
+            {/* Status expiry */}
+            {tokenExpiresAt && (
+              <p className={`text-xs ${new Date(tokenExpiresAt) < new Date() ? "text-red-600 font-semibold" : "text-amber-600"}`}>
+                {new Date(tokenExpiresAt) < new Date()
+                  ? `⛔ Link kedaluwarsa sejak ${new Date(tokenExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`
+                  : `⏰ Link aktif hingga ${new Date(tokenExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`
+                }
+              </p>
+            )}
+
+            {/* Set expiry date */}
+            <div>
+              <p className="mb-1 text-xs text-slate-500">Tanggal kedaluwarsa link (opsional)</p>
+              <div className="flex gap-2">
+                <input
+                  type="datetime-local"
+                  value={expiryInput}
+                  onChange={(e) => setExpiryInput(e.target.value)}
+                  min={new Date().toISOString().slice(0, 16)}
+                  className="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-slate-400"
+                />
+                <button
+                  type="button"
+                  onClick={handleSetExpiry}
+                  disabled={isTokenLoading || !expiryInput}
+                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-white disabled:opacity-50 transition"
+                >
+                  {isTokenLoading ? "..." : "Simpan"}
+                </button>
+                {tokenExpiresAt && (
+                  <button
+                    type="button"
+                    onClick={handleClearExpiry}
+                    disabled={isTokenLoading}
+                    className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 disabled:opacity-50 transition"
+                  >
+                    Hapus
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Regenerate token */}
+            <div className="pt-1 border-t border-slate-200">
+              <p className="mb-1 text-xs text-slate-500">Generate link baru (link lama langsung tidak aktif)</p>
+              <button
+                type="button"
+                onClick={handleRegenerateToken}
+                disabled={isTokenLoading}
+                className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition"
+              >
+                {isTokenLoading ? "Memproses..." : "🔄 Generate Token Baru"}
               </button>
             </div>
           </div>
