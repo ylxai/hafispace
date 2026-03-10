@@ -5,7 +5,8 @@ import { prisma } from "@/lib/db";
 import { gallerySchema } from "@/lib/api/validation";
 import { unauthorizedResponse, validationErrorResponse, notFoundResponse, parseAndValidate } from "@/lib/api/response";
 import { parsePaginationParams, createPaginationResponse } from "@/lib/api/pagination";
-import { verifyGalleryOwnership } from "@/lib/api/gallery-auth";
+// verifyGalleryOwnership tidak diperlukan di route ini — DELETE menggunakan manual query
+// karena perlu mengambil _count.photos dalam satu roundtrip yang sama
 
 export async function GET(request: Request) {
   const session = await auth();

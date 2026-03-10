@@ -93,48 +93,52 @@ export async function PATCH(request: Request) {
     return unauthorizedResponse();
   }
 
-  const result = await parseAndValidate(request, toggleLockSchema);
-  if (!result.ok) return result.response;
+  try {
+    const result = await parseAndValidate(request, toggleLockSchema);
+    if (!result.ok) return result.response;
 
-  const { selectionId, isLocked } = result.data;
+    const { selectionId, isLocked } = result.data;
 
-  const ownership = await verifySelectionOwnership(selectionId, session.user.id);
-  if (!ownership.found) {
-    return notFoundResponse("Selection not found");
-  }
+    const ownership = await verifySelectionOwnership(selectionId, session.user.id);
+    if (!ownership.found) {
+      return notFoundResponse("Selection not found");
+    }
 
-  const updated = await prisma.photoSelection.update({
-    where: { id: selectionId },
-    data: {
-      isLocked,
-      lockedAt: isLocked ? new Date() : null,
-    },
-  });
+    // Gunakan ownership.resource — hindari redundant findUnique query
+    const { filename, galleryId } = ownership.resource;
 
-  const selection = await prisma.photoSelection.findUnique({
-    where: { id: selectionId },
-    select: { filename: true, galleryId: true },
-  });
+    const updated = await prisma.photoSelection.update({
+      where: { id: selectionId },
+      data: {
+        isLocked,
+        lockedAt: isLocked ? new Date() : null,
+      },
+    });
 
-  if (selection) {
     await prisma.activityLog.create({
       data: {
         vendorId: session.user.id,
-        galleryId: selection.galleryId,
+        galleryId,
         action: isLocked ? "SELECTION_LOCKED" : "SELECTION_UNLOCKED",
-        details: `Selection ${selection.filename} ${isLocked ? "locked" : "unlocked"}`,
+        details: `Selection ${filename} ${isLocked ? "locked" : "unlocked"}`,
       },
     });
-  }
 
-  return NextResponse.json({
-    success: true,
-    selection: {
-      id: updated.id,
-      isLocked: updated.isLocked,
-      lockedAt: updated.lockedAt?.toISOString() ?? null,
-    },
-  });
+    return NextResponse.json({
+      success: true,
+      selection: {
+        id: updated.id,
+        isLocked: updated.isLocked,
+        lockedAt: updated.lockedAt?.toISOString() ?? null,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating selection:", error);
+    return NextResponse.json(
+      { code: "INTERNAL_ERROR", message: "Failed to update selection" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(request: Request) {

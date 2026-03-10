@@ -151,8 +151,9 @@ export async function PATCH(
     if (!paket) return notFoundResponse("Package not found");
   }
 
+  // Sertakan vendorId sebagai defense-in-depth — cegah IDOR jika verifyBookingOwnership dilewati
   const updated = await prisma.booking.update({
-    where: { id },
+    where: { id, vendorId: session.user.id },
     data: {
       ...(status !== undefined && { status }),
       ...(lokasiSesi !== undefined && { lokasiSesi }),

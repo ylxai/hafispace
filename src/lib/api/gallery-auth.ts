@@ -40,15 +40,18 @@ export async function verifyGalleryOwnership(
  * if (!result.found) return notFoundResponse();
  * const gallery = result.gallery; // Type-safe!
  */
+type GalleryWithSelect<T extends Prisma.GallerySelect> = Prisma.GalleryGetPayload<{ select: T }> & { id: string; vendorId: string };
+
 export async function verifyGalleryOwnershipWithSelect<T extends Prisma.GallerySelect>(
   galleryId: string,
   vendorId: string,
   select: T
-): Promise<{ found: true; gallery: { id: string; vendorId: string } & Prisma.GalleryGetPayload<{ select: T }> } | { found: false }> {
-  const gallery = await prisma.gallery.findUnique({
+): Promise<{ found: true; gallery: GalleryWithSelect<T> } | { found: false }> {
+  const gallery = await (prisma.gallery.findUnique({
     where: { id: galleryId, vendorId },
-    select: { id: true, vendorId: true, ...select },
-  });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    select: { id: true, vendorId: true, ...select } as any,
+  }) as unknown as Promise<GalleryWithSelect<T> | null>);
 
   if (!gallery) return { found: false };
   return { found: true, gallery };
