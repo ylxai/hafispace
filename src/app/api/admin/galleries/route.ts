@@ -115,18 +115,24 @@ export async function DELETE(request: Request) {
     return validationErrorResponse("Gallery ID is required");
   }
 
-  const ownership = await verifyGalleryOwnership(galleryId, session.user.id);
-  if (!ownership.found) {
+  // Verifikasi ownership dan cek photo count dalam satu query
+  const gallery = await prisma.gallery.findUnique({
+    where: { id: galleryId, vendorId: session.user.id },
+    select: {
+      id: true,
+      _count: {
+        select: { photos: true },
+      },
+    },
+  });
+
+  if (!gallery) {
     return notFoundResponse("Gallery not found");
   }
 
-  const photoCount = await prisma.photo.count({
-    where: { galleryId },
-  });
-
-  if (photoCount > 0) {
+  if (gallery._count.photos > 0) {
     return validationErrorResponse(
-      `Cannot delete gallery with ${photoCount} photo(s). Delete photos first.`
+      `Cannot delete gallery with ${gallery._count.photos} photo(s). Delete photos first.`
     );
   }
 

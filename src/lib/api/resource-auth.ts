@@ -67,13 +67,13 @@ export async function verifyPhotoOwnership(
 export async function verifySelectionOwnership(
   selectionId: string,
   vendorId: string
-): Promise<OwnershipResult<{ id: string; galleryId: string }>> {
+): Promise<OwnershipResult<{ id: string; galleryId: string; fileId: string; filename: string }>> {
   const selection = await prisma.photoSelection.findFirst({
     where: {
       id: selectionId,
       gallery: { vendorId },
     },
-    select: { id: true, galleryId: true },
+    select: { id: true, galleryId: true, fileId: true, filename: true },
   });
 
   if (!selection) return { found: false };

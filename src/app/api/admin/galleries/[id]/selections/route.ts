@@ -46,23 +46,7 @@ export async function GET(
       return notFoundResponse("Gallery not found");
     }
 
-    const gallery = ownership.gallery as {
-      selections: Array<{
-        id: string;
-        fileId: string;
-        filename: string;
-        selectionType: string;
-        printSize: string | null;
-        selectedAt: Date;
-        isLocked: boolean;
-        lockedAt: Date | null;
-      }>;
-      photos: Array<{
-        storageKey: string;
-        url: string;
-        thumbnailUrl: string;
-      }>;
-    };
+    const gallery = ownership.gallery;
 
     const photoMap = new Map(
       gallery.photos.map((photo) => [photo.storageKey, photo])
@@ -160,43 +144,44 @@ export async function DELETE(request: Request) {
     return unauthorizedResponse();
   }
 
-  const result = await parseAndValidate(request, deleteSchema);
-  if (!result.ok) return result.response;
-
-  const { selectionId } = result.data;
-
-  const ownership = await verifySelectionOwnership(selectionId, session.user.id);
-  if (!ownership.found) {
-    return notFoundResponse("Selection not found");
-  }
-
-  const selection = await prisma.photoSelection.findUnique({
-    where: { id: selectionId },
-    select: { fileId: true, filename: true, galleryId: true },
-  });
-
-  if (!selection) {
-    return notFoundResponse("Selection not found");
-  }
-
-  await prisma.photoSelection.delete({
-    where: { id: selectionId },
-  });
-
   try {
-    await deletePhotoFromCloudinary(session.user.id, selection.fileId);
-  } catch (cloudinaryError) {
-    console.error("Gagal menghapus foto dari Cloudinary:", cloudinaryError);
+    const result = await parseAndValidate(request, deleteSchema);
+    if (!result.ok) return result.response;
+
+    const { selectionId } = result.data;
+
+    const ownership = await verifySelectionOwnership(selectionId, session.user.id);
+    if (!ownership.found) {
+      return notFoundResponse("Selection not found");
+    }
+
+    const selection = ownership.resource;
+
+    await prisma.photoSelection.delete({
+      where: { id: selectionId },
+    });
+
+    try {
+      await deletePhotoFromCloudinary(session.user.id, selection.fileId);
+    } catch (cloudinaryError) {
+      console.error("Gagal menghapus foto dari Cloudinary:", cloudinaryError);
+    }
+
+    await prisma.activityLog.create({
+      data: {
+        vendorId: session.user.id,
+        galleryId: selection.galleryId,
+        action: "SELECTION_DELETED",
+        details: `Selection ${selection.filename} deleted`,
+      },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting selection:", error);
+    return NextResponse.json(
+      { code: "INTERNAL_ERROR", message: "Failed to delete selection" },
+      { status: 500 }
+    );
   }
-
-  await prisma.activityLog.create({
-    data: {
-      vendorId: session.user.id,
-      galleryId: selection.galleryId,
-      action: "SELECTION_DELETED",
-      details: `Selection ${selection.filename} deleted`,
-    },
-  });
-
-  return NextResponse.json({ success: true });
 }
