@@ -38,18 +38,21 @@ export async function verifyGalleryOwnership(
  *   tokenExpiresAt: true,
  * });
  * if (!result.found) return notFoundResponse();
- * const gallery = result.gallery as { id: string; vendorId: string; clientToken: string | null; tokenExpiresAt: Date | null };
+ * const gallery = result.gallery; // Type-safe!
  */
-export async function verifyGalleryOwnershipWithSelect(
+type GalleryWithSelect<T extends Prisma.GallerySelect> = Prisma.GalleryGetPayload<{ select: T }> & { id: string; vendorId: string };
+
+export async function verifyGalleryOwnershipWithSelect<T extends Prisma.GallerySelect>(
   galleryId: string,
   vendorId: string,
-  select: Prisma.GallerySelect
-): Promise<{ found: true; gallery: Record<string, unknown> } | { found: false }> {
-  const gallery = await prisma.gallery.findUnique({
+  select: T
+): Promise<{ found: true; gallery: GalleryWithSelect<T> } | { found: false }> {
+  const gallery = await (prisma.gallery.findUnique({
     where: { id: galleryId, vendorId },
-    select: { id: true, vendorId: true, ...select },
-  });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    select: { id: true, vendorId: true, ...select } as any,
+  }) as unknown as Promise<GalleryWithSelect<T> | null>);
 
   if (!gallery) return { found: false };
-  return { found: true, gallery: gallery as Record<string, unknown> };
+  return { found: true, gallery };
 }

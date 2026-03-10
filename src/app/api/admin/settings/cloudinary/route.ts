@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { v2 as cloudinary } from "cloudinary";
-import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
+import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse, parseRequestBody } from "@/lib/api/response";
 
 interface CloudinaryConfig {
   cloudName: string;
@@ -53,7 +53,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { cloudName, apiKey, apiSecret }: CloudinaryConfig = await request.json();
+    const bodyResult = await parseRequestBody(request);
+    if (!bodyResult.ok) return bodyResult.response;
+    const { cloudName, apiKey, apiSecret } = bodyResult.data as Partial<CloudinaryConfig>;
 
     if (!cloudName || !apiKey || !apiSecret) {
       return validationErrorResponse("Missing required fields: cloudName, apiKey, apiSecret");

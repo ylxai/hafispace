@@ -44,3 +44,49 @@ export const gallerySchema = z.object({
   enableDownload: z.boolean().optional(),
   enablePrint: z.boolean().optional(),
 });
+
+export const paymentSchema = z.object({
+  amount: z.coerce.number().positive("Amount must be positive"),
+  paymentMethod: z.enum(["CASH", "TRANSFER", "QRIS", "OTHER"]),
+  notes: z.string().optional(),
+  proofUrl: z.string().url().optional(),
+});
+
+export const packageSchema = z.object({
+  namaPaket: z.string().min(1, "Nama paket wajib diisi"),
+  kategori: z.enum(["PREWED", "WEDDING", "PERSONAL", "EVENT", "LAINNYA"]).default("LAINNYA"),
+  harga: z.coerce.number().min(0).default(0),
+  deskripsi: z.string().optional(),
+  kuotaEdit: z.coerce.number().int().positive().optional().nullable(),
+  maxSelection: z.coerce.number().int().min(1).default(40),
+  includeCetak: z
+    .array(z.object({ nama: z.string(), jumlah: z.coerce.number().int().positive() }))
+    .optional()
+    .nullable(),
+  urutan: z.coerce.number().int().default(0),
+  status: z.enum(["active", "inactive"]).default("active"),
+});
+
+export const cloudinaryAccountSchema = z.object({
+  cloudName: z.string().min(1, "Cloud name is required"),
+  apiKey: z.string().min(1, "API key is required"),
+  apiSecret: z.string().min(1, "API secret is required"),
+  label: z.string().min(1, "Label is required"),
+  isDefault: z.boolean().optional(),
+});
+
+export const gallerySettingsSchema = z.object({
+  enableDownload: z.boolean().optional(),
+  enablePrint: z.boolean().optional(),
+  enableWatermark: z.boolean().optional(),
+  customMessage: z.string().optional(),
+  maxSelection: z.coerce.number().int().positive().min(1).max(MAX_SELECTION_LIMIT).optional(),
+});
+
+export const deleteResourceSchema = z.object({
+  id: z.string().uuid("ID must be a valid UUID"),
+});
+
+export const bulkDeleteSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1, "At least one ID is required"),
+});

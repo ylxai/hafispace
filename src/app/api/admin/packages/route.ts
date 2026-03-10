@@ -1,23 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse, validationErrorResponse, notFoundResponse, parseRequestBody } from "@/lib/api/response";
+import { unauthorizedResponse, validationErrorResponse, notFoundResponse, parseAndValidate } from "@/lib/api/response";
+import { verifyPackageOwnership } from "@/lib/api/resource-auth";
+import { packageSchema } from "@/lib/api/validation";
 import { z } from "zod";
-
-const packageSchema = z.object({
-  namaPaket: z.string().min(1, "Nama paket wajib diisi"),
-  kategori: z.enum(["PREWED", "WEDDING", "PERSONAL", "EVENT", "LAINNYA"]).default("LAINNYA"),
-  harga: z.coerce.number().min(0).default(0),
-  deskripsi: z.string().optional(),
-  kuotaEdit: z.coerce.number().int().positive().optional().nullable(),
-  maxSelection: z.coerce.number().int().min(1).default(40),
-  includeCetak: z
-    .array(z.object({ nama: z.string(), jumlah: z.coerce.number().int().positive() }))
-    .optional()
-    .nullable(),
-  urutan: z.coerce.number().int().default(0),
-  status: z.enum(["active", "inactive"]).default("active"),
-});
 
 // GET — list semua paket milik vendor
 export async function GET() {
@@ -51,12 +38,10 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return unauthorizedResponse();
 
-  const bodyResult = await parseRequestBody(request);
-  if (!bodyResult.ok) return bodyResult.response;
-  const parsed = packageSchema.safeParse(bodyResult.data);
-  if (!parsed.success) return validationErrorResponse(parsed.error.format());
+  const result = await parseAndValidate(request, packageSchema);
+  if (!result.ok) return result.response;
 
-  const { namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak, urutan, status } = parsed.data;
+  const { namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak, urutan, status } = result.data;
 
   const newPackage = await prisma.package.create({
     data: {
@@ -81,22 +66,16 @@ export async function PUT(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return unauthorizedResponse();
 
-  const bodyResult = await parseRequestBody(request);
-  if (!bodyResult.ok) return bodyResult.response;
-  const updatePackageSchema = packageSchema.extend({
-    id: z.string({ message: "Package ID required" }).min(1),
-  });
-  const parsed = updatePackageSchema.safeParse(bodyResult.data);
-  if (!parsed.success) return validationErrorResponse(parsed.error.format());
+  const result = await parseAndValidate(request, packageSchema.extend({
+    id: z.string().uuid(),
+  }));
+  if (!result.ok) return result.response;
 
-  const { id, namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak, urutan, status } = parsed.data;
+  const { id, namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak, urutan, status } = result.data;
 
-  const existing = await prisma.package.findFirst({
-    where: { id, vendorId: session.user.id },
-  });
-  if (!existing) return notFoundResponse("Package not found");
+  const ownership = await verifyPackageOwnership(id, session.user.id);
+  if (!ownership.found) return notFoundResponse("Package not found");
 
-  // Sertakan vendorId sebagai defense-in-depth — cegah IDOR
   const updated = await prisma.package.update({
     where: { id, vendorId: session.user.id },
     data: { namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak: includeCetak ?? undefined, urutan, status },
@@ -114,21 +93,16 @@ export async function DELETE(request: NextRequest) {
   const id = searchParams.get("id");
   if (!id) return validationErrorResponse("Package ID required");
 
-  const existing = await prisma.package.findFirst({
-    where: { id, vendorId: session.user.id },
-  });
-  if (!existing) return notFoundResponse("Package not found");
+  const ownership = await verifyPackageOwnership(id, session.user.id);
+  if (!ownership.found) return notFoundResponse("Package not found");
 
-  // Cek apakah ada booking yang menggunakan paket ini
   const bookingCount = await prisma.booking.count({ where: { paketId: id } });
   if (bookingCount > 0) {
-    return NextResponse.json(
-      { error: `Paket digunakan oleh ${bookingCount} booking. Hapus atau ubah paket di booking terlebih dahulu.` },
-      { status: 409 }
+    return validationErrorResponse(
+      `Paket digunakan oleh ${bookingCount} booking. Hapus atau ubah paket di booking terlebih dahulu.`
     );
   }
 
-  // Sertakan vendorId sebagai defense-in-depth — cegah IDOR
   await prisma.package.delete({ where: { id, vendorId: session.user.id } });
   return NextResponse.json({ success: true });
 }

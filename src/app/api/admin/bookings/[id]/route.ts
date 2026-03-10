@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse, notFoundResponse, validationErrorResponse, parseRequestBody } from "@/lib/api/response";
+import { unauthorizedResponse, notFoundResponse, parseAndValidate } from "@/lib/api/response";
+import { verifyBookingOwnership } from "@/lib/api/resource-auth";
 import { z } from "zod";
 
 // GET — detail booking lengkap
@@ -14,8 +15,11 @@ export async function GET(
 
   const { id } = await params;
 
-  const booking = await prisma.booking.findFirst({
-    where: { id, vendorId: session.user.id },
+  const ownership = await verifyBookingOwnership(id, session.user.id);
+  if (!ownership.found) return notFoundResponse("Booking not found");
+
+  const booking = await prisma.booking.findUnique({
+    where: { id },
     select: {
       id: true,
       kodeBooking: true,
@@ -131,31 +135,25 @@ export async function PATCH(
 
   const { id } = await params;
 
-  const existing = await prisma.booking.findFirst({
-    where: { id, vendorId: session.user.id },
-  });
-  if (!existing) return notFoundResponse("Booking not found");
+  const ownership = await verifyBookingOwnership(id, session.user.id);
+  if (!ownership.found) return notFoundResponse("Booking not found");
 
-  const bodyResult = await parseRequestBody(request);
-  if (!bodyResult.ok) return bodyResult.response;
-  const parsed = updateSchema.safeParse(bodyResult.data);
-  if (!parsed.success) {
-    return validationErrorResponse(parsed.error.format());
-  }
+  const result = await parseAndValidate(request, updateSchema);
+  if (!result.ok) return result.response;
 
-  const { status, lokasiSesi, tanggalSesi, hargaPaket, notes, paketId } = parsed.data;
+  const { status, lokasiSesi, tanggalSesi, hargaPaket, notes, paketId } = result.data;
 
-  // IDOR check: verifikasi paketId milik vendor yang sedang login
   if (paketId) {
     const paket = await prisma.package.findFirst({
       where: { id: paketId, vendorId: session.user.id },
       select: { id: true },
     });
-    if (!paket) return notFoundResponse("Package not found or unauthorized");
+    if (!paket) return notFoundResponse("Package not found");
   }
 
+  // Sertakan vendorId sebagai defense-in-depth — cegah IDOR jika verifyBookingOwnership dilewati
   const updated = await prisma.booking.update({
-    where: { id },
+    where: { id, vendorId: session.user.id },
     data: {
       ...(status !== undefined && { status }),
       ...(lokasiSesi !== undefined && { lokasiSesi }),

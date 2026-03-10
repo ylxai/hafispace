@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { bookingSchema, bookingUpdateSchema } from "@/lib/api/validation";
-import { unauthorizedResponse, validationErrorResponse, internalErrorResponse , parseRequestBody } from "@/lib/api/response";
+import { unauthorizedResponse, validationErrorResponse, internalErrorResponse, parseAndValidate, notFoundResponse } from "@/lib/api/response";
+import { parsePaginationParams, createPaginationResponse } from "@/lib/api/pagination";
+import { verifyBookingOwnership } from "@/lib/api/resource-auth";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -14,9 +16,7 @@ export async function GET(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
-    const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit") ?? "20", 10)));
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePaginationParams(searchParams);
 
     const [bookings, total] = await Promise.all([
       prisma.booking.findMany({
@@ -70,12 +70,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       items: formatted,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      pagination: createPaginationResponse(page, limit, total),
     });
   } catch (error) {
     console.error("Error fetching bookings:", error);
@@ -91,13 +86,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const bodyResult = await parseRequestBody(request);
-    if (!bodyResult.ok) return bodyResult.response;
-    const parsed = bookingSchema.safeParse(bodyResult.data);
-
-    if (!parsed.success) {
-      return validationErrorResponse(parsed.error.format());
-    }
+    const result = await parseAndValidate(request, bookingSchema);
+    if (!result.ok) return result.response;
 
     const {
       namaClient,
@@ -110,17 +100,14 @@ export async function POST(request: Request) {
       lokasiSesi,
       maxSelection,
       notes,
-    } = parsed.data;
+    } = result.data;
 
-    // Generate booking code
     const kodeBooking = `BK-${Date.now().toString(36).toUpperCase()}`;
 
-    // Handle timezone: Convert ISO string to Date, preserve user's date
     const sessionDate = new Date(tanggalSesi);
     const year = sessionDate.getUTCFullYear();
     const month = sessionDate.getUTCMonth();
     const day = sessionDate.getUTCDate();
-    // Create date at noon UTC to avoid timezone issues
     const normalizedDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
 
     // Ambil maxSelection dari paket jika paketId dipilih
@@ -178,43 +165,24 @@ export async function DELETE(request: Request) {
     const bookingId = searchParams.get("id");
 
     if (!bookingId) {
-      return NextResponse.json(
-        { code: "VALIDATION_ERROR", message: "Booking ID is required" },
-        { status: 400 }
-      );
+      return validationErrorResponse("Booking ID is required");
     }
 
-    // Verify booking belongs to vendor
-    const booking = await prisma.booking.findFirst({
-      where: {
-        id: bookingId,
-        vendorId: session.user.id,
-      },
-    });
-
-    if (!booking) {
-      return NextResponse.json(
-        { code: "NOT_FOUND", message: "Booking not found" },
-        { status: 404 }
-      );
+    const ownership = await verifyBookingOwnership(bookingId, session.user.id);
+    if (!ownership.found) {
+      return notFoundResponse("Booking not found");
     }
 
-    // Check if booking has galleries
     const galleryCount = await prisma.gallery.count({
       where: { bookingId },
     });
 
     if (galleryCount > 0) {
-      return NextResponse.json(
-        {
-          code: "HAS_GALLERIES",
-          message: `Cannot delete booking with ${galleryCount} gallery(ies). Delete galleries first.`,
-        },
-        { status: 400 }
+      return validationErrorResponse(
+        `Cannot delete booking with ${galleryCount} gallery(ies). Delete galleries first.`
       );
     }
 
-    // Sertakan vendorId sebagai defense-in-depth — cegah IDOR jika logika di atas diubah
     await prisma.booking.delete({
       where: { id: bookingId, vendorId: session.user.id },
     });
@@ -237,13 +205,8 @@ export async function PUT(request: Request) {
   }
 
   try {
-    const bodyResult = await parseRequestBody(request);
-    if (!bodyResult.ok) return bodyResult.response;
-    const parsed = bookingUpdateSchema.safeParse(bodyResult.data);
-
-    if (!parsed.success) {
-      return validationErrorResponse(parsed.error.format());
-    }
+    const result = await parseAndValidate(request, bookingUpdateSchema);
+    if (!result.ok) return result.response;
 
     const {
       id,
@@ -258,38 +221,23 @@ export async function PUT(request: Request) {
       maxSelection,
       status,
       notes,
-    } = parsed.data;
+    } = result.data;
 
-    // Verify booking belongs to vendor
-    const existingBooking = await prisma.booking.findFirst({
-      where: {
-        id,
-        vendorId: session.user.id,
-      },
-    });
-
-    if (!existingBooking) {
-      return NextResponse.json(
-        { code: "NOT_FOUND", message: "Booking not found" },
-        { status: 404 }
-      );
+    const ownership = await verifyBookingOwnership(id, session.user.id);
+    if (!ownership.found) {
+      return notFoundResponse("Booking not found");
     }
 
-    // Jika paketId diupdate (dan bukan null), verifikasi kepemilikan — cegah IDOR di PUT handler
     if (paketId !== undefined && paketId !== null) {
       const paket = await prisma.package.findFirst({
         where: { id: paketId, vendorId: session.user.id },
         select: { id: true },
       });
       if (!paket) {
-        return NextResponse.json(
-          { code: "NOT_FOUND", message: "Package not found or unauthorized" },
-          { status: 404 }
-        );
+        return notFoundResponse("Package not found");
       }
     }
 
-    // Sertakan vendorId sebagai defense-in-depth — cegah IDOR jika logika di atas diubah
     const updatedBooking = await prisma.booking.update({
       where: { id, vendorId: session.user.id },
       data: {

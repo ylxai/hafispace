@@ -20,7 +20,7 @@ export async function POST(
 
   // Rate limit: maks 120 seleksi per menit per IP+token
   const ip = getClientIp(request);
-  const rl = checkRateLimit(`select:${ip}:${token}`, { limit: 120, windowMs: 60_000 });
+  const rl = await checkRateLimit(`select:${ip}:${token}`, { limit: 120, windowMs: 60_000 });
   if (!rl.success) {
     return NextResponse.json(
       { code: "RATE_LIMITED", message: "Terlalu banyak request. Coba lagi dalam 1 menit." },

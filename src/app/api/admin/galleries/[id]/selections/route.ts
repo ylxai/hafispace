@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse } from "@/lib/api/response";
+import { unauthorizedResponse, notFoundResponse, parseAndValidate } from "@/lib/api/response";
 import { deletePhotoFromCloudinary } from "@/lib/cloudinary";
+import { verifyGalleryOwnershipWithSelect } from "@/lib/api/gallery-auth";
+import { verifySelectionOwnership } from "@/lib/api/resource-auth";
 import { z } from "zod";
 
 const toggleLockSchema = z.object({
@@ -27,31 +29,24 @@ export async function GET(
   const { id: galleryId } = await params;
 
   try {
-    const gallery = await prisma.gallery.findUnique({
-      where: {
-        id: galleryId,
-        vendorId: session.user.id,
+    const ownership = await verifyGalleryOwnershipWithSelect(galleryId, session.user.id, {
+      selections: {
+        orderBy: { selectedAt: "desc" },
       },
-      include: {
-        selections: {
-          orderBy: { selectedAt: "desc" },
-        },
-        photos: {
-          select: {
-            storageKey: true,
-            url: true,
-            thumbnailUrl: true,
-          },
+      photos: {
+        select: {
+          storageKey: true,
+          url: true,
+          thumbnailUrl: true,
         },
       },
     });
 
-    if (!gallery) {
-      return NextResponse.json(
-        { code: "NOT_FOUND", message: "Gallery not found" },
-        { status: 404 }
-      );
+    if (!ownership.found) {
+      return notFoundResponse("Gallery not found");
     }
+
+    const gallery = ownership.gallery;
 
     const photoMap = new Map(
       gallery.photos.map((photo) => [photo.storageKey, photo])
@@ -99,24 +94,18 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const body = await request.json();
-    const { selectionId, isLocked } = toggleLockSchema.parse(body);
+    const result = await parseAndValidate(request, toggleLockSchema);
+    if (!result.ok) return result.response;
 
-    const selection = await prisma.photoSelection.findUnique({
-      where: { id: selectionId },
-      include: {
-        gallery: {
-          select: { vendorId: true },
-        },
-      },
-    });
+    const { selectionId, isLocked } = result.data;
 
-    if (!selection || selection.gallery.vendorId !== session.user.id) {
-      return NextResponse.json(
-        { code: "NOT_FOUND", message: "Selection not found" },
-        { status: 404 }
-      );
+    const ownership = await verifySelectionOwnership(selectionId, session.user.id);
+    if (!ownership.found) {
+      return notFoundResponse("Selection not found");
     }
+
+    // Gunakan ownership.resource — hindari redundant findUnique query
+    const { filename, galleryId } = ownership.resource;
 
     const updated = await prisma.photoSelection.update({
       where: { id: selectionId },
@@ -129,9 +118,9 @@ export async function PATCH(request: Request) {
     await prisma.activityLog.create({
       data: {
         vendorId: session.user.id,
-        galleryId: selection.galleryId,
+        galleryId,
         action: isLocked ? "SELECTION_LOCKED" : "SELECTION_UNLOCKED",
-        details: `Selection ${selection.filename} ${isLocked ? "locked" : "unlocked"}`,
+        details: `Selection ${filename} ${isLocked ? "locked" : "unlocked"}`,
       },
     });
 
@@ -144,12 +133,6 @@ export async function PATCH(request: Request) {
       },
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { code: "VALIDATION_ERROR", message: "Invalid request", details: error.issues },
-        { status: 400 }
-      );
-    }
     console.error("Error updating selection:", error);
     return NextResponse.json(
       { code: "INTERNAL_ERROR", message: "Failed to update selection" },
@@ -166,37 +149,26 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    const body = await request.json();
-    const { selectionId } = deleteSchema.parse(body);
+    const result = await parseAndValidate(request, deleteSchema);
+    if (!result.ok) return result.response;
 
-    const selection = await prisma.photoSelection.findUnique({
-      where: { id: selectionId },
-      include: {
-        gallery: {
-          select: { vendorId: true },
-        },
-      },
-    });
+    const { selectionId } = result.data;
 
-    if (!selection || selection.gallery.vendorId !== session.user.id) {
-      return NextResponse.json(
-        { code: "NOT_FOUND", message: "Selection not found" },
-        { status: 404 }
-      );
+    const ownership = await verifySelectionOwnership(selectionId, session.user.id);
+    if (!ownership.found) {
+      return notFoundResponse("Selection not found");
     }
 
-    // Hapus dari database dulu
+    const selection = ownership.resource;
+
     await prisma.photoSelection.delete({
       where: { id: selectionId },
     });
 
-    // Coba hapus foto dari Cloudinary (non-critical — jangan gagalkan request jika Cloudinary error)
-    // fileId menyimpan public_id Cloudinary
     try {
-      await deletePhotoFromCloudinary(selection.gallery.vendorId, selection.fileId);
+      await deletePhotoFromCloudinary(session.user.id, selection.fileId);
     } catch (cloudinaryError) {
       console.error("Gagal menghapus foto dari Cloudinary:", cloudinaryError);
-      // Lanjutkan — database sudah dihapus, Cloudinary cleanup bisa dilakukan manual
     }
 
     await prisma.activityLog.create({
@@ -210,12 +182,6 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { code: "VALIDATION_ERROR", message: "Invalid request", details: error.issues },
-        { status: 400 }
-      );
-    }
     console.error("Error deleting selection:", error);
     return NextResponse.json(
       { code: "INTERNAL_ERROR", message: "Failed to delete selection" },

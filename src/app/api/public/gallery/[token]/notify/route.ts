@@ -18,7 +18,7 @@ export async function POST(
 
     // Rate limit: maks 5 notifikasi per jam per IP+token (cegah spam)
     const ip = getClientIp(request);
-    const rl = checkRateLimit(`notify:${ip}:${token}`, { limit: 5, windowMs: 60 * 60_000 });
+    const rl = await checkRateLimit(`notify:${ip}:${token}`, { limit: 5, windowMs: 60 * 60_000 });
     if (!rl.success) {
       return NextResponse.json(
         { code: "RATE_LIMITED", message: "Terlalu banyak notifikasi. Coba lagi nanti." },
