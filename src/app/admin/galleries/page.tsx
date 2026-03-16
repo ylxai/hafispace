@@ -9,18 +9,7 @@ import { useAdminGalleries } from "@/hooks/use-admin-galleries";
 import { useToast } from "@/components/ui/toast";
 import { ErrorState } from "@/components/ui/error-state";
 import { Pagination } from "@/components/ui";
-
-type AdminGallery = {
-  id: string;
-  namaProject: string;
-  status: "DRAFT" | "IN_REVIEW" | "DELIVERED";
-  clientToken: string;
-  viewCount: number;
-  photoCount: number;
-  selectionCount: number;
-  clientName: string;
-  createdAt: string;
-};
+import type { AdminGallery } from "@/types/admin";
 
 
 import { EditGalleryModal } from "./_components/edit-gallery-modal";

@@ -5,18 +5,9 @@ import Link from "next/link";
 import { useAdminClients } from "@/hooks/use-admin-clients";
 import { useToast } from "@/components/ui/toast";
 import { ErrorState } from "@/components/ui/error-state";
+import type { AdminClient } from "@/types/admin";
 
 export const dynamic = "force-dynamic";
-
-type AdminClient = {
-  id: string;
-  name: string;
-  email: string | null;
-  phone: string | null;
-  instagram: string | null;
-  totalBooking: number;
-  createdAt: string;
-};
 
 function ClientViewModal({ client, onClose }: { client: AdminClient; onClose: () => void }) {
   return (

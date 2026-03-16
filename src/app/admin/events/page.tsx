@@ -12,15 +12,7 @@ import { PaymentModal } from "./_components/payment-modal";
 import { CreateBookingModal } from "./_components/create-booking-modal";
 import { ErrorState } from "@/components/ui/error-state";
 import { Pagination, Skeleton } from "@/components/ui";
-
-// ─── Format helpers ───────────────────────────────────────────────────────────
-
-const formatRupiah = (amount: number) =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(amount);
+import { formatRupiah } from "@/lib/format";
 
 const DP_STATUS_MAP: Record<string, { label: string; className: string }> = {
   PAID: { label: "Lunas", className: "bg-green-100 text-green-700" },
