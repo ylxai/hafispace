@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SAVED_FEEDBACK_DURATION_MS } from "@/lib/constants";
 
 export function StudioProfilePanel({ embedded = false }: { embedded?: boolean } = {}) {
@@ -48,6 +48,11 @@ export function StudioProfilePanel({ embedded = false }: { embedded?: boolean } 
       setIsSaving(false);
     }
   }
+
+  // Auto-load saat embedded karena tidak ada toggle button
+  useEffect(() => {
+    if (embedded) loadProfile();
+  }, [embedded]);
 
   function handleToggle() {
     if (!isOpen) loadProfile();

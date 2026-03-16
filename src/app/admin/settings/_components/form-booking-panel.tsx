@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { SAVED_FEEDBACK_DURATION_MS } from "@/lib/constants";
 import { useToast } from "@/components/ui/toast";
@@ -72,6 +72,11 @@ export function FormBookingPanel({ embedded = false }: { embedded?: boolean } = 
       setIsSaving(false);
     }
   }
+
+  // Auto-load saat embedded karena tidak ada toggle button
+  useEffect(() => {
+    if (embedded) void loadSettings();
+  }, [embedded]);
 
   function handleToggle() {
     if (!isOpen) loadSettings();

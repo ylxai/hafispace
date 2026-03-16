@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SAVED_FEEDBACK_DURATION_MS } from "@/lib/constants";
 
 export function ViesusEnhancementPanel({ embedded = false }: { embedded?: boolean } = {}) {
@@ -27,6 +27,11 @@ export function ViesusEnhancementPanel({ embedded = false }: { embedded?: boolea
       setLoading(false);
     }
   }
+
+  // Auto-load saat embedded karena tidak ada toggle button
+  useEffect(() => {
+    if (embedded) void loadConfig();
+  }, [embedded]);
 
   async function handleToggle() {
     if (!isOpen) {

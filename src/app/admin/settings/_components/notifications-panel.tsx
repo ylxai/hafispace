@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/toast";
 
 interface NotifPrefs {
@@ -61,6 +61,11 @@ export function NotificationsPanel({ embedded = false }: { embedded?: boolean } 
       toast.error("Gagal menyimpan pengaturan notifikasi");
     }
   }
+
+  // Saat embedded, auto-load prefs karena tidak ada toggle button
+  useEffect(() => {
+    if (embedded) loadPrefs();
+  }, [embedded]);
 
   function handleOpen() {
     if (!isOpen) {
