@@ -10,6 +10,9 @@ import { useToast } from "@/components/ui/toast";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import { PaymentModal } from "./_components/payment-modal";
 import { CreateBookingModal } from "./_components/create-booking-modal";
+import { EventsBulkActions } from "./_components/events-bulk-actions";
+import { EventsFilterBar } from "./_components/events-filter-bar";
+import { EventsSummaryBar } from "./_components/events-summary-bar";
 import { ErrorState } from "@/components/ui/error-state";
 import { Pagination, Skeleton } from "@/components/ui";
 import { formatRupiah } from "@/lib/format";
@@ -31,7 +34,6 @@ function AdminEventsContent() {
   const [selectedBookingIds, setSelectedBookingIds] = useState<Set<string>>(
     new Set(),
   );
-  const [showBulkActions, setShowBulkActions] = useState(false);
   const [bulkActionStatus, setBulkActionStatus] = useState<
     "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | ""
   >("");
@@ -124,16 +126,16 @@ function AdminEventsContent() {
       newSet.add(bookingId);
     }
     setSelectedBookingIds(newSet);
-    setShowBulkActions(newSet.size > 0);
+    
   };
 
   const handleSelectAll = () => {
     if (selectedBookingIds.size === bookings.length) {
       setSelectedBookingIds(new Set());
-      setShowBulkActions(false);
+      
     } else {
       setSelectedBookingIds(new Set(bookings.map((b) => b.id)));
-      setShowBulkActions(true);
+      
     }
   };
 
@@ -161,7 +163,7 @@ function AdminEventsContent() {
 
       toast.success(result.message);
       setSelectedBookingIds(new Set());
-      setShowBulkActions(false);
+      
       setBulkActionStatus("");
       await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
     } catch {
@@ -216,7 +218,7 @@ function AdminEventsContent() {
 
       toast.success(result.message);
       setSelectedBookingIds(new Set());
-      setShowBulkActions(false);
+      
       await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
     } catch {
       toast.error("Failed to delete bookings");
@@ -236,66 +238,15 @@ function AdminEventsContent() {
       )}
 
       {/* Bulk Actions Bar */}
-      {showBulkActions && (
-        <div className="fixed top-16 left-0 right-0 z-40 bg-amber-50 border-b border-amber-200 px-4 py-3 backdrop-blur-sm shadow-sm">
-          <div className="max-w-7xl mx-auto flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {/* Info + Clear */}
-            <div className="flex items-center gap-3">
-              <span className="text-amber-800 font-medium text-sm">
-                {selectedBookingIds.size} booking dipilih
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedBookingIds(new Set());
-                  setShowBulkActions(false);
-                }}
-                className="text-amber-600 hover:text-amber-800 text-sm font-medium underline underline-offset-2"
-              >
-                Batal
-              </button>
-            </div>
-            {/* Actions */}
-            <div className="flex flex-wrap items-center gap-2">
-              <select
-                value={bulkActionStatus}
-                onChange={(e) =>
-                  setBulkActionStatus(
-                    e.target.value as
-                      | "PENDING"
-                      | "CONFIRMED"
-                      | "COMPLETED"
-                      | "CANCELLED",
-                  )
-                }
-                className="flex-1 min-w-0 rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 text-sm text-amber-900 outline-none focus:border-amber-400"
-              >
-                <option value="">Ubah status...</option>
-                <option value="PENDING">Pending</option>
-                <option value="CONFIRMED">Confirmed</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="CANCELLED">Cancelled</option>
-              </select>
-              <button
-                type="button"
-                onClick={handleBulkUpdate}
-                disabled={!bulkActionStatus || isBulkProcessing}
-                className="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
-              >
-                Update
-              </button>
-              <button
-                type="button"
-                onClick={handleBulkDelete}
-                disabled={isBulkProcessing}
-                className="shrink-0 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-              >
-                {isBulkProcessing ? "Menghapus..." : "Hapus"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <EventsBulkActions
+        selectedCount={selectedBookingIds.size}
+        bulkActionStatus={bulkActionStatus}
+        isBulkProcessing={isBulkProcessing}
+        onClear={() => { setSelectedBookingIds(new Set());  }}
+        onStatusChange={(s) => setBulkActionStatus(s)}
+        onUpdate={handleBulkUpdate}
+        onDelete={handleBulkDelete}
+      />
 
       {/* Header */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -355,146 +306,17 @@ function AdminEventsContent() {
           </button>
         </div>
       </header>
-
       {/* Filters */}
-      <div className="rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
-        {/* Filter Header — selalu tampil, collapsible toggle di mobile */}
-        <div className="flex items-center justify-between px-5 py-4">
-          <div className="flex items-center gap-3">
-            {/* Search input — selalu visible */}
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setFilter("search", e.target.value)}
-              placeholder="Nama, kode, HP..."
-              className="w-44 sm:w-64 rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
-            />
-            {/* Active filter badge */}
-            {(statusFilter || dateFrom || dateTo) && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2.5 py-1 text-xs font-medium text-sky-700">
-                <svg
-                  className="h-3 w-3"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L13 10.414V15a1 1 0 01-.553.894l-4 2A1 1 0 017 17v-6.586L3.293 6.707A1 1 0 013 6V3z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                {[statusFilter, dateFrom, dateTo].filter(Boolean).length} filter
-                aktif
-              </span>
-            )}
-          </div>
-          {/* Toggle filter button — mobile */}
-          <button
-            type="button"
-            onClick={() => setShowFilter(!showFilter)}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition sm:hidden"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"
-              />
-            </svg>
-            Filter
-            <svg
-              className={`h-3.5 w-3.5 transition-transform ${showFilter ? "rotate-180" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
-        </div>
+      <EventsFilterBar
+        searchQuery={searchQuery}
+        statusFilter={statusFilter}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        showFilter={showFilter}
+        onFilterChange={setFilter}
+        onToggleFilter={() => setShowFilter(!showFilter)}
+      />
 
-        {/* Extended filters — always show di desktop, collapsible di mobile */}
-        <div
-          className={`px-5 pb-5 ${showFilter ? "block" : "hidden sm:block"}`}
-        >
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">
-                Status
-              </label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setFilter("status", e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400 bg-white"
-              >
-                <option value="">Semua Status</option>
-                <option value="PENDING">Pending</option>
-                <option value="CONFIRMED">Confirmed</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="CANCELLED">Cancelled</option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">
-                Sesi Dari
-              </label>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setFilter("from", e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">
-                Sesi Sampai
-              </label>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setFilter("to", e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
-              />
-            </div>
-            <div className="flex items-end">
-              <button
-                type="button"
-                onClick={() => {
-                  setFilter("search", "");
-                  setFilter("status", "");
-                  setFilter("from", "");
-                  setFilter("to", "");
-                }}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition"
-              >
-                Reset Filter
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
-          Menampilkan{" "}
-          <span className="font-semibold text-slate-900">
-            {bookings.length}
-          </span>{" "}
-          dari{" "}
-          <span className="font-semibold text-slate-900">
-            {data?.pagination.total ?? 0}
-          </span>{" "}
-          booking
-        </div>
-      </div>
 
       {/* Error State */}
       {error && (
@@ -504,25 +326,15 @@ function AdminEventsContent() {
       )}
 
       {/* Stats Grid */}
-      {!error && <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-        {eventSummary.map((card) => (
-          <div
-            key={card.label}
-            className="group rounded-3xl border border-slate-200 bg-white/70 backdrop-blur-xl p-6 shadow-sm transition-all duration-300 hover:shadow-glass hover:border-white/40"
-          >
-            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-              {card.label}
-            </p>
-            <p className="mt-3 text-3xl font-semibold text-slate-900 tracking-tight">
-              {isLoading ? (
-                <span className="inline-block h-8 w-16 animate-pulse rounded-lg bg-slate-200/60" />
-              ) : (
-                card.value
-              )}
-            </p>
-          </div>
-        ))}
-      </div>}
+      {/* Stats */}
+      {!error && (
+        <EventsSummaryBar
+          cards={eventSummary}
+          totalFromServer={data?.pagination.total ?? 0}
+          isLoading={isLoading}
+        />
+      )}
+
 
       {/* Bookings Table — Desktop (hidden di mobile, pakai card list) */}
       {!error && <div className="hidden sm:block overflow-hidden rounded-3xl border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
