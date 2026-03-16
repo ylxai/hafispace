@@ -15,21 +15,17 @@
 - [ ] Hapus file `src/components/admin/navigation.tsx` — dead code (sudah digantikan sidebar)
 
 ### 1B. Mobile Card Stack untuk Events
-- [ ] Buat `events/_components/events-card-list.tsx` — mobile card view per booking
-  - Tampilkan: Nama klien, tanggal sesi, paket, status badge, action buttons
-  - Touch target minimum 44px
-  - Swipe-friendly layout
-- [ ] Update `events/page.tsx` — desktop: table, mobile: card list
-  - `<div className="hidden md:block">` untuk table
-  - `<div className="md:hidden">` untuk card list
+- [x] Mobile card view sudah ada di events/page.tsx (`sm:hidden`) — verified ✅
+- [x] Desktop table `hidden sm:block` sudah ada — verified ✅
+- [x] Touch-friendly layout sudah diimplementasikan
 
 ### 1C. URL-Persistent Filter State
-- [ ] Events page — pindahkan filter ke URL params
-  - `?search=`, `?status=`, `?from=`, `?to=`, `?page=`
-  - Saat filter berubah: `router.push()` dengan params baru
-  - Saat mount: baca dari `useSearchParams()`
-- [ ] Galleries page — pindahkan filter ke URL params
-  - `?search=`, `?status=`, `?page=`
+- [x] Events page — filter dipindah ke URL params (`?search=`, `?status=`, `?from=`, `?to=`)
+  - `setFilter()` helper menggantikan semua `setState` filter
+  - Filter berubah → `router.push()` dengan params baru, reset ke page 1
+  - Mount: baca dari `useSearchParams()`
+  - Filter aktif → `showFilter` otomatis terbuka
+- [x] Galleries page — tidak ada filter state yang perlu dipersist (hanya bulk action)
 
 ---
 

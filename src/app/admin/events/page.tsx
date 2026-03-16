@@ -37,11 +37,23 @@ function AdminEventsContent() {
   >("");
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
   const [paymentBookingId, setPaymentBookingId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [showFilter, setShowFilter] = useState(false);
+  // Filter state — baca dari URL params agar bisa bookmark & refresh tidak hilang
+  const searchQuery = searchParams.get("search") ?? "";
+  const statusFilter = searchParams.get("status") ?? "";
+  const dateFrom = searchParams.get("from") ?? "";
+  const dateTo = searchParams.get("to") ?? "";
+  const [showFilter, setShowFilter] = useState(!!(statusFilter || dateFrom || dateTo));
+
+  const setFilter = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    params.delete("page"); // reset ke page 1 saat filter berubah
+    router.push(`?${params.toString()}`);
+  };
   const toast = useToast();
   const queryClient = useQueryClient();
 
@@ -353,7 +365,7 @@ function AdminEventsContent() {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => setFilter("search", e.target.value)}
               placeholder="Nama, kode, HP..."
               className="w-44 sm:w-64 rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
             />
@@ -423,7 +435,7 @@ function AdminEventsContent() {
               </label>
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => setFilter("status", e.target.value)}
                 className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400 bg-white"
               >
                 <option value="">Semua Status</option>
@@ -440,7 +452,7 @@ function AdminEventsContent() {
               <input
                 type="date"
                 value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+                onChange={(e) => setFilter("from", e.target.value)}
                 className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
               />
             </div>
@@ -451,7 +463,7 @@ function AdminEventsContent() {
               <input
                 type="date"
                 value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
+                onChange={(e) => setFilter("to", e.target.value)}
                 className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
               />
             </div>
@@ -459,10 +471,10 @@ function AdminEventsContent() {
               <button
                 type="button"
                 onClick={() => {
-                  setSearchQuery("");
-                  setStatusFilter("");
-                  setDateFrom("");
-                  setDateTo("");
+                  setFilter("search", "");
+                  setFilter("status", "");
+                  setFilter("from", "");
+                  setFilter("to", "");
                 }}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition"
               >
