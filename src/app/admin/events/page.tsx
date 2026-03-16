@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
 
 import { StatusBadge } from "@/components/admin";
+import { PageHeader } from "@/components/admin/shared";
 import { useAdminEvents } from "@/hooks/use-admin-events";
 import { useToast } from "@/components/ui/toast";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
@@ -249,63 +250,32 @@ function AdminEventsContent() {
       />
 
       {/* Header */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-1 rounded-full bg-gradient-to-b from-sky-500 to-sky-700" />
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                Booking Manager
-              </p>
-            </div>
-          </div>
-          <p className="text-sm text-slate-600 max-w-2xl">
-            Track upcoming sessions and manage delivery timelines.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <a
-            href="/api/admin/bookings/export"
-            download
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            Export CSV
-          </a>
-          <button
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-slate-800 hover:shadow-md"
-            type="button"
-            onClick={() => setShowModal(true)}
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Create Event
-          </button>
-        </div>
-      </header>
+      <PageHeader
+        label="Booking Manager"
+        title="Events"
+        subtitle="Track upcoming sessions and manage delivery timelines."
+      >
+        <a
+          href="/api/admin/bookings/export"
+          download
+          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Export CSV
+        </a>
+        <button
+          type="button"
+          onClick={() => setShowModal(true)}
+          className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800 transition"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          Create Event
+        </button>
+      </PageHeader>
       {/* Filters */}
       <EventsFilterBar
         searchQuery={searchQuery}
