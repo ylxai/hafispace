@@ -89,12 +89,6 @@ export function FormBookingPanel({ embedded = false }: { embedded?: boolean } = 
     : "";
 
 
-  // Embedded mode: auto-open panel karena tidak ada toggle button
-  if (embedded && !isOpen) {
-    setIsOpen(true);
-  }
-
-
   return (
     <div className={embedded ? "" : "rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"}>
       {!embedded && (

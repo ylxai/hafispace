@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast";
 
@@ -83,6 +83,11 @@ export function CustomFieldsPanel({ embedded = false }: { embedded?: boolean } =
     createMutation.mutate(newField);
   }
 
+  // Embedded mode: auto-open panel saat mount agar konten langsung tampil
+  useEffect(() => {
+    if (embedded) setIsOpen(true);
+  }, [embedded]);
+
   const fields = data?.fields ?? [];
 
   const TIPE_LABELS: Record<CustomField["tipe"], string> = {
@@ -98,11 +103,8 @@ export function CustomFieldsPanel({ embedded = false }: { embedded?: boolean } =
   };
 
 
-  // Embedded mode: auto-open panel karena tidak ada toggle button
-  if (embedded && !isOpen) {
-    setIsOpen(true);
-  }
-
+  // Embedded mode: auto-open panel via useEffect — aman dari infinite render loop
+  // (setState di render body menyebabkan infinite re-render)
 
   return (
     <div className={embedded ? "" : "rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"}>
