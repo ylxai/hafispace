@@ -13,7 +13,7 @@ type CloudinaryAccount = {
   createdAt: string;
 };
 
-export function CloudinaryAccountsPanel() {
+export function CloudinaryAccountsPanel({ embedded = false }: { embedded?: boolean } = {}) {
   const [accounts, setAccounts] = useState<CloudinaryAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -147,6 +147,30 @@ export function CloudinaryAccountsPanel() {
             <div className="h-20 rounded bg-slate-200"></div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (embedded) {
+    // Embedded mode: skip card wrapper dan header, render list + add form langsung
+    return (
+      <div className="space-y-4">
+        {accounts.length > 0 && (
+          <div className="space-y-3">
+            {accounts.map((account) => (
+              <div key={account.id} className={`flex items-center justify-between rounded-xl border p-3 ${account.isActive ? "border-slate-200" : "border-slate-100 bg-slate-50 opacity-60"}`}>
+                <div>
+                  <p className="text-sm font-medium text-slate-900">{account.name}</p>
+                  <p className="text-xs text-slate-400">{account.cloudName}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {account.isDefault && <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700">Default</span>}
+                  {!account.isActive && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">Inactive</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { SAVED_FEEDBACK_DURATION_MS } from "@/lib/constants";
 
-export function StudioProfilePanel() {
+export function StudioProfilePanel({ embedded = false }: { embedded?: boolean } = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -54,76 +54,52 @@ export function StudioProfilePanel() {
     setIsOpen((v) => !v);
   }
 
+  const formContent = (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="namaStudio">Studio Name</label>
+        <input id="namaStudio" name="namaStudio" type="text"
+          defaultValue={profile?.namaStudio ?? ""} placeholder="Your Studio Name"
+          className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400" />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="phone">Phone</label>
+        <input id="phone" name="phone" type="tel"
+          defaultValue={profile?.phone ?? ""} placeholder="+6281234567890"
+          className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400" />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="email">Email</label>
+        <input id="email" name="email" type="email"
+          defaultValue={profile?.email ?? ""} placeholder="studio@example.com"
+          className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400" />
+      </div>
+      {error && <p className="text-sm text-red-500">{error}</p>}
+      <div className="flex items-center gap-3">
+        <button type="submit" disabled={isSaving}
+          className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50">
+          {isSaving ? "Saving..." : "Save Changes"}
+        </button>
+        {saved && <span className="text-sm text-green-600">✓ Saved successfully</span>}
+      </div>
+    </form>
+  );
+
+  // Embedded mode: tampil langsung tanpa card wrapper & toggle button
+  if (embedded) {
+    return <>{formContent}</>;
+  }
+
+  // Standalone mode: card wrapper dengan toggle button (backward compat)
   return (
     <div className="group rounded-3xl border border-slate-200 bg-white/70 backdrop-blur-xl p-6 shadow-sm transition-all duration-300 hover:shadow-glass hover:border-white/40">
       <h2 className="text-lg font-semibold text-slate-900 tracking-tight">Studio Profile</h2>
-      <p className="mt-2 text-sm text-slate-600">
-        Update brand name, logo, and contact information.
-      </p>
-      <button
-        type="button"
-        onClick={handleToggle}
-        className="mt-4 rounded-full border border-slate-200 bg-white/50 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-600 backdrop-blur-sm transition-all duration-200 hover:border-slate-300 hover:bg-white hover:text-slate-900"
-      >
+      <p className="mt-2 text-sm text-slate-600">Update brand name, logo, and contact information.</p>
+      <button type="button" onClick={handleToggle}
+        className="mt-4 rounded-full border border-slate-200 bg-white/50 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-600 backdrop-blur-sm transition-all duration-200 hover:border-slate-300 hover:bg-white hover:text-slate-900">
         {isOpen ? "Close" : "Configure"}
       </button>
-
-      {isOpen && (
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4 border-t border-slate-100 pt-6">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="namaStudio">
-              Studio Name
-            </label>
-            <input
-              id="namaStudio"
-              name="namaStudio"
-              type="text"
-              defaultValue={profile?.namaStudio ?? ""}
-              placeholder="Your Studio Name"
-              className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="phone">
-              Phone
-            </label>
-            <input
-              id="phone"
-              name="phone"
-              type="tel"
-              defaultValue={profile?.phone ?? ""}
-              placeholder="+6281234567890"
-              className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600" htmlFor="email">
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              defaultValue={profile?.email ?? ""}
-              placeholder="studio@example.com"
-              className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm outline-none focus:border-slate-400"
-            />
-          </div>
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          <div className="flex items-center gap-3">
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50"
-            >
-              {isSaving ? "Saving..." : "Save Changes"}
-            </button>
-            {saved && (
-              <span className="text-sm text-green-600">✓ Saved successfully</span>
-            )}
-          </div>
-        </form>
-      )}
+      {isOpen && <div className="mt-6 border-t border-slate-100 pt-6">{formContent}</div>}
     </div>
   );
 }
