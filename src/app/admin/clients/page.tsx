@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAdminClients } from "@/hooks/use-admin-clients";
 import { useToast } from "@/components/ui/toast";
 import { ErrorState } from "@/components/ui/error-state";
+import { Pagination } from "@/components/ui";
 import type { AdminClient } from "@/types/admin";
 
 export const dynamic = "force-dynamic";
@@ -85,7 +86,9 @@ function ClientViewModal({ client, onClose }: { client: AdminClient; onClose: ()
 }
 
 export default function AdminClientsPage() {
-  const { data, isLoading, error, refetch } = useAdminClients();
+  const [page, setPage] = useState(1);
+  const limit = 20;
+  const { data, isLoading, error, refetch } = useAdminClients(page, limit);
   const [selectedClient, setSelectedClient] = useState<AdminClient | null>(null);
   const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
@@ -279,7 +282,12 @@ export default function AdminClientsPage() {
                      onChange={handleSelectAll}
                      className="h-4 w-4 rounded border-slate-300 text-slate-600 focus:ring-slate-500"
                    />
-                   <span>Select all {clients.length} clients</span>
+                   <span>
+                     Select all {clients.length} clients on this page
+                     {data?.pagination && data.pagination.total > clients.length && (
+                       <span className="ml-1 text-slate-400">({data.pagination.total} total)</span>
+                     )}
+                   </span>
                  </label>
                </div>
              )}
@@ -350,9 +358,24 @@ export default function AdminClientsPage() {
                  </div>
                </div>
              ))}
-           </div>
-         )}
-       </div>}
-     </section>
-   );
- }
+
+           {/* Pagination */}
+           {data?.pagination && data.pagination.totalPages > 1 && (
+             <Pagination
+               currentPage={page}
+               totalPages={data.pagination.totalPages}
+               totalItems={data.pagination.total}
+               itemsPerPage={limit}
+               onPageChange={(newPage) => {
+                 setPage(newPage);
+                 setSelectedClientIds(new Set());
+                 setShowBulkActions(false);
+               }}
+             />
+           )}
+         </div>
+       )}
+     </div>}
+   </section>
+ );
+}

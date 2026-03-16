@@ -219,7 +219,7 @@ function AdminEventsContent() {
 
       toast.success(result.message);
       setSelectedBookingIds(new Set());
-      
+      setBulkActionStatus("");
       await queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
     } catch {
       toast.error("Failed to delete bookings");
