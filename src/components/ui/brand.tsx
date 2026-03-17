@@ -24,61 +24,55 @@ const iconSvg = (
 
 const variantStyles = {
   hafispace: {
-    text: "Hafispace",
-    tagline: "Admin Dashboard",
+    text: "HafiSpace",
     color: "#581c87",
+    defaultWithIcon: false,
   },
   hafiview: {
     text: "HafiView",
-    tagline: null,
     color: "#be1854",
+    defaultWithIcon: true,
   },
   hafiselect: {
     text: "HafiSelect",
-    tagline: "Pilih foto favoritmu!",
     color: "#c2410c",
+    defaultWithIcon: true,
   },
 };
 
 const sizeStyles = {
-  sm: { text: "text-xl", icon: "w-4 h-4", tagline: "text-[10px]" },
-  md: { text: "text-2xl", icon: "w-5 h-5", tagline: "text-xs" },
-  lg: { text: "text-3xl", icon: "w-6 h-6", tagline: "text-sm" },
-  xl: { text: "text-4xl", icon: "w-7 h-7", tagline: "text-base" },
+  sm: { text: "text-xl", icon: "w-4 h-4" },
+  md: { text: "text-2xl", icon: "w-5 h-5" },
+  lg: { text: "text-3xl", icon: "w-6 h-6" },
+  xl: { text: "text-4xl", icon: "w-7 h-7" },
 };
 
 export function Brand({ 
   variant = "hafispace", 
   size = "md", 
-  withIcon = true,
+  withIcon,
   className = "" 
 }: BrandProps) {
   const config = variantStyles[variant];
   const sizes = sizeStyles[size];
+  const showIcon = withIcon ?? config.defaultWithIcon;
 
   return (
-    <div className={`flex flex-col ${className}`}>
-      <div className="flex items-center gap-1.5">
-        {withIcon && (
-          <span 
-            className={`${sizes.icon}`}
-            style={{ color: config.color }}
-          >
-            {iconSvg}
-          </span>
-        )}
+    <div className={`flex items-center gap-1.5 ${className}`}>
+      {showIcon && (
         <span 
-          className={`${sizes.text} font-[family-name:var(--font-bonheur)]`}
+          className={sizes.icon}
           style={{ color: config.color }}
         >
-          {config.text}
-        </span>
-      </div>
-      {config.tagline && (
-        <span className={`${sizes.tagline} text-slate-500 font-medium tracking-wide`}>
-          {config.tagline}
+          {iconSvg}
         </span>
       )}
+      <span 
+        className={`${sizes.text} font-[family-name:var(--font-bonheur)]`}
+        style={{ color: config.color }}
+      >
+        {config.text}
+      </span>
     </div>
   );
 }
