@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/toast";
 export type PackageCategory = "PREWED" | "WEDDING" | "PERSONAL" | "EVENT" | "LAINNYA";
 
 export interface IncludeCetak {
+  id?: string; // ID unik untuk key React — digenerate saat tambah item baru
   nama: string;
   jumlah: number;
 }
@@ -67,13 +68,12 @@ export function PackageModal({
     kategori: pkg?.kategori ?? ("LAINNYA" as PackageCategory),
     harga: pkg?.harga ?? 0,
     deskripsi: pkg?.deskripsi ?? "",
-    kuotaEdit: pkg?.kuotaEdit ?? ("" as string | number),
+    kuotaEdit: pkg?.kuotaEdit?.toString() ?? "",
     maxSelection: pkg?.maxSelection ?? 40,
     status: pkg?.status ?? "active",
     includeCetak: (pkg?.includeCetak ?? []) as IncludeCetak[],
   });
 
-  const [isSaving, setIsSaving] = useState(false);
   const [newCetak, setNewCetak] = useState({ nama: "", jumlah: 1 });
 
   const mutation = useMutation({
@@ -106,7 +106,7 @@ export function PackageModal({
 
   function handleAddCetak() {
     if (!newCetak.nama) return;
-    setForm((f) => ({ ...f, includeCetak: [...f.includeCetak, { ...newCetak }] }));
+    setForm((f) => ({ ...f, includeCetak: [...f.includeCetak, { ...newCetak, id: Date.now().toString() }] }));
     setNewCetak({ nama: "", jumlah: 1 });
   }
 
@@ -116,12 +116,7 @@ export function PackageModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setIsSaving(true);
-    try {
-      await mutation.mutateAsync(form);
-    } finally {
-      setIsSaving(false);
-    }
+    await mutation.mutateAsync(form);
   }
 
   return (
@@ -237,7 +232,7 @@ export function PackageModal({
             {form.includeCetak.length > 0 && (
               <div className="mb-2 space-y-1.5">
                 {form.includeCetak.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
+                  <div key={item.id ?? `cetak-${i}`} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
                     <span className="text-slate-700">{item.nama} <span className="text-slate-400">×{item.jumlah}</span></span>
                     <button type="button" onClick={() => handleRemoveCetak(i)} className="text-red-400 hover:text-red-600">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -276,9 +271,9 @@ export function PackageModal({
               className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50">
               Batal
             </button>
-            <button type="submit" disabled={isSaving}
+            <button type="submit" disabled={mutation.isPending}
               className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50">
-              {isSaving ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Tambah Paket"}
+              {mutation.isPending ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Tambah Paket"}
             </button>
           </div>
         </form>
