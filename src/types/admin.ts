@@ -34,6 +34,7 @@ export type AdminGallery = {
   namaProject: string;
   status: GalleryStatus;
   clientToken: string;
+  tokenExpiresAt?: string | null;  // Digunakan di EditGalleryModal untuk token expiry management
   viewCount: number;
   photoCount: number;
   selectionCount: number;

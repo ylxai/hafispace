@@ -7,19 +7,7 @@ import ViesusPreview from "@/components/admin/viesus-preview";
 import { useToast } from "@/components/ui/toast";
 import { SelectionsModal } from "@/components/admin/selections-modal";
 import { UploadPhotosModal } from "./upload-photos-modal";
-
-type AdminGallery = {
-  id: string;
-  namaProject: string;
-  status: "DRAFT" | "IN_REVIEW" | "DELIVERED";
-  clientToken: string;
-  tokenExpiresAt?: string | null;
-  viewCount: number;
-  photoCount: number;
-  selectionCount: number;
-  clientName: string;
-  createdAt: string;
-};
+import type { AdminGallery } from "@/types/admin";
 
 const STATUS_OPTIONS: AdminGallery["status"][] = ["DRAFT", "IN_REVIEW", "DELIVERED"];
 
