@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { v2 as cloudinary } from "cloudinary";
+import { encrypt } from "@/lib/encryption";
 import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 
 interface CloudinaryAccount {
@@ -29,21 +30,20 @@ export async function GET() {
         id: true,
         name: true,
         cloudName: true,
-        apiKey: true,
         isActive: true,
         isDefault: true,
         storageUsed: true,
         createdAt: true,
+        // ❌ Jangan select apiKey dan apiSecret untuk security
       },
     });
 
-    const accountsWithMaskedKey = accounts.map(acc => ({
+    const accountsFormatted = accounts.map(acc => ({
       ...acc,
-      apiKey: acc.apiKey ? `${acc.apiKey.substring(0, 6)}...` : null,
       storageUsed: Number(acc.storageUsed),
     }));
 
-    return NextResponse.json({ accounts: accountsWithMaskedKey });
+    return NextResponse.json({ accounts: accountsFormatted });
   } catch (error) {
     console.error("Error fetching Cloudinary accounts:", error);
     return internalErrorResponse("Failed to fetch accounts");
@@ -99,14 +99,14 @@ export async function POST(request: Request) {
 
     const isFirstAccount = existingCount === 0;
 
-    // Create new account
+    // Create new account with encrypted credentials
     const account = await prisma.vendorCloudinary.create({
       data: {
         vendorId: session.user.id,
         name,
         cloudName,
-        apiKey,
-        apiSecret,
+        apiKey: encrypt(apiKey),      // 🔒 Encrypt before save
+        apiSecret: encrypt(apiSecret), // 🔒 Encrypt before save
         isDefault: isFirstAccount || setAsDefault === true,
         isActive: true,
       },

@@ -58,7 +58,9 @@ model VendorCloudinary {
   vendorId    String   @map("vendor_id") @db.Uuid
   name        String
   cloudName   String   @map("cloud_name")
+  /// @encrypted - API key dienkripsi dengan AES-256-GCM
   apiKey      String   @map("api_key")
+  /// @encrypted - API secret dienkripsi dengan AES-256-GCM
   apiSecret   String   @map("api_secret")
   isActive    Boolean  @default(true) @map("is_active")
   isDefault   Boolean  @default(false) @map("is_default")
