@@ -10,6 +10,7 @@ import type * as AblyModule from "ably";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import cloudinaryLoader from '@/lib/image-loader';
 import { extractCloudName, extractPublicId, generateThumbnailUrl, generateDownloadUrl } from '@/lib/cloudinary/utils';
+import { Brand } from "@/components/ui/brand";
 
 // Lazy-load Lightbox component to reduce initial bundle size
 const Lightbox = dynamic(
@@ -274,10 +275,10 @@ export default function ViewspacePage() {
       <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/95 backdrop-blur-md">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="min-w-0 flex-1">
-            {/* Studio name — elegant serif-inspired, semua lowercase dengan tracking */}
-            <p className="truncate text-[10px] font-medium uppercase tracking-[0.25em] text-slate-400">
-              {gallery.vendor.namaStudio ?? "Photography"}
-            </p>
+            {/* Brand + Project Name */}
+            <div className="flex items-center gap-2 mb-1">
+              <Brand variant="hafiview" size="sm" />
+            </div>
             <div className="flex items-center gap-2">
               <h1 className="truncate text-base font-bold text-white sm:text-lg">
                 {gallery.namaProject}

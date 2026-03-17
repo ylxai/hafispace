@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
+import { Brand } from "@/components/ui/brand";
 
 interface NavItem {
   label: string;
@@ -116,17 +117,8 @@ function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
   return (
     <div className="flex h-full flex-col">
       {/* Logo */}
-      <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-white">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-slate-900">Hafispace</p>
-          <p className="text-xs text-slate-500">Admin Dashboard</p>
-        </div>
+      <div className="flex items-center gap-3 px-3 py-4">
+        <Brand variant="hafispace" size="sm" />
       </div>
 
       {/* Nav Groups */}
@@ -227,15 +219,7 @@ export function AdminSidebar() {
       {/* Mobile: Top Bar */}
       {/* Mobile Top Bar — logo + hamburger menu */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-slate-100 bg-white/90 backdrop-blur-xl px-4 py-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-900 text-white">
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </div>
-          <span className="text-sm font-semibold text-slate-900">Hafispace</span>
-        </div>
+        <Brand variant="hafispace" size="sm" />
         <button
           type="button"
           onClick={() => setIsOpen(true)}

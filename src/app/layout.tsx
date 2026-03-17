@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Bonheur_Royale } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
@@ -12,6 +12,12 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const bonheurRoyale = Bonheur_Royale({
+  variable: "--font-bonheur",
+  weight: "400",
   subsets: ["latin"],
 });
 
@@ -28,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${bonheurRoyale.variable} antialiased`}
       >
         <ErrorBoundary>
           <Providers>

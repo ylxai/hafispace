@@ -8,6 +8,7 @@ import Link from "next/link";
 import * as Ably from "ably";
 import cloudinaryLoader from "@/lib/image-loader";
 import { extractCloudName, extractPublicId, generateThumbnailUrl } from "@/lib/cloudinary/utils";
+import { Brand } from "@/components/ui/brand";
 
 type Photo = {
   id: string;
@@ -411,7 +412,9 @@ export default function PickspacePage() {
                 </svg>
                 Kembali ke galeri
               </Link>
-              <h1 className="truncate text-base font-bold text-slate-900">{gallery.namaProject}</h1>
+              <div className="flex items-center gap-2">
+                <Brand variant="hafiselect" size="sm" />
+              </div>
             </div>
             {/* Tombol submit header — label konsisten */}
             <button
