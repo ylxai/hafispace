@@ -25,7 +25,7 @@ const iconSvg = (
 const variantStyles = {
   hafispace: {
     text: "HafiSpace",
-    color: "#581c87",
+    color: "#000000",
     defaultWithIcon: false,
   },
   hafiview: {
