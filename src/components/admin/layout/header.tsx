@@ -9,7 +9,7 @@ export function AdminHeader() {
   return (
     <header className="border-b bg-white px-4 py-3 text-sm font-medium">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
-        <Brand variant="hafispace" size="md" />
+        <Brand variant="hafispace" size="lg" />
         <div className="flex items-center gap-3 text-xs text-slate-600">
           <span>{session?.user?.name ?? "Admin"}</span>
           <button

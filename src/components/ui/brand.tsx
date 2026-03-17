@@ -31,20 +31,20 @@ const variantStyles = {
   hafiview: {
     text: "HafiView",
     color: "#be1854",
-    defaultWithIcon: true,
+    defaultWithIcon: false,
   },
   hafiselect: {
     text: "HafiSelect",
     color: "#c2410c",
-    defaultWithIcon: true,
+    defaultWithIcon: false,
   },
 };
 
 const sizeStyles = {
-  sm: { text: "text-xl", icon: "w-4 h-4" },
-  md: { text: "text-2xl", icon: "w-5 h-5" },
-  lg: { text: "text-3xl", icon: "w-6 h-6" },
-  xl: { text: "text-4xl", icon: "w-7 h-7" },
+  sm: { text: "text-2xl", icon: "w-5 h-5" },
+  md: { text: "text-3xl", icon: "w-6 h-6" },
+  lg: { text: "text-4xl", icon: "w-7 h-7" },
+  xl: { text: "text-5xl", icon: "w-8 h-8" },
 };
 
 export function Brand({ 
