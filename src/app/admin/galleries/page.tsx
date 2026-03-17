@@ -9,9 +9,8 @@ import { useAdminGalleries } from "@/hooks/use-admin-galleries";
 import { useToast } from "@/components/ui/toast";
 import { ErrorState } from "@/components/ui/error-state";
 import { Pagination } from "@/components/ui";
+import { PageHeader, BulkActionBar } from "@/components/admin/shared";
 import type { AdminGallery } from "@/types/admin";
-
-
 import { EditGalleryModal } from "./_components/edit-gallery-modal";
 
 function AdminGalleriesContent() {
@@ -21,7 +20,6 @@ function AdminGalleriesContent() {
   const { data, isLoading, error, refetch } = useAdminGalleries(currentPage, 20);
   const [selectedGallery, setSelectedGallery] = useState<AdminGallery | null>(null);
   const [selectedGalleryIds, setSelectedGalleryIds] = useState<Set<string>>(new Set());
-  const [showBulkActions, setShowBulkActions] = useState(false);
   const [bulkActionStatus, setBulkActionStatus] = useState<AdminGallery["status"] | "">("");
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
   const toast = useToast();
@@ -43,16 +41,16 @@ function AdminGalleriesContent() {
       newSet.add(galleryId);
     }
     setSelectedGalleryIds(newSet);
-    setShowBulkActions(newSet.size > 0);
+    
   };
 
   const handleSelectAll = () => {
     if (selectedGalleryIds.size === galleries.length) {
       setSelectedGalleryIds(new Set());
-      setShowBulkActions(false);
+      
     } else {
       setSelectedGalleryIds(new Set(galleries.map(g => g.id)));
-      setShowBulkActions(true);
+      
     }
   };
 
@@ -91,7 +89,7 @@ function AdminGalleriesContent() {
 
       toast.success(result.message);
       setSelectedGalleryIds(new Set());
-      setShowBulkActions(false);
+      
       await queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
     } catch {
       toast.error("Failed to delete galleries");
@@ -124,7 +122,7 @@ function AdminGalleriesContent() {
 
       toast.success(result.message);
       setSelectedGalleryIds(new Set());
-      setShowBulkActions(false);
+      
       setBulkActionStatus("");
       await queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
     } catch {
@@ -141,69 +139,45 @@ function AdminGalleriesContent() {
       )}
       
       {/* Bulk Actions Bar */}
-      {showBulkActions && (
-        <div className="fixed top-16 left-0 right-0 z-40 bg-amber-50 border-b border-amber-200 px-4 py-3 backdrop-blur-sm shadow-sm">
-          <div className="max-w-7xl mx-auto flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {/* Info + Clear */}
-            <div className="flex items-center gap-3">
-              <span className="text-amber-800 font-medium text-sm">
-                {selectedGalleryIds.size} gallery dipilih
-              </span>
-              <button
-                type="button"
-                onClick={() => { setSelectedGalleryIds(new Set()); setShowBulkActions(false); }}
-                className="text-amber-600 hover:text-amber-800 text-sm font-medium underline underline-offset-2"
-              >
-                Batal
-              </button>
-            </div>
-            {/* Actions */}
-            <div className="flex flex-wrap items-center gap-2">
-              <select
-                value={bulkActionStatus}
-                onChange={(e) => setBulkActionStatus(e.target.value as AdminGallery["status"])}
-                className="flex-1 min-w-0 rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 text-sm text-amber-900 outline-none focus:border-amber-400"
-              >
-                <option value="">Ubah status...</option>
-                <option value="DRAFT">Draft</option>
-                <option value="IN_REVIEW">In Review</option>
-                <option value="DELIVERED">Delivered</option>
-              </select>
-              <button
-                type="button"
-                onClick={handleBulkUpdate}
-                disabled={!bulkActionStatus || isBulkProcessing}
-                className="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
-              >
-                Update
-              </button>
-              <button
-                type="button"
-                onClick={handleBulkDelete}
-                disabled={isBulkProcessing}
-                className="shrink-0 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-              >
-                {isBulkProcessing ? "Menghapus..." : "Hapus"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <BulkActionBar
+        selectedCount={selectedGalleryIds.size}
+        itemLabel="gallery"
+        onClear={() => { setSelectedGalleryIds(new Set());  setBulkActionStatus(""); }}
+      >
+        <select
+          value={bulkActionStatus}
+          onChange={(e) => setBulkActionStatus(e.target.value as AdminGallery["status"])}
+          className="flex-1 min-w-0 rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 text-sm text-amber-900 outline-none focus:border-amber-400"
+        >
+          <option value="">Ubah status...</option>
+          <option value="DRAFT">Draft</option>
+          <option value="IN_REVIEW">In Review</option>
+          <option value="DELIVERED">Delivered</option>
+        </select>
+        <button
+          type="button"
+          onClick={handleBulkUpdate}
+          disabled={!bulkActionStatus || isBulkProcessing}
+          className="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+        >
+          Update
+        </button>
+        <button
+          type="button"
+          onClick={handleBulkDelete}
+          disabled={isBulkProcessing}
+          className="shrink-0 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+        >
+          {isBulkProcessing ? "Menghapus..." : "Hapus"}
+        </button>
+      </BulkActionBar>
       
       {/* Header */}
-      <header className="space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-1 rounded-full bg-gradient-to-b from-sky-500 to-sky-700" />
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-              Gallery Manager
-            </p>
-          </div>
-        </div>
-        <p className="text-sm text-slate-600 max-w-2xl">
-          Curate and publish professional photo galleries for your clients.
-        </p>
-      </header>
+      <PageHeader
+        label="Gallery Manager"
+        title="Galleries"
+        subtitle="Curate and publish professional photo galleries for your clients."
+      />
 
       {/* Error State */}
       {error && (
