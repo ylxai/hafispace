@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { v2 as cloudinary } from "cloudinary";
 import { encrypt } from "@/lib/encryption";
+import { testCloudinaryConnectionWithCredentials } from "@/lib/cloudinary";
 import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 
 interface CloudinaryAccount {
@@ -64,24 +64,15 @@ export async function POST(request: Request) {
       return validationErrorResponse("Missing required fields: name, cloudName, apiKey, apiSecret");
     }
 
-    // Test Cloudinary connection first
-    let cloudinaryConnected = false;
-    try {
-      cloudinary.config({
-        cloud_name: cloudName,
-        api_key: apiKey,
-        api_secret: apiSecret,
-      });
-      
-      const result = await cloudinary.api.ping();
-      cloudinaryConnected = result.status === 'ok';
-    } catch (cloudinaryError) {
-      console.error("Cloudinary connection test failed:", cloudinaryError);
-      return validationErrorResponse("Failed to connect to Cloudinary with provided credentials");
-    }
+    // Test Cloudinary connection first (using helper that doesn't mutate global state)
+    const cloudinaryConnected = await testCloudinaryConnectionWithCredentials(
+      cloudName,
+      apiKey,
+      apiSecret
+    );
     
     if (!cloudinaryConnected) {
-      return validationErrorResponse("Failed to connect to Cloudinary");
+      return validationErrorResponse("Failed to connect to Cloudinary with provided credentials");
     }
 
     // If setAsDefault, unset other defaults first
