@@ -243,7 +243,7 @@ function AdminEventsContent() {
         selectedCount={selectedBookingIds.size}
         bulkActionStatus={bulkActionStatus}
         isBulkProcessing={isBulkProcessing}
-        onClear={() => { setSelectedBookingIds(new Set());  }}
+        onClear={() => setSelectedBookingIds(new Set())}
         onStatusChange={(s) => setBulkActionStatus(s)}
         onUpdate={handleBulkUpdate}
         onDelete={handleBulkDelete}
