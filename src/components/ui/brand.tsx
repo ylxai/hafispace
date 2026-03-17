@@ -26,17 +26,17 @@ const variantStyles = {
   hafispace: {
     text: "Hafispace",
     tagline: "Admin Dashboard",
-    gradient: "from-violet-900 via-purple-800 to-indigo-800",
+    color: "#581c87",
   },
   hafiview: {
     text: "HafiView",
     tagline: null,
-    gradient: "from-rose-700 via-pink-600 to-fuchsia-700",
+    color: "#be1854",
   },
   hafiselect: {
     text: "HafiSelect",
     tagline: "Pilih foto favoritmu!",
-    gradient: "from-orange-700 via-amber-600 to-rose-700",
+    color: "#c2410c",
   },
 };
 
@@ -60,18 +60,22 @@ export function Brand({
     <div className={`flex flex-col ${className}`}>
       <div className="flex items-center gap-1.5">
         {withIcon && (
-          <span className={`${sizes.icon} bg-gradient-to-br ${config.gradient} bg-clip-text text-transparent`}>
+          <span 
+            className={`${sizes.icon}`}
+            style={{ color: config.color }}
+          >
             {iconSvg}
           </span>
         )}
         <span 
-          className={`${sizes.text} font-[family-name:var(--font-bonheur)] bg-gradient-to-br ${config.gradient} bg-clip-text text-transparent`}
+          className={`${sizes.text} font-[family-name:var(--font-bonheur)]`}
+          style={{ color: config.color }}
         >
           {config.text}
         </span>
       </div>
       {config.tagline && (
-        <span className={`${sizes.tagline} text-slate-400 font-medium tracking-wide`}>
+        <span className={`${sizes.tagline} text-slate-500 font-medium tracking-wide`}>
           {config.tagline}
         </span>
       )}
