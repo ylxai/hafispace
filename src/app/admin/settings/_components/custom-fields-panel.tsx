@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast";
 
@@ -13,7 +13,7 @@ interface CustomField {
   isActive: boolean;
 }
 
-export function CustomFieldsPanel() {
+export function CustomFieldsPanel({ embedded = false }: { embedded?: boolean } = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const toast = useToast();
@@ -83,6 +83,11 @@ export function CustomFieldsPanel() {
     createMutation.mutate(newField);
   }
 
+  // Embedded mode: auto-open panel saat mount agar konten langsung tampil
+  useEffect(() => {
+    if (embedded) setIsOpen(true);
+  }, [embedded]);
+
   const fields = data?.fields ?? [];
 
   const TIPE_LABELS: Record<CustomField["tipe"], string> = {
@@ -97,22 +102,58 @@ export function CustomFieldsPanel() {
     DATE: "bg-green-100 text-green-700",
   };
 
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-slate-900">Custom Fields</h2>
-      <p className="mt-2 text-sm text-slate-600">
-        Tambah field kustom untuk form booking (nama klien, tanggal event, dll).
-      </p>
-      <button
-        type="button"
-        onClick={() => setIsOpen((v) => !v)}
-        className="mt-4 rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
-      >
-        {isOpen ? "Close" : "Configure"}
-      </button>
 
-      {isOpen && (
-        <div className="mt-6 space-y-4 border-t border-slate-100 pt-6">
+  // Modal — single source of truth, dipakai di embedded dan standalone mode
+  const modalContent = showModal ? (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+          <h3 className="text-base font-semibold text-slate-900">Add Custom Field</h3>
+          <button type="button" onClick={() => { setShowModal(false); setNewField({ label: "", tipe: "TEXT", isRequired: false }); }}
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <form onSubmit={handleAddField} className="p-6 space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Label <span className="text-red-500">*</span></label>
+            <input type="text" value={newField.label} onChange={(e) => setNewField((f) => ({ ...f, label: e.target.value }))}
+              placeholder="Contoh: Nama Pasangan, Tanggal Acara"
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400" required />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Tipe Input</label>
+            <select value={newField.tipe} onChange={(e) => setNewField((f) => ({ ...f, tipe: e.target.value as typeof f.tipe }))}
+              className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400 bg-white">
+              <option value="TEXT">Text</option>
+              <option value="TEXTAREA">Textarea</option>
+              <option value="DATE">Date</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3">
+            <input type="checkbox" id="isRequired" checked={newField.isRequired}
+              onChange={(e) => setNewField((f) => ({ ...f, isRequired: e.target.checked }))}
+              className="h-4 w-4 rounded border-slate-300" />
+            <label htmlFor="isRequired" className="text-sm text-slate-700 cursor-pointer">Field wajib diisi (required)</label>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={() => { setShowModal(false); setNewField({ label: "", tipe: "TEXT", isRequired: false }); }}
+              className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+            <button type="submit" disabled={createMutation.isPending}
+              className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50">
+              {createMutation.isPending ? "Adding..." : "Add Field"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  ) : null;
+
+  // Extract content ke variable — pakai di embedded (early return) dan standalone (dalam isOpen block)
+  const panelContent = (
+    <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-slate-700">
               {fields.length} Custom Field{fields.length !== 1 ? "s" : ""}
@@ -176,93 +217,36 @@ export function CustomFieldsPanel() {
               ))}
             </div>
           )}
-        </div>
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <>
+        {panelContent}
+        {modalContent}
+      </>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 className="text-lg font-semibold text-slate-900">Custom Fields</h2>
+      <p className="mt-2 text-sm text-slate-600">
+        Tambah field kustom untuk form booking (nama klien, tanggal event, dll).
+      </p>
+      <button
+        type="button"
+        onClick={() => setIsOpen((v) => !v)}
+        className="mt-4 rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+      >
+        {isOpen ? "Close" : "Configure"}
+      </button>
+      {isOpen && (
+        <div className="mt-6 border-t border-slate-100 pt-6">{panelContent}</div>
       )}
 
-      {/* Add Field Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-              <h3 className="text-base font-semibold text-slate-900">Add Custom Field</h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowModal(false);
-                  setNewField({ label: "", tipe: "TEXT", isRequired: false });
-                }}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <form onSubmit={handleAddField} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">
-                  Label <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={newField.label}
-                  onChange={(e) => setNewField((f) => ({ ...f, label: e.target.value }))}
-                  placeholder="Contoh: Nama Pasangan, Tanggal Acara"
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Tipe Input</label>
-                <select
-                  value={newField.tipe}
-                  onChange={(e) => setNewField((f) => ({ ...f, tipe: e.target.value as typeof f.tipe }))}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-slate-400 bg-white"
-                >
-                  <option value="TEXT">Text</option>
-                  <option value="TEXTAREA">Textarea</option>
-                  <option value="DATE">Date</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3">
-                <input
-                  type="checkbox"
-                  id="isRequired"
-                  checked={newField.isRequired}
-                  onChange={(e) => setNewField((f) => ({ ...f, isRequired: e.target.checked }))}
-                  className="h-4 w-4 rounded border-slate-300"
-                />
-                <label htmlFor="isRequired" className="text-sm text-slate-700 cursor-pointer">
-                  Field wajib diisi (required)
-                </label>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setNewField({ label: "", tipe: "TEXT", isRequired: false });
-                  }}
-                  className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={createMutation.isPending}
-                  className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-                >
-                  {createMutation.isPending ? "Adding..." : "Add Field"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {modalContent}
     </div>
   );
 }

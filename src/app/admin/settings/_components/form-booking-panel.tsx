@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { SAVED_FEEDBACK_DURATION_MS } from "@/lib/constants";
 import { useToast } from "@/components/ui/toast";
 
-export function FormBookingPanel() {
+export function FormBookingPanel({ embedded = false }: { embedded?: boolean } = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -73,6 +73,11 @@ export function FormBookingPanel() {
     }
   }
 
+  // Auto-load saat embedded karena tidak ada toggle button
+  useEffect(() => {
+    if (embedded) void loadSettings();
+  }, [embedded]);
+
   function handleToggle() {
     if (!isOpen) loadSettings();
     setIsOpen((v) => !v);
@@ -83,22 +88,27 @@ export function FormBookingPanel() {
     ? `${window.location.origin}/booking?v=${vendorId}`
     : "";
 
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-slate-900">Form Booking</h2>
-      <p className="mt-2 text-sm text-slate-600">
-        Kelola pengaturan form booking publik untuk klien.
-      </p>
-      <button
-        type="button"
-        onClick={handleToggle}
-        className="mt-4 rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
-      >
-        {isOpen ? "Close" : "Configure"}
-      </button>
+    <div className={embedded ? "" : "rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"}>
+      {!embedded && (
+        <>
+          <h2 className="text-lg font-semibold text-slate-900">Form Booking</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Kelola pengaturan form booking publik untuk klien.
+          </p>
+          <button
+            type="button"
+            onClick={handleToggle}
+            className="mt-4 rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+          >
+            {isOpen ? "Close" : "Configure"}
+          </button>
+        </>
+      )}
 
       {isOpen && (
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4 border-t border-slate-100 pt-6">
+        <form onSubmit={handleSubmit} className={embedded ? "space-y-4" : "mt-6 space-y-4 border-t border-slate-100 pt-6"}>
           <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
             <div>
               <p className="text-sm font-medium text-slate-700">Aktifkan Form Booking</p>
