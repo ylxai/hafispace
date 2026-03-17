@@ -150,6 +150,7 @@ model Booking {
   @@index([tanggalSesi])
   @@index([status])
   @@index([createdAt])
+  @@index([kodeBooking, vendorId])  // Compound index untuk unique lookup
   @@map("bookings")
 }
 
@@ -234,6 +235,8 @@ model Photo {
 
   @@unique([galleryId, storageKey])
   @@index([galleryId, urutan])
+  @@index([storageKey])  // Index untuk lookup saat selection
+  @@index([filename])    // Index untuk search/filter
   @@map("photos")
 }
 

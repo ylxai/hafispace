@@ -1,13 +1,24 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAblyRest, ABLY_CHANNEL_SELECTION } from "@/lib/ably";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
     const { token } = await params;
+
+    // Rate limit: maks 3 submission per menit per IP+token (cegah spam)
+    const ip = getClientIp(request);
+    const rl = await checkRateLimit(`submit:${ip}:${token}`, { limit: 3, windowMs: 60_000 });
+    if (!rl.success) {
+      return NextResponse.json(
+        { code: "RATE_LIMITED", message: "Terlalu banyak permintaan. Coba lagi nanti." },
+        { status: 429 }
+      );
+    }
 
     const gallery = await prisma.gallery.findUnique({
       where: { clientToken: token },

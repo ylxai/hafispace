@@ -69,14 +69,23 @@ export async function GET(request: Request) {
   if (!ablyKey) {
     return NextResponse.json({ error: "Ably not configured" }, { status: 503 });
   }
-  const ably = new Ably.Rest({ key: ablyKey });
-  const tokenRequest = await ably.auth.createTokenRequest({
-    clientId,
-    // Restrict capabilities to only subscribe to the gallery channel
-    capability: {
-      [`gallery:${gallery.id}:selection`]: ["subscribe", "presence"]
-    }
-  });
+  
+  try {
+    const ably = new Ably.Rest({ key: ablyKey });
+    const tokenRequest = await ably.auth.createTokenRequest({
+      clientId,
+      // Restrict capabilities to only subscribe to the gallery channel
+      capability: {
+        [`gallery:${gallery.id}:selection`]: ["subscribe", "presence"]
+      }
+    });
 
-  return NextResponse.json(tokenRequest);
+    return NextResponse.json(tokenRequest);
+  } catch (ablyError) {
+    console.error("[Ably] Token creation failed:", ablyError);
+    return NextResponse.json(
+      { error: "Realtime service temporarily unavailable" },
+      { status: 503 }
+    );
+  }
 }

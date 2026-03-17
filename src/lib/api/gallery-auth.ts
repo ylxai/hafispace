@@ -47,12 +47,11 @@ export async function verifyGalleryOwnershipWithSelect<T extends Prisma.GalleryS
   vendorId: string,
   select: T
 ): Promise<{ found: true; gallery: GalleryWithSelect<T> } | { found: false }> {
-  const gallery = await (prisma.gallery.findUnique({
+  const gallery = await prisma.gallery.findUnique({
     where: { id: galleryId, vendorId },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    select: { id: true, vendorId: true, ...select } as any,
-  }) as unknown as Promise<GalleryWithSelect<T> | null>);
+    select: { id: true, vendorId: true, ...select } as T & { id: true; vendorId: true },
+  });
 
   if (!gallery) return { found: false };
-  return { found: true, gallery };
+  return { found: true, gallery: gallery as GalleryWithSelect<T> };
 }
