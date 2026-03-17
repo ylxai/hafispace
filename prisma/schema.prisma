@@ -152,7 +152,7 @@ model Booking {
   @@index([tanggalSesi])
   @@index([status])
   @@index([createdAt])
-  // @@index([kodeBooking, vendorId]) — dihapus: redundant karena kodeBooking sudah @unique
+  @@index([kodeBooking, vendorId])  // Compound index untuk unique lookup
   @@map("bookings")
 }
 
@@ -237,7 +237,7 @@ model Photo {
 
   @@unique([galleryId, storageKey])
   @@index([galleryId, urutan])
-  // @@index([storageKey]) — dihapus: redundant karena sudah ada @@unique([galleryId, storageKey])
+  @@index([storageKey])  // Index untuk lookup saat selection
   @@index([filename])    // Index untuk search/filter
   @@map("photos")
 }
