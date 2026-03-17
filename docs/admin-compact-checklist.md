@@ -118,20 +118,20 @@
 ## 📋 Backlog — Temuan Audit Valid (new-audit.md 17 Mar 2026)
 
 ### 🔴 High Priority — Fix Segera
-- [ ] **#2 Ably Token Route** — tambah try-catch di `src/app/api/ably-token/route.ts` line 72-78 (Ably down = unhandled exception)
-- [ ] **#4 Rate Limit** — tambah `checkRateLimit` di `submit/route.ts` dan `booking/route.ts` POST handler
+- [x] **#2 Ably Token Route** — tambah try-catch di `src/app/api/ably-token/route.ts` line 72-78 (Ably down = unhandled exception) ✅ DONE
+- [x] **#4 Rate Limit** — tambah `checkRateLimit` di `submit/route.ts` dan `booking/route.ts` POST handler ✅ DONE
 
 ### 🟡 Medium Priority
-- [ ] **#7 DB Index** — tambah `@@index([storageKey])` di model `Photo` di `prisma/schema.prisma`
-- [ ] **#9 TypeScript `any`** — fix `as any` di `src/lib/api/gallery-auth.ts` line ~52
-- [ ] **#10 Selections no limit** — tambah `take: 500` di `prisma.photoSelection.findMany` di `gallery/[token]/route.ts`
+- [x] **#7 DB Index** — tambah `@@index([storageKey])` di model `Photo` di `prisma/schema.prisma` ✅ DONE
+- [x] **#9 TypeScript `any`** — fix `as any` di `src/lib/api/gallery-auth.ts` line ~52 ✅ DONE
+- [x] **#10 Selections no limit** — tambah `take: 1000` di `prisma.photoSelection.findMany` di `gallery/[token]/route.ts` ✅ DONE
 
 ### 🟢 Low Priority
-- [ ] **#5 Magic bytes HEIC** — validasi brand HEIC (`heic`, `avif`, dll) bukan hanya `ftyp` box
-- [ ] **#6 Cloudinary credentials** — enkripsi `apiKey`/`apiSecret` di `VendorCloudinary` (High effort)
-- [ ] **#8 Unused import** — cek `cloudinaryLoader` di `gallery/[token]/page.tsx`
-- [ ] **#15 Test coverage** — unit tests untuk Zod schemas, auth middleware, selection logic
-- [ ] **#16 Bundle size** — lazy-load Lightbox component
+- [x] **#5 Magic bytes HEIC** — validasi brand HEIC (`heic`, `avif`, dll) bukan hanya `ftyp` box ✅ DONE
+- [x] **#6 Cloudinary credentials** — enkripsi `apiKey`/`apiSecret` dengan AES-256-GCM ✅ DONE + TESTED
+- [~] **#8 Unused import** — `cloudinaryLoader` sebenarnya digunakan di line 458 (bukan unused)
+- [~] **#15 Test coverage** — Vitest + 21 tests ✅ DONE (PR #36)
+- [~] **#16 Bundle size** — lazy-load Lightbox ✅ DONE (PR #36)
 - [ ] **#18 Health check** — buat endpoint `/api/health`
 
 ### ❌ False Positives (Tidak perlu di-fix)
@@ -149,6 +149,10 @@
 | Tanggal | Fase | Keterangan |
 |---------|------|------------|
 | 9 Mar 2026 | Setup | Branch `feat/admin-compact-mobile` dibuat |
+| 17 Mar 2026 | Audit Fix | PR #33: Fix issues #2, #4, #5, #7, #9, #10 dari QA review |
+| 17 Mar 2026 | Security | PR #35: Enkripsi Cloudinary credentials dengan AES-256-GCM |
+| 17 Mar 2026 | Testing | Encryption tested & verified - upload works correctly |
+| 17 Mar 2026 | Test+Bundle | PR #36: Unit tests (Vitest 21 tests) + lazy-load Lightbox |
 
 ---
 
