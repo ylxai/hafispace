@@ -3,54 +3,8 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast";
-
-export type PackageCategory = "PREWED" | "WEDDING" | "PERSONAL" | "EVENT" | "LAINNYA";
-
-export interface IncludeCetak {
-  id?: string; // ID unik untuk key React — digenerate saat tambah item baru
-  nama: string;
-  jumlah: number;
-}
-
-export interface Package {
-  id: string;
-  namaPaket: string;
-  kategori: PackageCategory;
-  harga: number;
-  deskripsi?: string | null;
-  kuotaEdit?: number | null;
-  maxSelection: number;
-  includeCetak?: IncludeCetak[] | null;
-  urutan: number;
-  status: string;
-  createdAt: string;
-  _count: { bookings: number };
-}
-
-export const KATEGORI_LABELS: Record<PackageCategory, string> = {
-  PREWED: "Prewedding",
-  WEDDING: "Wedding",
-  PERSONAL: "Personal",
-  EVENT: "Event",
-  LAINNYA: "Lainnya",
-};
-
-export const KATEGORI_COLORS: Record<PackageCategory, string> = {
-  PREWED: "bg-pink-100 text-pink-700",
-  WEDDING: "bg-purple-100 text-purple-700",
-  PERSONAL: "bg-sky-100 text-sky-700",
-  EVENT: "bg-amber-100 text-amber-700",
-  LAINNYA: "bg-slate-100 text-slate-600",
-};
-
-export const FILTER_TABS: { label: string; value: PackageCategory | "ALL" }[] = [
-  { label: "Semua", value: "ALL" },
-  { label: "Prewedding", value: "PREWED" },
-  { label: "Wedding", value: "WEDDING" },
-  { label: "Personal", value: "PERSONAL" },
-  { label: "Event", value: "EVENT" },
-  { label: "Lainnya", value: "LAINNYA" },
-];
+import type { Package, PackageCategory, IncludeCetak } from "./package-types";
+import { KATEGORI_LABELS } from "./package-types";
 
 export function PackageModal({
   pkg,
@@ -110,8 +64,9 @@ export function PackageModal({
     setNewCetak({ nama: "", jumlah: 1 });
   }
 
-  function handleRemoveCetak(index: number) {
-    setForm((f) => ({ ...f, includeCetak: f.includeCetak.filter((_, i) => i !== index) }));
+  function handleRemoveCetak(id: string) {
+    // Filter berdasarkan id — bukan index, agar tidak bug saat item lain dihapus
+    setForm((f) => ({ ...f, includeCetak: f.includeCetak.filter((item) => item.id !== id) }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -234,7 +189,7 @@ export function PackageModal({
                 {form.includeCetak.map((item, i) => (
                   <div key={item.id ?? `cetak-${i}`} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
                     <span className="text-slate-700">{item.nama} <span className="text-slate-400">×{item.jumlah}</span></span>
-                    <button type="button" onClick={() => handleRemoveCetak(i)} className="text-red-400 hover:text-red-600">
+                    <button type="button" onClick={() => handleRemoveCetak(item.id ?? "")} className="text-red-400 hover:text-red-600">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                       </svg>

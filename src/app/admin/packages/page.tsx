@@ -5,14 +5,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast";
 import { formatRupiah } from "@/lib/format";
 import { PageHeader } from "@/components/admin/shared";
+import { PackageModal } from "./_components/package-modal";
 import {
-  PackageModal,
   type Package,
   type PackageCategory,
   KATEGORI_LABELS,
   KATEGORI_COLORS,
   FILTER_TABS,
-} from "./_components/package-modal";
+} from "./_components/package-types";
 
 
 export default function PackagesPage() {

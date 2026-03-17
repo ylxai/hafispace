@@ -89,7 +89,7 @@ function AdminGalleriesContent() {
 
       toast.success(result.message);
       setSelectedGalleryIds(new Set());
-      
+      setBulkActionStatus(""); // Reset status filter setelah bulk delete berhasil
       await queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
     } catch {
       toast.error("Failed to delete galleries");
