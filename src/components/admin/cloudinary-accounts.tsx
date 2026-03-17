@@ -171,6 +171,13 @@ export function CloudinaryAccountsPanel({ embedded = false }: { embedded?: boole
             ))}
           </div>
         )}
+        {/* Form tambah akun — tersedia di embedded mode agar user bisa tambah akun dari accordion */}
+        <CloudinaryAddForm
+          onSubmit={handleSubmit}
+          formData={formData}
+          setFormData={setFormData}
+          isAdding={isAdding}
+        />
       </div>
     );
   }

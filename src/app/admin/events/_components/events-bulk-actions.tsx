@@ -6,8 +6,9 @@
  */
 
 import { BulkActionBar } from "@/components/admin/shared";
+import type { BookingStatus } from "@/types/admin";
 
-type BulkStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "";
+type BulkStatus = BookingStatus | "";
 
 type EventsBulkActionsProps = {
   selectedCount: number;
