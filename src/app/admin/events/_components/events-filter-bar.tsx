@@ -13,6 +13,7 @@ type EventsFilterBarProps = {
   showFilter: boolean;
   onFilterChange: (key: string, value: string) => void;
   onToggleFilter: () => void;
+  onReset: () => void; // Reset semua filter sekaligus — 1x router.push bukan 4x
 };
 
 export function EventsFilterBar({
@@ -23,6 +24,7 @@ export function EventsFilterBar({
   showFilter,
   onFilterChange,
   onToggleFilter,
+  onReset,
 }: EventsFilterBarProps) {
   const activeFilterCount = [statusFilter, dateFrom, dateTo].filter(Boolean).length;
 
@@ -111,12 +113,7 @@ export function EventsFilterBar({
           <div className="flex items-end">
             <button
               type="button"
-              onClick={() => {
-                onFilterChange("search", "");
-                onFilterChange("status", "");
-                onFilterChange("from", "");
-                onFilterChange("to", "");
-              }}
+              onClick={onReset}
               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition"
             >
               Reset Filter

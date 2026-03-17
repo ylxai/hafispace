@@ -113,6 +113,37 @@
 
 ---
 
+---
+
+## 📋 Backlog — Temuan Audit Valid (new-audit.md 17 Mar 2026)
+
+### 🔴 High Priority — Fix Segera
+- [ ] **#2 Ably Token Route** — tambah try-catch di `src/app/api/ably-token/route.ts` line 72-78 (Ably down = unhandled exception)
+- [ ] **#4 Rate Limit** — tambah `checkRateLimit` di `submit/route.ts` dan `booking/route.ts` POST handler
+
+### 🟡 Medium Priority
+- [ ] **#7 DB Index** — tambah `@@index([storageKey])` di model `Photo` di `prisma/schema.prisma`
+- [ ] **#9 TypeScript `any`** — fix `as any` di `src/lib/api/gallery-auth.ts` line ~52
+- [ ] **#10 Selections no limit** — tambah `take: 500` di `prisma.photoSelection.findMany` di `gallery/[token]/route.ts`
+
+### 🟢 Low Priority
+- [ ] **#5 Magic bytes HEIC** — validasi brand HEIC (`heic`, `avif`, dll) bukan hanya `ftyp` box
+- [ ] **#6 Cloudinary credentials** — enkripsi `apiKey`/`apiSecret` di `VendorCloudinary` (High effort)
+- [ ] **#8 Unused import** — cek `cloudinaryLoader` di `gallery/[token]/page.tsx`
+- [ ] **#15 Test coverage** — unit tests untuk Zod schemas, auth middleware, selection logic
+- [ ] **#16 Bundle size** — lazy-load Lightbox component
+- [ ] **#18 Health check** — buat endpoint `/api/health`
+
+### ❌ False Positives (Tidak perlu di-fix)
+- **#1** N+1 query — sudah difix dengan `createMany` (PR #26)
+- **#11** Error disclosure — `internalErrorResponse` sudah generic, tidak expose internal
+- **#12** Memory leak — sudah dimigasi ke Redis (fallback in-memory aman)
+- **#3** Race condition — overstated, transaction sudah atomic, retry tidak diperlukan untuk skala saat ini
+- **#13** Naming convention — desain disengaja (Bahasa Indonesia)
+- **#17** DB connection pooling — NeonDB sudah handle via connection string
+
+---
+
 ## Progress Log
 
 | Tanggal | Fase | Keterangan |

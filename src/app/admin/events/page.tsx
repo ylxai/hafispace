@@ -285,6 +285,10 @@ function AdminEventsContent() {
         showFilter={showFilter}
         onFilterChange={setFilter}
         onToggleFilter={() => setShowFilter(!showFilter)}
+        onReset={() => {
+          const params = new URLSearchParams();
+          router.push(`?${params.toString()}`);
+        }}
       />
 
 

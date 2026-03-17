@@ -3,6 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --sidebar-width: 15rem; /* 60 * 4px = 240px — sinkron dengan w-60 di sidebar.tsx */
 }
 
 @theme inline {

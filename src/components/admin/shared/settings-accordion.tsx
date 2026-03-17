@@ -35,15 +35,19 @@ export function SettingsAccordion({
     try {
       const stored = localStorage.getItem(storageKey);
       if (stored !== null) setIsOpen(stored === "true");
-    } catch { /* ignore */ }
-  }, [storageKey]);
+    } catch (error) {
+      console.warn(`Gagal membaca state accordion '${id}' dari localStorage:`, error);
+    }
+  }, [storageKey, id]);
 
   function toggle() {
     const next = !isOpen;
     setIsOpen(next);
     try {
       localStorage.setItem(storageKey, String(next));
-    } catch { /* ignore */ }
+    } catch (error) {
+      console.warn(`Gagal menyimpan state accordion '${id}' ke localStorage:`, error);
+    }
   }
 
   return (
