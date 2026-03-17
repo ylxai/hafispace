@@ -106,7 +106,7 @@ export function PackageModal({
 
   function handleAddCetak() {
     if (!newCetak.nama) return;
-    setForm((f) => ({ ...f, includeCetak: [...f.includeCetak, { ...newCetak, id: Date.now().toString() }] }));
+    setForm((f) => ({ ...f, includeCetak: [...f.includeCetak, { ...newCetak, id: crypto.randomUUID() }] }));
     setNewCetak({ nama: "", jumlah: 1 });
   }
 
