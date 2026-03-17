@@ -26,17 +26,17 @@ const variantStyles = {
   hafispace: {
     text: "Hafispace",
     tagline: "Admin Dashboard",
-    gradient: "from-violet-600 via-purple-500 to-indigo-500",
+    gradient: "from-violet-700 via-purple-600 to-indigo-600",
   },
   hafiview: {
     text: "HafiView",
     tagline: null,
-    gradient: "from-rose-500 via-pink-500 to-purple-500",
+    gradient: "from-rose-600 via-pink-500 to-fuchsia-600",
   },
   hafiselect: {
     text: "HafiSelect",
     tagline: "Pilih foto favoritmu!",
-    gradient: "from-amber-500 via-orange-500 to-rose-500",
+    gradient: "from-orange-600 via-amber-500 to-rose-600",
   },
 };
 
