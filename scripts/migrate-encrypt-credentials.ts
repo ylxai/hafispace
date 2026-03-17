@@ -61,9 +61,10 @@ async function migrateCredentials() {
           continue;
         }
 
-        // Encrypt credentials
-        const encryptedKey = encrypt(account.apiKey);
-        const encryptedSecret = encrypt(account.apiSecret);
+        // Encrypt each credential separately to avoid double encryption
+        // If one is already encrypted and the other isn't, only encrypt the unencrypted one
+        const encryptedKey = keyEncrypted ? account.apiKey : encrypt(account.apiKey);
+        const encryptedSecret = secretEncrypted ? account.apiSecret : encrypt(account.apiSecret);
 
         // Update database
         await prisma.vendorCloudinary.update({
