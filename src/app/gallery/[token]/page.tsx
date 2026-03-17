@@ -554,7 +554,7 @@ export default function ViewspacePage() {
         {/* Footer credit studio */}
         <div className="mt-10 pb-6 text-center">
           <p className="text-xs text-slate-600">
-            © {new Date().getFullYear()} {gallery.vendor.namaStudio ?? "Photography"} · Galeri foto eksklusif
+            © {new Date().getFullYear()} {gallery.vendor.namaStudio ?? "Photography"}
           </p>
         </div>
       </main>
