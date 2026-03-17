@@ -4,12 +4,28 @@ import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Lightbox } from "@/components/gallery/lightbox";
 import type * as AblyModule from "ably";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import cloudinaryLoader from '@/lib/image-loader';
 import { extractCloudName, extractPublicId, generateThumbnailUrl, generateDownloadUrl } from '@/lib/cloudinary/utils';
+
+// Lazy-load Lightbox component to reduce initial bundle size
+const Lightbox = dynamic(
+  () => import("@/components/gallery/lightbox").then((mod) => mod.Lightbox),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin" />
+          <p className="text-white">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+);
 
 
 type AblyRealtime = InstanceType<typeof AblyModule.Realtime>;
