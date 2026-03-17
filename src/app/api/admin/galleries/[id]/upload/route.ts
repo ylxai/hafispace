@@ -30,25 +30,36 @@ const MAGIC_BYTES: Array<{ bytes: number[]; offset?: number; mime: string }> = [
   { bytes: [0x4D, 0x4D, 0x00, 0x2A], mime: 'image/tiff' },     // TIFF (big-endian)
 ];
 
+// Valid brands untuk HEIC/HEIF/AVIF container (ftyp box)
+const VALID_FTYP_BRANDS = new Set([
+  'heic', 'heix', 'hevc', 'hevx',  // HEIC
+  'mif1', 'msf1',                  // HEIF
+  'avif', 'avis',                  // AVIF
+]);
+
 /**
  * Verifikasi file adalah benar-benar image berdasarkan magic bytes
  * Mencegah upload file berbahaya dengan extension/MIME yang dipalsukan
  */
 async function verifyImageMagicBytes(file: File): Promise<boolean> {
-  // Baca hanya 12 bytes pertama (cukup untuk semua signature)
-  const headerSlice = file.slice(0, 12);
+  // Baca 16 bytes pertama (cukup untuk ftyp box: 4 bytes size + 'ftyp' + 4 bytes brand)
+  const headerSlice = file.slice(0, 16);
   const buffer = new Uint8Array(await headerSlice.arrayBuffer());
 
-  // HEIC/HEIF — cek ftyp box di offset 4
-  // Format: ????ftyp (4 bytes size + 'ftyp' magic)
-  if (buffer.length >= 8) {
-    const ftyp = [buffer[4], buffer[5], buffer[6], buffer[7]];
-    if (ftyp[0] === 0x66 && ftyp[1] === 0x74 && ftyp[2] === 0x79 && ftyp[3] === 0x70) {
-      return true; // HEIC/HEIF/MP4 container
+  // HEIC/HEIF/AVIF — cek ftyp box di offset 4
+  // Format: [4 bytes size][4 bytes 'ftyp'][4 bytes brand][...]
+  if (buffer.length >= 12) {
+    const size = new DataView(buffer.buffer).getUint32(0, false); // big-endian
+    const ftyp = String.fromCharCode(...buffer.slice(4, 8));
+    const brand = String.fromCharCode(...buffer.slice(8, 12)).toLowerCase();
+    
+    // Validasi: size minimal 8 (ftyp header), magic harus 'ftyp', brand harus valid
+    if (size >= 8 && ftyp === 'ftyp' && VALID_FTYP_BRANDS.has(brand)) {
+      return true;
     }
   }
 
-  // Cek magic bytes lainnya
+  // Cek magic bytes lainnya (JPEG, PNG, WEBP, TIFF)
   for (const sig of MAGIC_BYTES) {
     const offset = sig.offset ?? 0;
     if (buffer.length < offset + sig.bytes.length) continue;

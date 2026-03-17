@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { sendBookingConfirmationEmail } from "@/lib/email";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { randomInt } from "node:crypto";
 
 const bookingSchema = z.object({
@@ -85,6 +86,16 @@ export async function GET(request: NextRequest) {
 
 // POST — submit booking baru dari klien
 export async function POST(request: NextRequest) {
+  // Rate limit: maks 5 booking per jam per IP (cegah spam)
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit(`booking:${ip}`, { limit: 5, windowMs: 60 * 60_000 });
+  if (!rl.success) {
+    return NextResponse.json(
+      { code: "RATE_LIMITED", message: "Terlalu banyak booking. Coba lagi nanti." },
+      { status: 429 }
+    );
+  }
+
   const body = await request.json() as { vendorId?: string } & Record<string, unknown>;
   const { vendorId } = body;
 

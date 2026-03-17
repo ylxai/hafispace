@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
 import type { UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
 import { prisma } from '../db';
+import { decrypt } from '../encryption';
 import type { CloudinaryResource, CloudinaryResourceResult, CloudinaryDeletionResult, CloudinaryPingResult } from '@/types/cloudinary';
 
 // Configure Cloudinary with environment variables
@@ -67,8 +68,8 @@ export async function getCloudinaryAccount(vendorId: string, accountId?: string)
     vendorId: account.vendorId,
     name: account.name,
     cloudName: account.cloudName,
-    apiKey: account.apiKey,
-    apiSecret: account.apiSecret,
+    apiKey: decrypt(account.apiKey),      // 🔓 Decrypt
+    apiSecret: decrypt(account.apiSecret), // 🔓 Decrypt
     isActive: account.isActive,
     isDefault: account.isDefault,
   };

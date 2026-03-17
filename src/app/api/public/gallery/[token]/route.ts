@@ -162,9 +162,10 @@ export async function GET(
     });
   }
 
-  // Ambil selections sekaligus — count dihitung dari hasil query (1 query, bukan 2)
+  // Ambil selections dengan limit — cegah memory bloat untuk gallery dengan ribuan seleksi
   const selections = await prisma.photoSelection.findMany({
     where: { galleryId: gallery.id },
+    take: 1000, // Reasonable limit untuk performance
     select: {
       fileId: true,
       selectionType: true,

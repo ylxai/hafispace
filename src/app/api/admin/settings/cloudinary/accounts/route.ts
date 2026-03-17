@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { v2 as cloudinary } from "cloudinary";
+import { encrypt } from "@/lib/encryption";
+import { testCloudinaryConnectionWithCredentials } from "@/lib/cloudinary";
 import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 
 interface CloudinaryAccount {
@@ -29,21 +30,20 @@ export async function GET() {
         id: true,
         name: true,
         cloudName: true,
-        apiKey: true,
         isActive: true,
         isDefault: true,
         storageUsed: true,
         createdAt: true,
+        // ❌ Jangan select apiKey dan apiSecret untuk security
       },
     });
 
-    const accountsWithMaskedKey = accounts.map(acc => ({
+    const accountsFormatted = accounts.map(acc => ({
       ...acc,
-      apiKey: acc.apiKey ? `${acc.apiKey.substring(0, 6)}...` : null,
       storageUsed: Number(acc.storageUsed),
     }));
 
-    return NextResponse.json({ accounts: accountsWithMaskedKey });
+    return NextResponse.json({ accounts: accountsFormatted });
   } catch (error) {
     console.error("Error fetching Cloudinary accounts:", error);
     return internalErrorResponse("Failed to fetch accounts");
@@ -64,24 +64,15 @@ export async function POST(request: Request) {
       return validationErrorResponse("Missing required fields: name, cloudName, apiKey, apiSecret");
     }
 
-    // Test Cloudinary connection first
-    let cloudinaryConnected = false;
-    try {
-      cloudinary.config({
-        cloud_name: cloudName,
-        api_key: apiKey,
-        api_secret: apiSecret,
-      });
-      
-      const result = await cloudinary.api.ping();
-      cloudinaryConnected = result.status === 'ok';
-    } catch (cloudinaryError) {
-      console.error("Cloudinary connection test failed:", cloudinaryError);
-      return validationErrorResponse("Failed to connect to Cloudinary with provided credentials");
-    }
+    // Test Cloudinary connection first (using helper that doesn't mutate global state)
+    const cloudinaryConnected = await testCloudinaryConnectionWithCredentials(
+      cloudName,
+      apiKey,
+      apiSecret
+    );
     
     if (!cloudinaryConnected) {
-      return validationErrorResponse("Failed to connect to Cloudinary");
+      return validationErrorResponse("Failed to connect to Cloudinary with provided credentials");
     }
 
     // If setAsDefault, unset other defaults first
@@ -99,14 +90,14 @@ export async function POST(request: Request) {
 
     const isFirstAccount = existingCount === 0;
 
-    // Create new account
+    // Create new account with encrypted credentials
     const account = await prisma.vendorCloudinary.create({
       data: {
         vendorId: session.user.id,
         name,
         cloudName,
-        apiKey,
-        apiSecret,
+        apiKey: encrypt(apiKey),      // 🔒 Encrypt before save
+        apiSecret: encrypt(apiSecret), // 🔒 Encrypt before save
         isDefault: isFirstAccount || setAsDefault === true,
         isActive: true,
       },
