@@ -29,7 +29,7 @@ export async function POST(
       select: { vendorId: true }
     });
 
-    if (!gallery || gallery.vendorId !== session.user.id) {
+    if (gallery?.vendorId !== session.user.id) {
       return NextResponse.json(
         { code: "FORBIDDEN", message: "Forbidden" },
         { status: 403 }
@@ -84,7 +84,7 @@ export async function POST(
     );
     
     const cloudinaryErrors = cloudinaryResult.failed.map(f => ({
-      photoId: photosToDelete.find(p => p.storageKey === f.publicId)?.id || f.publicId,
+      photoId: photosToDelete.find(p => p.storageKey === f.publicId)?.id ?? f.publicId,
       error: f.error
     }));
 

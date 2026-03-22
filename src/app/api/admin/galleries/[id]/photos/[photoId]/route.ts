@@ -28,7 +28,7 @@ export async function DELETE(
       select: { vendorId: true }
     });
 
-    if (!gallery || gallery.vendorId !== session.user.id) {
+    if (gallery?.vendorId !== session.user.id) {
       return NextResponse.json(
         { code: "FORBIDDEN", message: "Forbidden" },
         { status: 403 }
