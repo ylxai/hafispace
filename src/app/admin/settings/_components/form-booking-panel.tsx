@@ -6,7 +6,7 @@ import { SAVED_FEEDBACK_DURATION_MS } from "@/lib/constants";
 import { useToast } from "@/components/ui/toast";
 
 export function FormBookingPanel({ embedded = false }: { embedded?: boolean } = {}) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(embedded); // ✅ Default true jika embedded
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
