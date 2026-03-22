@@ -1,9 +1,104 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --sidebar-width: 15rem; /* 60 * 4px = 240px — sinkron dengan w-60 di sidebar.tsx */
+  /* ============================
+     PEARL WHITE & GOLD PALETTE
+     With Rose Gold Accent
+     ============================ */
+  
+  /* Primary Colors */
+  --pearl-white: #FEFCF9;
+  --soft-cream: #FAF7F2;
+  --champagne: #F5E6D3;
+  
+  /* Accent Colors */
+  --antique-gold: #D4AF37;
+  --rose-gold: #B76E79;
+  --soft-rose: #E8D5D8;
+  --copper: #B87333;
+  
+  /* Text Colors */
+  --charcoal: #2C2C2C;
+  --warm-gray: #6B6B6B;
+  --light-gray: #9CA3AF;
+  
+  /* Background */
+  --background: var(--pearl-white);
+  --foreground: var(--charcoal);
+  
+  /* Sidebar */
+  --sidebar-width: 15rem;
+  
+  /* ============================
+     GLASSMORPHISM VARIABLES
+     ============================ */
+  
+  /* Base Glass */
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-bg-hover: rgba(255, 255, 255, 0.85);
+  --glass-bg-active: rgba(255, 255, 255, 0.9);
+  
+  /* Glass Border - Gold tint */
+  --glass-border: rgba(212, 175, 55, 0.15);
+  --glass-border-hover: rgba(212, 175, 55, 0.25);
+  --glass-border-active: rgba(212, 175, 55, 0.35);
+  
+  /* Glass Shadow - Rose gold tint */
+  --glass-shadow: 0 8px 32px rgba(183, 110, 121, 0.08);
+  --glass-shadow-hover: 0 12px 40px rgba(183, 110, 121, 0.12);
+  --glass-shadow-md: 0 4px 16px rgba(183, 110, 121, 0.06);
+  
+  /* Glass Highlight */
+  --glass-highlight: rgba(255, 255, 255, 0.9);
+  
+  /* Glass Blur */
+  --glass-blur: blur(20px);
+  --glass-blur-sm: blur(12px);
+  --glass-blur-md: blur(16px);
+  
+  /* Text on Glass */
+  --glass-text: var(--charcoal);
+  --glass-text-secondary: var(--warm-gray);
+  --glass-text-muted: var(--light-gray);
+  
+  /* Accent Colors */
+  --accent-gold: var(--antique-gold);
+  --accent-rose: var(--rose-gold);
+  
+  /* ============================
+     COMPONENT VARIABLES
+     ============================ */
+  
+  /* Buttons */
+  --btn-primary-bg: linear-gradient(135deg, var(--antique-gold), #C9A227);
+  --btn-primary-hover: linear-gradient(135deg, #C9A227, var(--antique-gold));
+  --btn-secondary-bg: rgba(255, 255, 255, 0.8);
+  --btn-secondary-border: rgba(212, 175, 55, 0.3);
+  
+  /* Cards */
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --card-border: rgba(212, 175, 55, 0.1);
+  --card-radius: 16px;
+  
+  /* Badges */
+  --badge-gold-bg: rgba(212, 175, 55, 0.15);
+  --badge-gold-text: #996515;
+  --badge-rose-bg: rgba(183, 110, 121, 0.15);
+  --badge-rose-text: var(--rose-gold);
+  
+  /* Tabs */
+  --tab-active: var(--rose-gold);
+  --tab-active-bg: rgba(183, 110, 121, 0.1);
+  --tab-inactive: var(--warm-gray);
+  
+  /* Selection */
+  --selection-bg: rgba(183, 110, 121, 0.1);
+  --selection-border: var(--rose-gold);
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @theme inline {
@@ -13,15 +108,417 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Body Background - Pearl White Gradient */
+body {
+  background: linear-gradient(135deg, var(--pearl-white) 0%, var(--soft-cream) 50%, var(--champagne) 100%);
+  background-attachment: fixed;
+  color: var(--foreground);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+}
+
+/* ============================
+   GLASSMORPHISM COMPONENT STYLES
+   ============================ */
+
+/* Base Glass Container */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--glass-shadow);
+  transition: all var(--transition-smooth);
+}
+
+.glass:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-hover);
+  box-shadow: var(--glass-shadow-hover);
+}
+
+/* Glass Card */
+.glass-card {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0.6)
+  );
+  backdrop-filter: var(--glass-blur-md);
+  -webkit-backdrop-filter: var(--glass-blur-md);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: var(--glass-shadow-md);
+}
+
+/* Glass Button Primary */
+.glass-btn-primary {
+  background: var(--btn-primary-bg);
+  border: none;
+  border-radius: 9999px;
+  color: white;
+  font-weight: 600;
+  padding: 10px 24px;
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.3);
+  transition: all var(--transition-smooth);
+}
+
+.glass-btn-primary:hover {
+  background: var(--btn-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(212, 175, 55, 0.4);
+}
+
+/* Glass Button Secondary */
+.glass-btn-secondary {
+  background: var(--btn-secondary-bg);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  border: 1px solid var(--btn-secondary-border);
+  border-radius: 9999px;
+  color: var(--charcoal);
+  font-weight: 500;
+  padding: 8px 20px;
+  transition: all var(--transition-smooth);
+}
+
+.glass-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: var(--antique-gold);
+  box-shadow: var(--glass-shadow-md);
+}
+
+/* Glass Icon Button */
+.glass-btn-icon {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-smooth);
+}
+
+.glass-btn-icon:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: var(--antique-gold);
+  transform: scale(1.05);
+}
+
+/* Glass Badge - Gold */
+.badge-gold {
+  background: var(--badge-gold-bg);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  color: var(--badge-gold-text);
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+}
+
+/* Glass Badge - Rose */
+.badge-rose {
+  background: var(--badge-rose-bg);
+  border: 1px solid rgba(183, 110, 121, 0.2);
+  color: var(--badge-rose-text);
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+}
+
+/* Glass Tab */
+.glass-tab {
+  background: transparent;
+  border: none;
+  color: var(--tab-inactive);
+  padding: 12px 20px;
+  font-weight: 500;
+  position: relative;
+  transition: all var(--transition-normal);
+}
+
+.glass-tab::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--rose-gold), var(--antique-gold));
+  transition: width var(--transition-normal);
+}
+
+.glass-tab:hover {
+  color: var(--charcoal);
+}
+
+.glass-tab:hover::after {
+  width: 60%;
+}
+
+.glass-tab-active {
+  color: var(--tab-active);
+}
+
+.glass-tab-active::after {
+  width: 80%;
+}
+
+/* Glass Photo Card */
+.glass-photo-card {
+  background: var(--card-bg);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all var(--transition-smooth);
+  position: relative;
+}
+
+.glass-photo-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--glass-shadow-hover);
+  border-color: var(--rose-gold);
+}
+
+.glass-photo-card .photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.4) 0%,
+    transparent 50%
+  );
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.glass-photo-card:hover .photo-overlay {
+  opacity: 1;
+}
+
+.glass-photo-card .photo-number {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: var(--glass-blur-sm);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--charcoal);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all var(--transition-normal);
+}
+
+.glass-photo-card:hover .photo-number {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Glass Selection Indicator */
+.glass-selection-check {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, var(--rose-gold), var(--antique-gold));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(183, 110, 121, 0.4);
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Glass Banner */
+.glass-banner {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.75),
+    rgba(250, 247, 242, 0.6)
+  );
+  backdrop-filter: var(--glass-blur-md);
+  -webkit-backdrop-filter: var(--glass-blur-md);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 20px 24px;
+  box-shadow: var(--glass-shadow-md);
+}
+
+.glass-banner-client-name {
+  color: var(--rose-gold);
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.glass-banner-welcome {
+  color: var(--charcoal);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.glass-banner-date {
+  color: var(--warm-gray);
+  font-size: 13px;
+}
+
+/* Glass Header */
+.glass-header {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-md);
+}
+
+/* Glass Empty State */
+.glass-empty {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(245, 230, 211, 0.3)
+  );
+  border: 2px dashed var(--glass-border);
+  border-radius: 24px;
+  padding: 48px 24px;
+}
+
+/* Glass Action Section */
+.glass-action {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.8),
+    rgba(250, 247, 242, 0.6)
+  );
+  backdrop-filter: var(--glass-blur-md);
+  -webkit-backdrop-filter: var(--glass-blur-md);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 20px;
+}
+
+/* Glass Footer */
+.glass-footer {
+  color: var(--warm-gray);
+  font-size: 13px;
+  text-align: center;
+  padding: 24px;
+}
+
+/* ============================
+   UTILITY CLASSES
+   ============================ */
+
+/* Gold Text Gradient */
+.text-gold-gradient {
+  background: linear-gradient(135deg, var(--antique-gold), var(--rose-gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Rose Gold Text */
+.text-rose-gold {
+  color: var(--rose-gold);
+}
+
+/* Gold Border */
+.border-gold {
+  border-color: var(--antique-gold);
+}
+
+/* Hover lift effect */
+.hover-lift {
+  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--glass-shadow-hover);
+}
+
+/* Shimmer animation for loading */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ============================
+   MOBILE FIRST RESPONSIVE
+   ============================ */
+
+@media (max-width: 640px) {
+  .glass-card,
+  .glass-banner,
+  .glass-action {
+    border-radius: 16px;
+    padding: 16px;
+  }
+  
+  .glass-btn-primary {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+  
+  .glass-photo-card {
+    border-radius: 12px;
+  }
+  
+  .glass-photo-card .photo-number {
+    bottom: 8px;
+    left: 8px;
+    padding: 2px 8px;
+    font-size: 11px;
+  }
+  
+  .glass-selection-check {
+    width: 24px;
+    height: 24px;
+    top: 8px;
+    right: 8px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ============================
+   REDUCED MOTION
+   ============================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

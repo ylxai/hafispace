@@ -1,14 +1,13 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import * as Ably from "ably";
 import cloudinaryLoader from "@/lib/image-loader";
 import { extractCloudName, extractPublicId, generateThumbnailUrl } from "@/lib/cloudinary/utils";
-import { Brand } from "@/components/ui/brand";
 
 type Photo = {
   id: string;
@@ -72,13 +71,14 @@ function PhotoSelectCard({
       aria-label={`${isSelected ? "Batalkan pilihan" : "Pilih"} foto ${index + 1}`}
       className={`group relative aspect-square w-full overflow-hidden rounded-xl transition-all duration-200 ${
         isSelected
-          ? "ring-4 ring-slate-900 ring-offset-2"
+          ? "ring-4 ring-[var(--rose-gold)] ring-offset-2"
           : canSelect
-            ? "hover:opacity-90 active:scale-95"
+            ? "hover:shadow-lg"
             : "cursor-not-allowed opacity-40"
       }`}
+      style={{ boxShadow: 'var(--glass-shadow-md)' }}
     >
-      <div className="relative h-full w-full bg-slate-100">
+      <div className="relative h-full w-full">
         <Image
           src={thumbnailUrl}
           alt={`Foto ${index + 1}`}
@@ -96,15 +96,15 @@ function PhotoSelectCard({
       </div>
 
       {/* Nomor foto */}
-      <div className="absolute bottom-1.5 left-1.5 rounded bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white/80">
+      <div className="absolute bottom-1.5 left-1.5 rounded px-1.5 py-0.5 text-[10px] font-medium" style={{ background: 'rgba(255,255,255,0.8)', color: 'var(--charcoal)' }}>
         {index + 1}
       </div>
 
       {/* Selection overlay */}
       {isSelected && (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-900/30">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-white shadow-lg">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+        <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(183, 110, 121, 0.2)' }}>
+          <div className="flex h-9 w-9 items-center justify-center rounded-full shadow-lg" style={{ background: 'var(--rose-gold)' }}>
+            <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
@@ -113,8 +113,8 @@ function PhotoSelectCard({
 
       {/* Pending overlay */}
       {isPending && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/60">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900" />
+        <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.6)' }}>
+          <div className="h-5 w-5 animate-spin rounded-full border-2" style={{ borderColor: 'var(--champagne)', borderTopColor: 'var(--rose-gold)' }} />
         </div>
       )}
     </button>
@@ -127,11 +127,11 @@ export default function PickspacePage() {
   const queryClient = useQueryClient();
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [selectionCount, setSelectionCount] = useState(0);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showHint, setShowHint] = useState(true);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
   const { data, isLoading, isError } = useQuery<GalleryData>({
     queryKey: ["gallery", token],
@@ -143,21 +143,34 @@ export default function PickspacePage() {
     retry: false,
   });
 
-  // Initialize selections from server
+  // FIX Bug 6,12: Reset all state when token changes
   useEffect(() => {
-    if (data?.gallery) {
+    setSelectedIds(new Set());
+    setPendingId(null);
+    setIsLocked(false);
+    setShowSuccess(false);
+    setShowHint(true);
+  }, [token]);
+
+  // Initialize selections from server - ONLY on initial load or when data is stale
+  // Don't override if there are pending operations
+  useEffect(() => {
+    if (data?.gallery && !pendingId && !isBulkProcessing) {
       const ids = new Set(data.gallery.selections);
       setSelectedIds(ids);
-      setSelectionCount(data.gallery.selectionCount);
     }
-  }, [data]);
+  }, [data, pendingId, isBulkProcessing]);
 
-  // Sembunyikan hint setelah interaksi pertama
+  // FIX Bug 1: Reset showHint when all selections are cleared
   useEffect(() => {
-    if (selectedIds.size > 0) setShowHint(false);
+    if (selectedIds.size === 0) {
+      setShowHint(true);
+    } else if (selectedIds.size > 0) {
+      setShowHint(false);
+    }
   }, [selectedIds.size]);
 
-  // Ably real-time subscription
+  // FIX Bug 7: Simplified Ably subscription - no auto refresh to avoid race conditions
   useEffect(() => {
     if (!data?.gallery?.id) return;
 
@@ -169,9 +182,10 @@ export default function PickspacePage() {
           authUrl: `/api/ably-token?gallery=${token}` 
         });
         const channel = ably.channels.get(`gallery:${data.gallery.id}:selection`);
-        await channel.subscribe("count-updated", (msg) => {
-          if (typeof msg.data?.count === "number") {
-            setSelectionCount(msg.data.count);
+        await channel.subscribe("count-updated", () => {
+          // Only refresh if no local pending operations
+          if (!pendingId && !isBulkProcessing) {
+            queryClient.invalidateQueries({ queryKey: ["gallery", token] });
           }
         });
       } catch {
@@ -184,68 +198,34 @@ export default function PickspacePage() {
     return () => {
       ably?.close();
     };
-  }, [data?.gallery?.id, token]);
+  }, [data?.gallery?.id, token, queryClient, pendingId, isBulkProcessing]);
 
   // Debounce ref: antrian pending action per photo storageKey
   // Mencegah spam click → Ably quota exceeded (free tier: 6 msg/s)
   const debounceTimerRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-  // Cleanup semua debounce timer saat komponen unmount
-  useEffect(() => {
-    const timers = debounceTimerRef.current;
-    return () => {
-      timers.forEach((timer) => clearTimeout(timer));
-      timers.clear();
-    };
+  // FIX Bug 2: Helper function to clear all debounce timers
+  const clearAllDebounceTimers = useCallback(() => {
+    debounceTimerRef.current.forEach((timer) => clearTimeout(timer));
+    debounceTimerRef.current.clear();
+    setPendingId(null); // Cancel any pending mutation
   }, []);
 
-  const { mutate: toggleSelection } = useMutation({
-    mutationFn: async ({ photo, action }: { photo: Photo; action: "add" | "remove" }) => {
-      const res = await fetch(`/api/public/gallery/${token}/select`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileId: photo.storageKey,
-          filename: photo.filename,
-          url: photo.url,
-          action,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message ?? "Failed to update selection");
-      }
-      return res.json();
-    },
-    onSuccess: (result, { photo, action }) => {
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        if (action === "add") next.add(photo.storageKey);
-        else next.delete(photo.storageKey);
-        return next;
-      });
-      setSelectionCount(result.selectionCount);
-      queryClient.invalidateQueries({ queryKey: ["gallery", token] });
-    },
-    onSettled: () => setPendingId(null),
-    onError: (err, { photo, action }) => {
-      // Revert optimistic update jika API gagal — kembalikan state ke kondisi sebelumnya
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        // Balik aksi: jika tadi "add" yang gagal → hapus; jika "remove" yang gagal → tambah kembali
-        if (action === "add") next.delete(photo.storageKey);
-        else next.add(photo.storageKey);
-        return next;
-      });
-      alert(err instanceof Error ? err.message : "Gagal memperbarui pilihan");
-    },
-  });
+  // Cleanup semua debounce timer saat komponen unmount atau token berubah
+  useEffect(() => {
+    return () => {
+      debounceTimerRef.current.forEach((timer) => clearTimeout(timer));
+      debounceTimerRef.current.clear();
+    };
+  }, [token]);
 
   const handleToggle = useCallback(
     (photo: Photo) => {
-      // Hapus || pendingId dari guard — setiap foto punya tombol disabled sendiri
-      // Global lock hanya untuk isLocked (seleksi sudah dikirim)
       if (isLocked) return;
+      
+      // Only one pending mutation at a time - ignore clicks while processing
+      if (pendingId) return;
+      
       const action = selectedIds.has(photo.storageKey) ? "remove" : "add";
 
       // Optimistic UI: langsung update state lokal agar UI responsif
@@ -256,34 +236,86 @@ export default function PickspacePage() {
         return next;
       });
 
-      // Debounce API call 400ms — mencegah spam click menghabiskan Ably quota
-      // Jika user klik berkali-kali dalam 400ms, hanya request terakhir yang dikirim
-      const existing = debounceTimerRef.current.get(photo.storageKey);
-      if (existing) clearTimeout(existing);
+      // Set pending immediately to prevent race conditions
+      setPendingId(photo.storageKey);
 
-      const timer = setTimeout(() => {
+      // Debounce API call 400ms — prevents spam clicks
+      const timer = setTimeout(async () => {
         debounceTimerRef.current.delete(photo.storageKey);
-        setPendingId(photo.storageKey);
-        toggleSelection({ photo, action });
+        
+        // Double-check we still have a valid state before calling API
+        if (isLocked) {
+          setPendingId(null);
+          return;
+        }
+        
+        try {
+          const res = await fetch(`/api/public/gallery/${token}/select`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fileId: photo.storageKey,
+              filename: photo.filename,
+              url: photo.url,
+              action,
+            }),
+          });
+          
+          if (!res.ok) {
+            const err = await res.json();
+            // On error, revert optimistic update
+            setSelectedIds((prev) => {
+              const next = new Set(prev);
+              if (action === "add") next.delete(photo.storageKey);
+              else next.add(photo.storageKey);
+              return next;
+            });
+            alert(err.message ?? "Gagal memperbarui pilihan");
+          } else {
+            // Success - invalidate to sync with server
+            await queryClient.invalidateQueries({ queryKey: ["gallery", token] });
+          }
+        } catch {
+          // On error, revert optimistic update
+          setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (action === "add") next.delete(photo.storageKey);
+            else next.add(photo.storageKey);
+            return next;
+          });
+          alert("Terjadi kesalahan koneksi");
+        } finally {
+          setPendingId(null);
+        }
       }, 400);
 
       debounceTimerRef.current.set(photo.storageKey, timer);
     },
-    [isLocked, selectedIds, toggleSelection]
+    [isLocked, selectedIds, token, queryClient, pendingId]
   );
-
-  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
   const handleSelectAll = useCallback(async () => {
     if (!data?.gallery || isBulkProcessing || pendingId) return;
+    
+    // FIX Bug 2: Clear all debounce timers before bulk operation
+    clearAllDebounceTimers();
+    
+    // FIX Bug 5: Wait for any pending operations to complete
+    if (pendingId) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
     setIsBulkProcessing(true);
     try {
+      // FIX Bug 4,11: Limit selection to maxSelection
+      const maxSel = data.gallery.settings.maxSelection;
+      const photosToSelect = data.gallery.photos.slice(0, maxSel);
       const res = await fetch(`/api/public/gallery/${token}/select/bulk`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "add-all",
-          photos: data.gallery.photos.map((p) => ({
+          photos: photosToSelect.map((p) => ({
             storageKey: p.storageKey,
             filename: p.filename,
             url: p.url,
@@ -291,21 +323,28 @@ export default function PickspacePage() {
         }),
       });
       if (!res.ok) throw new Error("Gagal memilih semua foto");
-      const result = await res.json() as { selectionCount: number };
-      setSelectionCount(result.selectionCount);
-      // Update selectedIds dari data gallery
-      const allKeys = new Set(data.gallery.photos.map((p) => p.storageKey));
+      // Update selectedIds - only up to maxSelection
+      const allKeys = new Set(photosToSelect.map((p) => p.storageKey));
       setSelectedIds(allKeys);
-      queryClient.invalidateQueries({ queryKey: ["gallery", token] });
+      await queryClient.invalidateQueries({ queryKey: ["gallery", token] });
     } catch {
       alert("Gagal memilih semua foto. Coba lagi.");
     } finally {
       setIsBulkProcessing(false);
     }
-  }, [data, token, isBulkProcessing, pendingId, queryClient]);
+  }, [data, token, isBulkProcessing, pendingId, queryClient, clearAllDebounceTimers]);
 
   const handleClearAll = useCallback(async () => {
     if (!data?.gallery || isBulkProcessing || pendingId) return;
+    
+    // FIX Bug 2: Clear all debounce timers before bulk operation
+    clearAllDebounceTimers();
+    
+    // FIX Bug 5: Wait for any pending operations to complete
+    if (pendingId) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
     setIsBulkProcessing(true);
     try {
       const res = await fetch(`/api/public/gallery/${token}/select/bulk`, {
@@ -314,15 +353,16 @@ export default function PickspacePage() {
         body: JSON.stringify({ action: "remove-all" }),
       });
       if (!res.ok) throw new Error("Gagal membatalkan semua pilihan");
-      setSelectionCount(0);
       setSelectedIds(new Set());
-      queryClient.invalidateQueries({ queryKey: ["gallery", token] });
+      // FIX Bug 1: Reset showHint when clearing all
+      setShowHint(true);
+      await queryClient.invalidateQueries({ queryKey: ["gallery", token] });
     } catch {
       alert("Gagal membatalkan semua pilihan. Coba lagi.");
     } finally {
       setIsBulkProcessing(false);
     }
-  }, [data, token, isBulkProcessing, pendingId, queryClient]);
+  }, [data, token, isBulkProcessing, pendingId, queryClient, clearAllDebounceTimers]);
 
   const handleSubmit = async () => {
     if (selectedIds.size === 0) return;
@@ -344,10 +384,10 @@ export default function PickspacePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
-          <p className="text-sm text-slate-500">Memuat galeri...</p>
+      <div className="flex min-h-screen flex-col items-center justify-center">
+        <div className="glass-card p-8 flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-2 border-[var(--antique-gold)] border-t-transparent rounded-full animate-spin" />
+          <p style={{ color: 'var(--warm-gray)' }}>Memuat galeri...</p>
         </div>
       </div>
     );
@@ -355,10 +395,17 @@ export default function PickspacePage() {
 
   if (isError || !data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
-        <div className="text-center">
-          <p className="text-2xl font-bold text-slate-900">Galeri tidak ditemukan</p>
-          <p className="mt-2 text-sm text-slate-500">Link galeri tidak valid atau sudah kadaluarsa.</p>
+      <div className="flex min-h-screen flex-col items-center justify-center px-4">
+        <div className="glass-card p-8 flex flex-col items-center gap-4 text-center">
+          <div className="w-16 h-16 rounded-full bg-[var(--champagne)] flex items-center justify-center">
+            <svg className="w-8 h-8" style={{ color: 'var(--warm-gray)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <p className="text-lg font-semibold" style={{ color: 'var(--charcoal)' }}>Galeri tidak ditemukan</p>
+          <p style={{ color: 'var(--warm-gray)' }}>
+            Link galeri tidak valid atau sudah kadaluarsa.
+          </p>
         </div>
       </div>
     );
@@ -366,31 +413,32 @@ export default function PickspacePage() {
 
   const { gallery } = data;
   const maxSelection = gallery.settings.maxSelection;
-  const isFull = selectionCount >= maxSelection;
+  // FIX Bug 3,9: Use selectedIds.size consistently for isFull
+  const isFull = selectedIds.size >= maxSelection;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, var(--pearl-white) 0%, var(--soft-cream) 50%, var(--champagne) 100%)' }}>
       {/* Success Modal */}
       {showSuccess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-2xl">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-              <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md" style={{ background: 'rgba(254, 252, 249, 0.8)' }}>
+          <div className="glass-card w-full max-w-sm p-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'rgba(212, 175, 55, 0.15)' }}>
+              <svg className="h-8 w-8" style={{ color: 'var(--antique-gold)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-slate-900">Pilihan Berhasil Dikirim! 🎉</h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <h2 className="text-xl font-bold" style={{ color: 'var(--charcoal)' }}>Pilihan Berhasil Dikirim!</h2>
+            <p className="mt-2 text-sm" style={{ color: 'var(--warm-gray)' }}>
               Anda telah memilih <strong>{selectedIds.size} foto</strong>. Fotografer akan segera memproses pilihan Anda.
             </p>
             {gallery.settings.thankYouMessage && (
-              <p className="mt-4 rounded-xl bg-slate-50 p-3 text-sm italic text-slate-500">
+              <p className="mt-4 rounded-xl p-3 text-sm italic" style={{ background: 'var(--champagne)', color: 'var(--warm-gray)' }}>
                 &ldquo;{gallery.settings.thankYouMessage}&rdquo;
               </p>
             )}
             <Link
               href={`/gallery/${token}`}
-              className="mt-6 inline-block w-full rounded-full bg-slate-900 px-8 py-3 text-sm font-semibold text-white transition hover:bg-slate-700"
+              className="glass-btn-primary mt-6 inline-block w-full px-8 py-3 text-sm font-semibold"
             >
               Kembali ke Galeri
             </Link>
@@ -399,42 +447,43 @@ export default function PickspacePage() {
       )}
 
       {/* Sticky Header */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur-sm shadow-sm">
+      <header className="sticky top-0 z-30 glass backdrop-blur-md">
         <div className="mx-auto max-w-5xl px-4 py-3 sm:px-6">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
               <Link
                 href={`/gallery/${token}`}
-                className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors"
+                className="mb-1 flex items-center gap-1.5 text-xs font-medium transition-colors hover:underline"
+                style={{ color: 'var(--warm-gray)' }}
               >
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
                 Kembali ke galeri
               </Link>
-              <div className="flex items-center gap-2">
-                <Brand variant="hafiselect" size="sm" />
-              </div>
             </div>
-            {/* Tombol submit header — label konsisten */}
+            {/* Tombol submit header */}
             <button
               type="button"
               onClick={handleSubmit}
               disabled={selectedIds.size === 0 || isLocked}
-              className="shrink-0 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-40"
+              className="glass-btn-primary shrink-0 px-5 py-2.5 text-sm font-semibold"
             >
               Kirim Seleksi ({selectedIds.size})
             </button>
           </div>
-          {/* Counter tunggal di bawah header — hapus duplikat SelectionCounter */}
+          {/* Counter tunggal di bawah header */}
           <div className="mt-2 flex items-center gap-2">
-            <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+            <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(212, 175, 55, 0.15)' }}>
               <div
-                className={`h-full rounded-full transition-all duration-300 ${isLocked ? "bg-green-500" : isFull ? "bg-amber-500" : "bg-slate-800"}`}
-                style={{ width: `${Math.min((selectedIds.size / maxSelection) * 100, 100)}%` }}
+                className="h-full rounded-full transition-all duration-300"
+                style={{ 
+                  width: `${Math.min((selectedIds.size / maxSelection) * 100, 100)}%`,
+                  background: isLocked ? '#22c55e' : isFull ? 'var(--rose-gold)' : 'var(--antique-gold)'
+                }}
               />
             </div>
-            <span className="text-xs text-slate-500 shrink-0">
+            <span className="text-xs shrink-0" style={{ color: 'var(--warm-gray)' }}>
               {selectedIds.size} / {maxSelection} dipilih
             </span>
           </div>
@@ -442,21 +491,21 @@ export default function PickspacePage() {
       </header>
 
       {/* Instructions + Quick Actions */}
-      <div className="border-b border-slate-100 bg-white px-4 py-2.5 sm:px-6">
+      <div className="glass mx-4 mt-4 rounded-xl px-4 py-2.5 sm:px-6">
         <div className="mx-auto max-w-5xl flex items-center justify-between gap-3 flex-wrap">
           {/* Hint — tampil hanya jika belum ada yang dipilih */}
           {showHint ? (
-            <p className="text-sm text-slate-500 flex-1">
-              👆 Ketuk foto untuk memilih · Maks. <strong>{maxSelection}</strong> foto
+            <p className="text-sm flex-1" style={{ color: 'var(--warm-gray)' }}>
+              Ketuk foto untuk memilih · Maks. <strong>{maxSelection}</strong> foto
               {isFull && !isLocked && (
-                <span className="ml-2 font-semibold text-amber-600">· Kuota penuh</span>
+                <span className="ml-2 font-semibold" style={{ color: 'var(--rose-gold)' }}>· Kuota penuh</span>
               )}
             </p>
           ) : (
-            <p className="text-sm text-slate-500 flex-1">
+            <p className="text-sm flex-1" style={{ color: 'var(--warm-gray)' }}>
               {selectedIds.size} foto dipilih · Maks. <strong>{maxSelection}</strong>
               {isFull && !isLocked && (
-                <span className="ml-2 font-semibold text-amber-600">· Kuota penuh</span>
+                <span className="ml-2 font-semibold" style={{ color: 'var(--rose-gold)' }}>· Kuota penuh</span>
               )}
             </p>
           )}
@@ -468,7 +517,8 @@ export default function PickspacePage() {
                   type="button"
                   onClick={handleClearAll}
                   disabled={!!pendingId || isBulkProcessing}
-                  className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                  className="rounded-full border px-3 py-1.5 text-xs font-medium transition hover:bg-white/50 disabled:opacity-50"
+                  style={{ borderColor: 'var(--rose-gold)', color: 'var(--rose-gold)' }}
                 >
                   {isBulkProcessing ? "..." : "Batal Semua"}
                 </button>
@@ -478,7 +528,8 @@ export default function PickspacePage() {
                   type="button"
                   onClick={handleSelectAll}
                   disabled={!!pendingId || isFull || isBulkProcessing}
-                  className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                  className="rounded-full border px-3 py-1.5 text-xs font-medium transition hover:bg-white/50 disabled:opacity-50"
+                  style={{ borderColor: 'var(--antique-gold)', color: 'var(--antique-gold)' }}
                 >
                   {isBulkProcessing ? "..." : "Pilih Semua"}
                 </button>
@@ -491,8 +542,8 @@ export default function PickspacePage() {
       {/* Photo Grid */}
       <main className="mx-auto max-w-5xl px-3 py-5 sm:px-6">
         {gallery.photos.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-white py-20 text-center">
-            <p className="text-slate-500">Belum ada foto di galeri ini.</p>
+          <div className="glass-card mx-4 py-20 text-center">
+            <p style={{ color: 'var(--warm-gray)' }}>Belum ada foto di galeri ini.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
@@ -511,26 +562,9 @@ export default function PickspacePage() {
           </div>
         )}
 
-        {/* Bottom Submit — label konsisten dengan header */}
-        {gallery.photos.length > 0 && !isLocked && (
-          <div className="mt-10 text-center">
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={selectedIds.size === 0}
-              className="rounded-full bg-slate-900 px-10 py-3.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-40"
-            >
-              Kirim Seleksi ({selectedIds.size} foto)
-            </button>
-            {selectedIds.size === 0 && (
-              <p className="mt-2 text-xs text-slate-500">Pilih minimal 1 foto untuk mengirim</p>
-            )}
-          </div>
-        )}
-
         {/* Footer credit studio */}
         <div className="mt-10 pb-6 text-center">
-          <p className="text-xs text-slate-400">
+          <p className="text-xs" style={{ color: 'var(--light-gray)' }}>
             © {new Date().getFullYear()} {gallery.vendor.namaStudio ?? "Photography"}
           </p>
         </div>
