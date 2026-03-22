@@ -17,10 +17,10 @@ const Lightbox = dynamic(
   { 
     ssr: false,
     loading: () => (
-      <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(254, 252, 249, 0.95)' }}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(254,252,249,0.95)]">
         <div className="glass-card p-8 flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-[var(--antique-gold)] border-t-transparent rounded-full animate-spin" />
-          <p style={{ color: 'var(--warm-gray)' }}>Loading...</p>
+          <p className="text-warm-gray">Loading...</p>
         </div>
       </div>
     )
@@ -78,8 +78,7 @@ function PhotoCard({ photo, index, onClick, isSelected }: { photo: Photo; index:
       type="button"
       onClick={onClick}
       aria-label={`Lihat foto ${index + 1}`}
-      className="group relative aspect-square overflow-hidden rounded-xl transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[var(--antique-gold)]/40"
-      style={{ boxShadow: 'var(--glass-shadow-md)' }}
+      className="group relative aspect-square overflow-hidden rounded-xl transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[var(--antique-gold)]/40 shadow-glass-md"
     >
       <Image
         src={thumbnailUrl}
@@ -94,14 +93,14 @@ function PhotoCard({ photo, index, onClick, isSelected }: { photo: Photo; index:
         }}
       />
       {isSelected && (
-        <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full shadow-md" style={{ background: 'var(--rose-gold)' }}>
+        <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full shadow-md bg-rose-gold">
           <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
         </div>
       )}
       {/* Nomor foto — muncul saat hover */}
-      <div className="absolute bottom-1.5 left-1.5 rounded bg-white/80 px-1.5 py-0.5 text-[10px] font-medium backdrop-blur-sm opacity-0 transition-opacity duration-200 group-hover:opacity-100" style={{ color: 'var(--charcoal)' }}>
+      <div className="absolute bottom-1.5 left-1.5 rounded bg-white/80 px-1.5 py-0.5 text-[10px] font-medium backdrop-blur-sm opacity-0 transition-opacity duration-200 group-hover:opacity-100 text-charcoal">
         {index + 1}
       </div>
     </button>
@@ -274,13 +273,13 @@ export default function ViewspacePage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, var(--pearl-white) 0%, var(--soft-cream) 50%, var(--champagne) 100%)' }}>
+    <div className="min-h-screen bg-pearl-gradient">
       {/* Header */}
       <header className="sticky top-0 z-30 glass backdrop-blur-md">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h1 className="truncate text-base font-bold sm:text-lg" style={{ color: 'var(--charcoal)' }}>
+              <h1 className="truncate text-base font-bold sm:text-lg text-charcoal">
                 {gallery.namaProject}
               </h1>
               {/* Jumlah foto */}
@@ -299,11 +298,11 @@ export default function ViewspacePage() {
               className="glass-btn-icon"
             >
               {copied ? (
-                <svg className="h-4 w-4" style={{ color: '#22c55e' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               ) : (
-                <svg className="h-4 w-4" style={{ color: 'var(--warm-gray)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="h-4 w-4 text-warm-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
               )}
@@ -335,19 +334,19 @@ export default function ViewspacePage() {
           <div className="flex items-start justify-between p-4">
             <div className="flex-1 text-center">
               {gallery.settings.bannerClientName && (
-                <p className="text-xs font-medium uppercase tracking-[0.3em]" style={{ color: 'var(--rose-gold)' }}>
+                <p className="text-xs font-medium uppercase tracking-[0.3em] text-rose-gold">
                   {gallery.settings.bannerClientName}
                 </p>
               )}
               {bannerOpen && (
                 <>
                   {gallery.settings.welcomeMessage && (
-                    <p className="mt-1 text-sm font-light sm:text-base" style={{ color: 'var(--charcoal)' }}>
+                    <p className="mt-1 text-sm font-light sm:text-base text-charcoal">
                       {gallery.settings.welcomeMessage}
                     </p>
                   )}
                   {gallery.settings.bannerEventDate && (
-                    <p className="mt-1.5 text-xs" style={{ color: 'var(--warm-gray)' }}>{gallery.settings.bannerEventDate}</p>
+                    <p className="mt-1.5 text-xs text-warm-gray">{gallery.settings.bannerEventDate}</p>
                   )}
                 </>
               )}
@@ -356,8 +355,7 @@ export default function ViewspacePage() {
             <button
               type="button"
               onClick={() => setBannerOpen(o => !o)}
-              className="ml-2 shrink-0 rounded-full p-1 transition hover:bg-white/50"
-              style={{ color: 'var(--warm-gray)' }}
+              className="ml-2 shrink-0 rounded-full p-1 transition hover:bg-white/50 text-warm-gray"
               aria-label={bannerOpen ? "Sembunyikan pesan" : "Tampilkan pesan"}
             >
               <svg className={`h-4 w-4 transition-transform duration-200 ${bannerOpen ? "" : "rotate-180"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -405,10 +403,10 @@ export default function ViewspacePage() {
 
         {gallery.photos.length === 0 ? (
           <div className="glass-card mx-4 flex flex-col items-center justify-center py-16">
-            <svg className="h-12 w-12" style={{ color: 'var(--light-gray)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-12 w-12 text-light-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <p className="mt-4" style={{ color: 'var(--warm-gray)' }}>Belum ada foto di galeri ini.</p>
+            <p className="mt-4 text-warm-gray">Belum ada foto di galeri ini.</p>
           </div>
         ) : isAllTab ? (
           /* All Photos - Grid */
@@ -431,22 +429,21 @@ export default function ViewspacePage() {
           <div className="space-y-4 px-2">
             {selectedPhotos.length === 0 ? (
               <div className="glass-card mx-4 flex flex-col items-center justify-center py-16">
-                <svg className="h-12 w-12" style={{ color: 'var(--light-gray)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-12 w-12 text-light-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
-                <p className="mt-4" style={{ color: 'var(--warm-gray)' }}>Belum ada foto yang dipilih.</p>
+                <p className="mt-4 text-warm-gray">Belum ada foto yang dipilih.</p>
                 <button
                   type="button"
                   onClick={() => setActiveTab("all")}
-                  className="mt-4 text-sm hover:underline"
-                  style={{ color: 'var(--rose-gold)' }}
+                  className="mt-4 text-sm hover:underline text-rose-gold"
                 >
                   Lihat semua foto →
                 </button>
               </div>
             ) : (
               <>
-                <p className="text-sm px-4" style={{ color: 'var(--warm-gray)' }}>
+                <p className="text-sm px-4 text-warm-gray">
                   {selectedPhotos.length} foto siap diproses:
                 </p>
                 <div className="space-y-2 px-2">
@@ -461,7 +458,7 @@ export default function ViewspacePage() {
                         key={photo.id}
                         className="glass flex items-center gap-3 rounded-xl p-3 transition hover:shadow-md"
                       >
-                        <span className="w-5 shrink-0 text-center text-xs font-medium" style={{ color: 'var(--warm-gray)' }}>{idx + 1}</span>
+                        <span className="w-5 shrink-0 text-center text-xs font-medium text-warm-gray">{idx + 1}</span>
                         <button
                           type="button"
                           onClick={() => openLightbox(originalIndex >= 0 ? originalIndex : 0)}
@@ -482,11 +479,11 @@ export default function ViewspacePage() {
                           />
                         </button>
                         <div className="flex-1 min-w-0">
-                          <p className="truncate text-sm font-medium" style={{ color: 'var(--charcoal)' }}>
+                          <p className="truncate text-sm font-medium text-charcoal">
                             Foto {originalIndex + 1}
                           </p>
                           {photo.width && photo.height && (
-                            <p className="text-xs" style={{ color: 'var(--warm-gray)' }}>
+                            <p className="text-xs text-warm-gray">
                               {photo.width} × {photo.height}
                             </p>
                           )}
@@ -497,7 +494,7 @@ export default function ViewspacePage() {
                           className="glass-btn-icon"
                           aria-label="Lihat foto"
                         >
-                          <svg className="h-5 w-5" style={{ color: 'var(--warm-gray)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg className="h-5 w-5 text-warm-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
@@ -508,8 +505,8 @@ export default function ViewspacePage() {
                 </div>
 
                 {/* Submit Section */}
-                <div className="mx-2 mt-4 rounded-2xl glass p-4" style={{ borderColor: 'var(--rose-gold)', background: 'rgba(255,255,255,0.6)' }}>
-                  <p className="mb-3 text-center text-sm" style={{ color: 'var(--warm-gray)' }}>
+                <div className="mx-2 mt-4 rounded-2xl glass p-4 border-rose-gold bg-[rgba(255,255,255,0.6)]">
+                  <p className="mb-3 text-center text-sm text-warm-gray">
                     {selectedPhotos.length} foto siap — kirim untuk mulai editing
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -529,8 +526,7 @@ export default function ViewspacePage() {
                       <button
                         type="button"
                         onClick={handleSubmitToWhatsApp}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
-                        style={{ background: '#25D366' }}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 bg-[#25D366]"
                       >
                         <WhatsappIcon className="h-4 w-4" />
                         Kirim via WhatsApp
@@ -538,8 +534,7 @@ export default function ViewspacePage() {
                     ) : (
                       <a
                         href={`mailto:${gallery.vendor.namaStudio}?subject=Seleksi Foto: ${gallery.namaProject}&body=${selectedPhotos.map((_, i) => `Foto ${i + 1}`).join('\n')}`}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
-                        style={{ background: 'var(--rose-gold)' }}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 bg-rose-gold"
                       >
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -556,7 +551,7 @@ export default function ViewspacePage() {
 
         {/* Footer credit studio */}
         <div className="mt-10 pb-6 text-center">
-          <p className="text-xs" style={{ color: 'var(--light-gray)' }}>
+          <p className="text-xs text-light-gray">
             © {new Date().getFullYear()} {gallery.vendor.namaStudio ?? "Photography"}
           </p>
         </div>
