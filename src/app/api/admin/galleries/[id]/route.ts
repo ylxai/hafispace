@@ -57,6 +57,13 @@ export async function POST(
       }
     );
 
+    // Calculate proper ordering for new photo
+    const maxUrutan = await prisma.photo.aggregate({
+      where: { galleryId: gallery.id },
+      _max: { urutan: true },
+    });
+    const nextUrutan = (maxUrutan._max.urutan ?? -1) + 1;
+
     // Save photo record to database
     const photo = await prisma.photo.create({
       data: {
@@ -69,7 +76,7 @@ export async function POST(
         height: result.height,
         size: result.size,
         mimeType: file.type || `image/${result.format}`,
-        urutan: 0, // Will need to reorganize photos by order later
+        urutan: nextUrutan, // ✅ Proper ordering based on existing photos
       },
     });
 
@@ -138,6 +145,13 @@ export async function PUT(
       });
 
       if (!existingPhoto) {
+        // Calculate proper ordering for synced photo
+        const maxUrutan = await prisma.photo.aggregate({
+          where: { galleryId: gallery.id },
+          _max: { urutan: true },
+        });
+        const nextUrutan = (maxUrutan._max.urutan ?? -1) + 1;
+
         // Create new photo record
         await prisma.photo.create({
           data: {
@@ -150,6 +164,7 @@ export async function PUT(
             height: cloudinaryPhoto.height,
             size: cloudinaryPhoto.size,
             mimeType: `image/${cloudinaryPhoto.format}`,
+            urutan: nextUrutan, // ✅ Proper ordering for synced photos
           },
         });
       }

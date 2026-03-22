@@ -133,8 +133,9 @@ export default function ViewspacePage() {
     if (!data?.gallery?.photos || !data?.gallery?.selections) return [];
     // selections berisi array of fileId — bisa photo.id (baru) atau storageKey (data lama)
     // filter match keduanya untuk backward compatibility
-    return data.gallery.photos.filter((photo: { id: string }) =>
-      data.gallery.selections.includes(photo.id)
+    return data.gallery.photos.filter((photo: { id: string; storageKey?: string }) =>
+      data.gallery.selections.includes(photo.id) || 
+      (photo.storageKey && data.gallery.selections.includes(photo.storageKey))
     );
   }, [data?.gallery?.photos, data?.gallery?.selections]);
 
