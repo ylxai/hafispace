@@ -1,3 +1,61 @@
+// GET all photos from gallery
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id: galleryId } = await params;
+
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return unauthorizedResponse();
+    }
+
+    // Verify gallery ownership
+    const gallery = await prisma.gallery.findUnique({
+      where: { id: galleryId },
+      select: { vendorId: true }
+    });
+
+    if (!gallery || gallery.vendorId !== session.user.id) {
+      return new NextResponse(
+        JSON.stringify({ code: "FORBIDDEN", message: "Forbidden" }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get all photos ordered by urutan
+    const photos = await prisma.photo.findMany({
+      where: { galleryId },
+      select: {
+        id: true,
+        filename: true,
+        url: true,
+        width: true,
+        height: true,
+        createdAt: true
+      },
+      orderBy: { urutan: "asc" }
+    });
+
+    return new NextResponse(
+      JSON.stringify({
+        code: "OK",
+        message: "Photos retrieved successfully",
+        photos
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error("GET /api/admin/galleries/[id]/photos:", error);
+    return new NextResponse(
+      JSON.stringify({ code: "ERROR", message: "Failed to fetch photos" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+}
+
+
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
