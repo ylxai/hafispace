@@ -35,7 +35,7 @@ export async function POST(
       select: { vendorId: true }
     });
 
-    if (!gallery || gallery.vendorId !== session.user.id) {
+    if (gallery?.vendorId !== session.user.id) {
       return new Response(
         JSON.stringify({ code: "FORBIDDEN", message: "Forbidden" }),
         { status: 403, headers: { "Content-Type": "application/json" } }
