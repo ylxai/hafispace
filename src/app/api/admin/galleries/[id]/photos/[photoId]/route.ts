@@ -1,10 +1,18 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
+import { v2 as cloudinary } from "cloudinary";
+
+// Initialize Cloudinary
+cloudinary.config({
+  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 /**
  * DELETE /api/admin/galleries/[id]/photos/[photoId]
- * Hapus satu foto dari gallery
+ * Hapus satu foto dari gallery + Cloudinary
  */
 export async function DELETE(
   _request: Request,
@@ -20,7 +28,6 @@ export async function DELETE(
       );
     }
 
-
     // Verify gallery ownership
     const gallery = await prisma.gallery.findUnique({
       where: { id: galleryId },
@@ -34,7 +41,7 @@ export async function DELETE(
       );
     }
 
-    // Get photo details sebelum delete (untuk Cloudinary cleanup)
+    // Get photo details sebelum delete
     const photo = await prisma.photo.findUnique({
       where: { id: photoId },
       select: { storageKey: true, galleryId: true }
@@ -47,21 +54,34 @@ export async function DELETE(
       );
     }
 
-    // Delete photo dari database
+    // Delete dari Cloudinary
+    let cloudinaryError: string | null = null;
+    try {
+      await cloudinary.uploader.destroy(photo.storageKey);
+    } catch (error) {
+      console.error(`Failed to delete ${photo.storageKey} from Cloudinary:`, error);
+      cloudinaryError = error instanceof Error ? error.message : "Unknown error";
+    }
+
+    // Delete dari database (regardless of Cloudinary success)
     await prisma.photo.delete({
       where: { id: photoId }
     });
 
-    // TODO: Delete dari Cloudinary menggunakan storageKey
-    // const cloudinary = new Cloudinary(...);
-    // await cloudinary.deleteImage(photo.storageKey);
+    interface SingleDeleteResponse { code: string; message: string; deletedPhotoId?: string; cloudinaryError?: string }
+    const response: SingleDeleteResponse = {
+      code: "OK",
+      message: "Photo deleted successfully",
+      deletedPhotoId: photoId
+    };
+
+    if (cloudinaryError) {
+      response.cloudinaryError = cloudinaryError;
+      response.message += " (database cleaned, but Cloudinary delete failed)";
+    }
 
     return new Response(
-      JSON.stringify({
-        code: "OK",
-        message: "Photo deleted successfully",
-        deletedPhotoId: photoId
-      }),
+      JSON.stringify(response),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
