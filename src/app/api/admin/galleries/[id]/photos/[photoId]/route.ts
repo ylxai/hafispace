@@ -1,9 +1,8 @@
 import { getServerSession } from "next-auth";
+import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { deletePhotoFromCloudinary } from "@/lib/cloudinary/core";
-
-// Initialize Cloudinary
 
 /**
  * DELETE /api/admin/galleries/[id]/photos/[photoId]
@@ -17,9 +16,9 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return new Response(
-        JSON.stringify({ code: "UNAUTHORIZED", message: "Unauthorized" }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
+      return NextResponse.json(
+        { code: "UNAUTHORIZED", message: "Unauthorized" },
+        { status: 401 }
       );
     }
 
@@ -29,10 +28,10 @@ export async function DELETE(
       select: { vendorId: true }
     });
 
-    if (gallery?.vendorId !== session.user.id) {
-      return new Response(
-        JSON.stringify({ code: "FORBIDDEN", message: "Forbidden" }),
-        { status: 403, headers: { "Content-Type": "application/json" } }
+    if (!gallery || gallery.vendorId !== session.user.id) {
+      return NextResponse.json(
+        { code: "FORBIDDEN", message: "Forbidden" },
+        { status: 403 }
       );
     }
 
@@ -43,9 +42,9 @@ export async function DELETE(
     });
 
     if (!photo?.galleryId || photo.galleryId !== galleryId) {
-      return new Response(
-        JSON.stringify({ code: "NOT_FOUND", message: "Photo not found" }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
+      return NextResponse.json(
+        { code: "NOT_FOUND", message: "Photo not found" },
+        { status: 404 }
       );
     }
 
@@ -63,7 +62,12 @@ export async function DELETE(
       where: { id: photoId }
     });
 
-    interface SingleDeleteResponse { code: string; message: string; deletedPhotoId?: string; cloudinaryError?: string }
+    interface SingleDeleteResponse {
+      code: string;
+      message: string;
+      deletedPhotoId: string;
+      cloudinaryError?: string;
+    }
     const response: SingleDeleteResponse = {
       code: "OK",
       message: "Photo deleted successfully",
@@ -75,18 +79,15 @@ export async function DELETE(
       response.message += " (database cleaned, but Cloudinary delete failed)";
     }
 
-    return new Response(
-      JSON.stringify(response),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return NextResponse.json(response, { status: 200 });
   } catch (error) {
     console.error("DELETE /api/admin/galleries/[id]/photos/[photoId]:", error);
-    return new Response(
-      JSON.stringify({
+    return NextResponse.json(
+      {
         code: "ERROR",
         message: "Failed to delete photo"
-      }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      },
+      { status: 500 }
     );
   }
 }

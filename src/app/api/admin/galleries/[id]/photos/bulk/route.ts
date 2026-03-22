@@ -1,7 +1,8 @@
 import { getServerSession } from "next-auth";
+import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { deletePhotoFromCloudinary } from "@/lib/cloudinary/core";
+import { deletePhotosFromCloudinary } from "@/lib/cloudinary/core";
 
 /**
  * POST /api/admin/galleries/[id]/photos/bulk
@@ -16,9 +17,9 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return new Response(
-        JSON.stringify({ code: "UNAUTHORIZED", message: "Unauthorized" }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
+      return NextResponse.json(
+        { code: "UNAUTHORIZED", message: "Unauthorized" },
+        { status: 401 }
       );
     }
 
@@ -28,29 +29,32 @@ export async function POST(
       select: { vendorId: true }
     });
 
-    if (gallery?.vendorId !== session.user.id) {
-      return new Response(
-        JSON.stringify({ code: "FORBIDDEN", message: "Forbidden" }),
-        { status: 403, headers: { "Content-Type": "application/json" } }
+    if (!gallery || gallery.vendorId !== session.user.id) {
+      return NextResponse.json(
+        { code: "FORBIDDEN", message: "Forbidden" },
+        { status: 403 }
       );
     }
 
     // Parse request body
-    interface BulkDeleteRequest { photoIds: string[]; action: string }
+    interface BulkDeleteRequest {
+      photoIds: string[];
+      action: string;
+    }
     const body = await request.json() as BulkDeleteRequest;
     const { photoIds, action } = body;
 
     if (!Array.isArray(photoIds) || photoIds.length === 0) {
-      return new Response(
-        JSON.stringify({ code: "BAD_REQUEST", message: "photoIds must be a non-empty array" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+      return NextResponse.json(
+        { code: "BAD_REQUEST", message: "photoIds must be a non-empty array" },
+        { status: 400 }
       );
     }
 
     if (action !== "delete") {
-      return new Response(
-        JSON.stringify({ code: "BAD_REQUEST", message: "Invalid action" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+      return NextResponse.json(
+        { code: "BAD_REQUEST", message: "Invalid action" },
+        { status: 400 }
       );
     }
 
@@ -64,29 +68,25 @@ export async function POST(
     });
 
     if (photosToDelete.length !== photoIds.length) {
-      return new Response(
-        JSON.stringify({
+      return NextResponse.json(
+        {
           code: "NOT_FOUND",
           message: `Some photos not found or don't belong to this gallery`
-        }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
+        },
+        { status: 404 }
       );
     }
 
-    // Delete from Cloudinary
-    const cloudinaryErrors: Array<{ photoId: string; error: string }> = [];
-    for (const photo of photosToDelete) {
-      try {
-        // Delete dari Cloudinary menggunakan public_id (storageKey)
-        await deletePhotoFromCloudinary(session.user.id, photo.storageKey);
-      } catch (error) {
-        console.error(`Failed to delete ${photo.storageKey} from Cloudinary:`, error);
-        cloudinaryErrors.push({
-          photoId: photo.id,
-          error: `Cloudinary delete failed: ${error instanceof Error ? error.message : "Unknown error"}`
-        });
-      }
-    }
+    // Delete dari Cloudinary menggunakan batch API (lebih efisien)
+    const cloudinaryResult = await deletePhotosFromCloudinary(
+      session.user.id,
+      photosToDelete.map(p => p.storageKey)
+    );
+    
+    const cloudinaryErrors = cloudinaryResult.failed.map(f => ({
+      photoId: photosToDelete.find(p => p.storageKey === f.publicId)?.id || f.publicId,
+      error: f.error
+    }));
 
     // Delete dari database (regardless of Cloudinary success)
     const dbResult = await prisma.photo.deleteMany({
@@ -97,31 +97,27 @@ export async function POST(
     });
 
     // Return response
-    interface DeleteResponse { code: string; message: string; deletedCount?: number; failedCount?: number; cloudinaryErrors?: Array<{ photoId: string; error: string }> }
-    const response: DeleteResponse = {
+    const message = cloudinaryErrors.length > 0
+      ? `Deleted ${dbResult.count} photo(s) (${cloudinaryErrors.length} Cloudinary delete failed, but DB cleaned)`
+      : `Deleted ${dbResult.count} photo(s)`;
+
+    const responseData = {
       code: "OK",
-      message: `Deleted ${dbResult.count} photo(s)`,
+      message,
       deletedCount: dbResult.count,
-      failedCount: cloudinaryErrors.length
+      failedCount: cloudinaryErrors.length,
+      ...(cloudinaryErrors.length > 0 ? { cloudinaryErrors } : {})
     };
 
-    if (cloudinaryErrors.length > 0) {
-      response.cloudinaryErrors = cloudinaryErrors;
-      response.message += ` (${cloudinaryErrors.length} Cloudinary delete failed, but DB cleaned)`;
-    }
-
-    return new Response(
-      JSON.stringify(response),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return NextResponse.json(responseData, { status: 200 });
   } catch (error) {
     console.error("POST /api/admin/galleries/[id]/photos/bulk:", error);
-    return new Response(
-      JSON.stringify({
+    return NextResponse.json(
+      {
         code: "ERROR",
         message: "Failed to delete photos"
-      }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      },
+      { status: 500 }
     );
   }
 }

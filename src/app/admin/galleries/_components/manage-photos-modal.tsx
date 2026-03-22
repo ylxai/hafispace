@@ -96,7 +96,7 @@ export function ManagePhotosModal({ galleryId, onClose }: ManagePhotosModalProps
             photos={photos}
             onPhotosChanged={() => {
               // Refresh photos setelah delete
-              window.location.reload();
+              // Refetch photos via state update;
             }}
           />
         )}
