@@ -11,7 +11,7 @@ import { extractCloudName, extractPublicId, generateThumbnailUrl } from "@/lib/c
 
 type Photo = {
   id: string;
-  storageKey: string;
+  // storageKey dihapus dari public API response (security) — pakai id sebagai fileId
   filename: string;
   url: string;
   thumbnailUrl: string | null;
@@ -153,12 +153,20 @@ export default function PickspacePage() {
   }, [token]);
 
   // Initialize selections from server - ONLY on initial load or when data is stale
-  // Don't override if there are pending operations
+  // Don't override if there are pending operations OR bulk processing
+  // Gunakan ref untuk track apakah initial load sudah dilakukan
+  const initializedRef = useRef(false);
   useEffect(() => {
-    if (data?.gallery && !pendingId && !isBulkProcessing) {
-      const ids = new Set(data.gallery.selections);
-      setSelectedIds(ids);
-    }
+    if (!data?.gallery) return;
+    if (pendingId || isBulkProcessing) return;
+    // Selalu sync dari server — tapi hanya pakai photo.id yang ada di photos list
+    // (bukan fileId lama yang mungkin pakai storageKey)
+    const photoIds = new Set(data.gallery.photos.map((p: Photo) => p.id));
+    const validSelections = (data.gallery.selections as string[]).filter(
+      (id) => photoIds.has(id)
+    );
+    setSelectedIds(new Set(validSelections));
+    initializedRef.current = true;
   }, [data, pendingId, isBulkProcessing]);
 
   // FIX Bug 1: Reset showHint when all selections are cleared
@@ -200,7 +208,7 @@ export default function PickspacePage() {
     };
   }, [data?.gallery?.id, token, queryClient, pendingId, isBulkProcessing]);
 
-  // Debounce ref: antrian pending action per photo storageKey
+  // Debounce ref: antrian pending action per photo id
   // Mencegah spam click → Ably quota exceeded (free tier: 6 msg/s)
   const debounceTimerRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
@@ -226,22 +234,22 @@ export default function PickspacePage() {
       // Only one pending mutation at a time - ignore clicks while processing
       if (pendingId) return;
       
-      const action = selectedIds.has(photo.storageKey) ? "remove" : "add";
+      const action = selectedIds.has(photo.id) ? "remove" : "add";
 
       // Optimistic UI: langsung update state lokal agar UI responsif
       setSelectedIds((prev) => {
         const next = new Set(prev);
-        if (action === "add") next.add(photo.storageKey);
-        else next.delete(photo.storageKey);
+        if (action === "add") next.add(photo.id);
+        else next.delete(photo.id);
         return next;
       });
 
       // Set pending immediately to prevent race conditions
-      setPendingId(photo.storageKey);
+      setPendingId(photo.id);
 
       // Debounce API call 400ms — prevents spam clicks
       const timer = setTimeout(async () => {
-        debounceTimerRef.current.delete(photo.storageKey);
+        debounceTimerRef.current.delete(photo.id);
         
         // Double-check we still have a valid state before calling API
         if (isLocked) {
@@ -254,7 +262,7 @@ export default function PickspacePage() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              fileId: photo.storageKey,
+              fileId: photo.id,
               filename: photo.filename,
               url: photo.url,
               action,
@@ -266,8 +274,8 @@ export default function PickspacePage() {
             // On error, revert optimistic update
             setSelectedIds((prev) => {
               const next = new Set(prev);
-              if (action === "add") next.delete(photo.storageKey);
-              else next.add(photo.storageKey);
+              if (action === "add") next.delete(photo.id);
+              else next.add(photo.id);
               return next;
             });
             alert(err.message ?? "Gagal memperbarui pilihan");
@@ -279,8 +287,8 @@ export default function PickspacePage() {
           // On error, revert optimistic update
           setSelectedIds((prev) => {
             const next = new Set(prev);
-            if (action === "add") next.delete(photo.storageKey);
-            else next.add(photo.storageKey);
+            if (action === "add") next.delete(photo.id);
+            else next.add(photo.id);
             return next;
           });
           alert("Terjadi kesalahan koneksi");
@@ -289,7 +297,7 @@ export default function PickspacePage() {
         }
       }, 400);
 
-      debounceTimerRef.current.set(photo.storageKey, timer);
+      debounceTimerRef.current.set(photo.id, timer);
     },
     [isLocked, selectedIds, token, queryClient, pendingId]
   );
@@ -316,7 +324,7 @@ export default function PickspacePage() {
         body: JSON.stringify({
           action: "add-all",
           photos: photosToSelect.map((p) => ({
-            storageKey: p.storageKey,
+            fileId: p.id,
             filename: p.filename,
             url: p.url,
           })),
@@ -324,7 +332,7 @@ export default function PickspacePage() {
       });
       if (!res.ok) throw new Error("Gagal memilih semua foto");
       // Update selectedIds - only up to maxSelection
-      const allKeys = new Set(photosToSelect.map((p) => p.storageKey));
+      const allKeys = new Set(photosToSelect.map((p) => p.id));
       setSelectedIds(allKeys);
       await queryClient.invalidateQueries({ queryKey: ["gallery", token] });
     } catch {
@@ -353,13 +361,14 @@ export default function PickspacePage() {
         body: JSON.stringify({ action: "remove-all" }),
       });
       if (!res.ok) throw new Error("Gagal membatalkan semua pilihan");
+      // Set selectedIds ke empty SEBELUM invalidate agar useEffect tidak override
       setSelectedIds(new Set());
-      // FIX Bug 1: Reset showHint when clearing all
       setShowHint(true);
+      // Set isBulkProcessing false SEBELUM invalidate — useEffect akan skip karena selectedIds sudah 0
+      setIsBulkProcessing(false);
       await queryClient.invalidateQueries({ queryKey: ["gallery", token] });
     } catch {
       alert("Gagal membatalkan semua pilihan. Coba lagi.");
-    } finally {
       setIsBulkProcessing(false);
     }
   }, [data, token, isBulkProcessing, pendingId, queryClient, clearAllDebounceTimers]);
@@ -552,11 +561,11 @@ export default function PickspacePage() {
                 key={photo.id}
                 photo={photo}
                 index={index}
-                isSelected={selectedIds.has(photo.storageKey)}
+                isSelected={selectedIds.has(photo.id)}
                 isFull={isFull}
                 isLocked={isLocked}
                 onToggle={handleToggle}
-                isPending={pendingId === photo.storageKey}
+                isPending={pendingId === photo.id}
               />
             ))}
           </div>
