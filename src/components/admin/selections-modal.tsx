@@ -1,13 +1,31 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
+import { useToast } from "@/components/ui/toast";
+
 // SVG placeholder data URI — dipakai saat thumbnailUrl tidak ada atau gagal load
 // Tidak butuh API endpoint eksternal, tidak ada 404
 const PLACEHOLDER_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23f1f5f9'/%3E%3Cpath d='M160 140h80v80h-80z' fill='%23cbd5e1'/%3E%3Cpath d='M150 240l30-30 20 20 30-40 50 50H150z' fill='%23cbd5e1'/%3E%3C/svg%3E";
 
-
-import { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
-import { useToast } from "@/components/ui/toast";
+/**
+ * Sub-component untuk thumbnail foto seleksi.
+ * Menggunakan React state untuk handle error — menghindari DOM manipulation
+ * langsung (e.target.src) yang merupakan anti-pattern dengan next/image.
+ */
+function SelectionThumbnail({ src, alt }: { src: string; alt: string }) {
+  const [imgSrc, setImgSrc] = useState(src);
+  return (
+    <Image
+      src={imgSrc}
+      alt={alt}
+      fill
+      className="object-cover"
+      unoptimized
+      onError={() => setImgSrc(PLACEHOLDER_SVG)}
+    />
+  );
+}
 
 function extractCloudName(url: string): string {
   try {
@@ -453,18 +471,11 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
                         />
                       </div>
                       
-                      {/* Image */}
+                      {/* Image — pakai SelectionThumbnail agar error handling via React state */}
                       <div className="aspect-square relative">
-                        <Image
+                        <SelectionThumbnail
                           src={thumbnailUrl}
                           alt={selection.filename}
-                          fill
-                          className="object-cover"
-                          unoptimized
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = PLACEHOLDER_SVG;
-                          }}
                         />
                         
                         {/* Lock overlay */}
