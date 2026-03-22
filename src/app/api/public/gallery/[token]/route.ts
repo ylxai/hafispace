@@ -173,7 +173,10 @@ export async function GET(
     },
   });
 
-  const selectionCount = selections.filter((s) => !s.isLocked).length;
+  // selectionCount = total semua seleksi (locked + unlocked)
+  // Locked = sudah submit, Unlocked = sedang dipilih tapi belum submit
+  // Keduanya tetap ditampilkan di tab "Foto Pilihan Saya"
+  const selectionCount = selections.length;
 
   const response = NextResponse.json({
     gallery: {

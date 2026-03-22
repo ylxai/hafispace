@@ -86,9 +86,9 @@ export async function POST(
           });
         }
 
-        // Verify photo exists in gallery
+        // Verify photo exists in gallery — fileId adalah photo.id (bukan storageKey)
         const photoExists = await tx.photo.findFirst({
-          where: { galleryId: gallery.id, storageKey: fileId },
+          where: { galleryId: gallery.id, id: fileId },
         });
 
         if (!photoExists) {

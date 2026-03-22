@@ -8,7 +8,7 @@ import { generateLightboxThumbnailUrl } from "@/lib/cloudinary/utils";
 
 interface Photo {
   id: string;
-  storageKey: string;
+  // storageKey dihapus dari public API response (security) — pakai id sebagai fileId
   filename: string;
   url: string;
   thumbnailUrl: string | null;

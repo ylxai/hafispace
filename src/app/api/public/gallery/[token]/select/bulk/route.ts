@@ -7,10 +7,11 @@ import { z } from "zod";
 const BulkSelectSchema = z.object({
   action: z.enum(["add-all", "remove-all"]),
   // Untuk add-all: array foto yang akan dipilih
+  // fileId = photo.id (bukan storageKey — sudah dihapus dari public API response)
   photos: z
     .array(
       z.object({
-        storageKey: z.string(),
+        fileId: z.string(),
         filename: z.string(),
         url: z.string(),
       })
@@ -87,14 +88,14 @@ export async function POST(
 
       // Filter foto yang belum terseleksi & batasi ke kuota tersisa
       const toAdd = photos
-        .filter((p) => !existingSet.has(p.storageKey))
+        .filter((p) => !existingSet.has(p.fileId))
         .slice(0, remaining);
 
       if (toAdd.length > 0) {
         await prisma.photoSelection.createMany({
           data: toAdd.map((p) => ({
             galleryId: gallery.id,
-            fileId: p.storageKey,
+            fileId: p.fileId,
             filename: p.filename,
             url: p.url,
             selectionType: "EDIT",
