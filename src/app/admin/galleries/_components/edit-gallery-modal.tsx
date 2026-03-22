@@ -7,6 +7,7 @@ import ViesusPreview from "@/components/admin/viesus-preview";
 import { useToast } from "@/components/ui/toast";
 import { SelectionsModal } from "@/components/admin/selections-modal";
 import { UploadPhotosModal } from "./upload-photos-modal";
+import { GalleryPhotosList } from "@/components/admin/gallery-photos-list";
 import type { AdminGallery } from "@/types/admin";
 
 const STATUS_OPTIONS: AdminGallery["status"][] = ["DRAFT", "IN_REVIEW", "DELIVERED"];

@@ -1,5 +1,4 @@
 import { config } from "dotenv";
-import { v4 as uuidv4 } from "uuid";
 
 config({ path: ".env" });
 
@@ -175,7 +174,7 @@ async function main() {
         namaProject: "Test Client Session",
         clientToken: "test-client-token",
         cloudinaryFolderId: "test_client",
-        status: "ONGOING",
+        status: "DELIVERED",
       },
     }),
     prisma.gallery.create({
@@ -185,7 +184,7 @@ async function main() {
         namaProject: "Fulan Prewed",
         clientToken: "fulan-token-001",
         cloudinaryFolderId: "fulan_prewed",
-        status: "ONGOING",
+        status: "DELIVERED",
       },
     }),
   ]);
