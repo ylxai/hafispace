@@ -36,6 +36,7 @@ type GalleryData = {
     photos: Photo[];
     selectionCount: number;
     selections: string[];
+    isSelectionLocked: boolean; // true jika ada seleksi yang sudah di-submit (isLocked: true)
   };
 };
 
@@ -131,6 +132,7 @@ export default function PickspacePage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showHint, setShowHint] = useState(true);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [showLockedWarning, setShowLockedWarning] = useState(false);
 
   const { data, isLoading, isError } = useQuery<GalleryData>({
     queryKey: ["gallery", token],
@@ -165,6 +167,9 @@ export default function PickspacePage() {
       (id) => photoIds.has(id)
     );
     setSelectedIds(new Set(validSelections));
+    // Sync isLocked dua arah dari API (set true atau false sesuai kondisi server)
+    // Ini penting jika admin membuka kunci seleksi (unlock) setelah client submit
+    setIsLocked(!!data.gallery.isSelectionLocked);
     initializedRef.current = true;
   }, [data, pendingId, isBulkProcessing]);
 
@@ -340,8 +345,14 @@ export default function PickspacePage() {
 
   const handleClearAll = useCallback(async () => {
     if (!data?.gallery || isBulkProcessing || pendingId) return;
-    
-    // FIX Bug 2: Clear all debounce timers before bulk operation
+
+    // Jika seleksi sudah di-submit (locked), tampilkan peringatan
+    if (isLocked || data.gallery.isSelectionLocked) {
+      setShowLockedWarning(true);
+      return;
+    }
+
+    // Clear all debounce timers sebelum bulk operation
     clearAllDebounceTimers();
 
     // pendingId sudah dijamin null karena guard di awal fungsi: if (pendingId) return
@@ -364,7 +375,7 @@ export default function PickspacePage() {
       alert("Gagal membatalkan semua pilihan. Coba lagi.");
       setIsBulkProcessing(false);
     }
-  }, [data, token, isBulkProcessing, pendingId, queryClient, clearAllDebounceTimers]);
+  }, [data, token, isBulkProcessing, pendingId, isLocked, queryClient, clearAllDebounceTimers]);
 
   const handleSubmit = async () => {
     if (selectedIds.size === 0) return;
@@ -420,6 +431,31 @@ export default function PickspacePage() {
 
   return (
     <div className="min-h-screen bg-pearl-gradient">
+      {/* Locked Warning Modal — overlay, tidak unmount komponen */}
+      {showLockedWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-[rgba(254,252,249,0.9)]">
+          <div className="glass-card w-full max-w-sm p-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(212,175,55,0.15)]">
+              <svg className="h-8 w-8 text-antique-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-bold text-charcoal mb-2">Seleksi Sudah Terkunci</h2>
+            <p className="text-sm text-warm-gray mb-6">
+              Foto pilihan kamu sudah dikirim ke fotografer dan <strong>tidak dapat dibatalkan</strong>.
+              Hubungi fotografer langsung jika perlu perubahan.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowLockedWarning(false)}
+              className="w-full rounded-full py-3 text-sm font-semibold text-white transition hover:opacity-90 bg-antique-gold"
+            >
+              Mengerti
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Success Modal */}
       {showSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-[rgba(254,252,249,0.8)]">

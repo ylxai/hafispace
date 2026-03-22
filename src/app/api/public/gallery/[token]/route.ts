@@ -198,6 +198,7 @@ export async function GET(
       photos: paginatedPhotos,
       selectionCount,
       selections: selections.map((s) => s.fileId),
+      isSelectionLocked: selections.some((s) => s.isLocked), // true jika ada seleksi yang sudah di-submit
     },
     pagination: {
       hasNextPage,
