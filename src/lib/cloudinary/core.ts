@@ -3,7 +3,7 @@ import type { UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
 import { prisma } from '../db';
 import { decrypt } from '../encryption';
 import type { CloudinaryResource, CloudinaryResourceResult, CloudinaryDeletionResult, CloudinaryPingResult } from '@/types/cloudinary';
-import { getVendorGalleryFolder, getGalleryFolder } from './constants';
+import { getVendorGalleryFolder } from './constants';
 
 // Configure Cloudinary with environment variables
 cloudinary.config({

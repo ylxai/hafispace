@@ -22,12 +22,3 @@ export function getVendorGalleryFolder(vendorId: string): string {
   return `${CLOUDINARY_FOLDERS.GALLERIES}/${vendorId}`;
 }
 
-/**
- * Get gallery-specific folder path
- * @param vendorId - The vendor/studio ID
- * @param galleryId - The gallery ID
- * @returns Full folder path for specific gallery
- */
-export function getGalleryFolder(vendorId: string, galleryId: string): string {
-  return `${getVendorGalleryFolder(vendorId)}/${galleryId}`;
-}
