@@ -423,7 +423,7 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {filteredSelections.map((selection) => {
                   // Ekstrak source URL dulu, lalu gunakan untuk generate thumbnail atau fallback ke placeholder
-                  const sourceUrl = selection.url || selection.thumbnailUrl;
+                  const sourceUrl = selection.url ?? selection.thumbnailUrl;
                   const thumbnailUrl = sourceUrl
                     ? generateThumbnailUrlFromUrl(sourceUrl)
                     : PLACEHOLDER_SVG;
