@@ -167,10 +167,9 @@ export default function PickspacePage() {
       (id) => photoIds.has(id)
     );
     setSelectedIds(new Set(validSelections));
-    // Sync isLocked dari API — jika ada seleksi yang sudah di-submit (locked)
-    if (data.gallery.isSelectionLocked) {
-      setIsLocked(true);
-    }
+    // Sync isLocked dua arah dari API (set true atau false sesuai kondisi server)
+    // Ini penting jika admin membuka kunci seleksi (unlock) setelah client submit
+    setIsLocked(!!data.gallery.isSelectionLocked);
     initializedRef.current = true;
   }, [data, pendingId, isBulkProcessing]);
 
@@ -396,34 +395,6 @@ export default function PickspacePage() {
     }
   };
 
-  // Modal peringatan: seleksi sudah di-submit dan tidak bisa dibatalkan
-  if (showLockedWarning) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-[rgba(254,252,249,0.9)]">
-        <div className="glass-card w-full max-w-sm p-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(212,175,55,0.15)]">
-            <svg className="h-8 w-8 text-antique-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m0 0v2m0-2h2m-2 0H10m2-5V8m0 0V6m0 2h2M10 8H8" />
-              <circle cx="12" cy="12" r="10" strokeWidth="2" />
-            </svg>
-          </div>
-          <h2 className="text-lg font-bold text-charcoal mb-2">Seleksi Sudah Terkunci</h2>
-          <p className="text-sm text-warm-gray mb-6">
-            Foto pilihan kamu sudah dikirim ke fotografer dan <strong>tidak dapat dibatalkan</strong>. 
-            Hubungi fotografer jika perlu perubahan.
-          </p>
-          <button
-            type="button"
-            onClick={() => setShowLockedWarning(false)}
-            className="w-full rounded-full py-3 text-sm font-semibold text-white transition hover:opacity-90 bg-antique-gold"
-          >
-            Mengerti
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center">
@@ -460,6 +431,31 @@ export default function PickspacePage() {
 
   return (
     <div className="min-h-screen bg-pearl-gradient">
+      {/* Locked Warning Modal — overlay, tidak unmount komponen */}
+      {showLockedWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-[rgba(254,252,249,0.9)]">
+          <div className="glass-card w-full max-w-sm p-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(212,175,55,0.15)]">
+              <svg className="h-8 w-8 text-antique-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-bold text-charcoal mb-2">Seleksi Sudah Terkunci</h2>
+            <p className="text-sm text-warm-gray mb-6">
+              Foto pilihan kamu sudah dikirim ke fotografer dan <strong>tidak dapat dibatalkan</strong>.
+              Hubungi fotografer langsung jika perlu perubahan.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowLockedWarning(false)}
+              className="w-full rounded-full py-3 text-sm font-semibold text-white transition hover:opacity-90 bg-antique-gold"
+            >
+              Mengerti
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Success Modal */}
       {showSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-[rgba(254,252,249,0.8)]">
