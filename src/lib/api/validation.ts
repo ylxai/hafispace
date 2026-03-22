@@ -47,7 +47,7 @@ export const gallerySchema = z.object({
 
 export const paymentSchema = z.object({
   amount: z.coerce.number().positive("Amount must be positive"),
-  paymentMethod: z.enum(["CASH", "TRANSFER", "QRIS", "OTHER"]),
+  paymentMethod: z.enum(["CASH", "TRANSFER", "QRIS", "OTHER"]), // ✅ Matches PaymentMethod enum in Prisma
   notes: z.string().optional(),
   proofUrl: z.string().url().optional(),
 });
