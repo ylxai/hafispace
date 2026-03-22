@@ -543,31 +543,29 @@ export default function PickspacePage() {
               )}
             </p>
           )}
-          {/* Quick action buttons */}
-          {!isLocked && (
-            <div className="flex items-center gap-2 shrink-0">
-              {selectedIds.size > 0 && (
-                <button
-                  type="button"
-                  onClick={handleClearAll}
-                  disabled={!!pendingId || isBulkProcessing}
-                  className="rounded-full border px-3 py-1.5 text-xs font-medium transition hover:bg-white/50 disabled:opacity-50 border-rose-gold text-rose-gold"
-                >
-                  {isBulkProcessing ? "..." : "Batal Semua"}
-                </button>
-              )}
-              {selectedIds.size === 0 && gallery.photos.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleSelectAll}
-                  disabled={!!pendingId || isFull || isBulkProcessing}
-                  className="rounded-full border px-3 py-1.5 text-xs font-medium transition hover:bg-white/50 disabled:opacity-50 border-antique-gold text-antique-gold"
-                >
-                  {isBulkProcessing ? "..." : "Pilih Semua"}
-                </button>
-              )}
-            </div>
-          )}
+          {/* Quick action buttons — tetap tampil meski locked, handleClearAll handle modal peringatan */}
+          <div className="flex items-center gap-2 shrink-0">
+            {selectedIds.size > 0 && (
+              <button
+                type="button"
+                onClick={handleClearAll}
+                disabled={!!pendingId || isBulkProcessing}
+                className="rounded-full border px-3 py-1.5 text-xs font-medium transition hover:bg-white/50 disabled:opacity-50 border-rose-gold text-rose-gold"
+              >
+                {isBulkProcessing ? "..." : "Batal Semua"}
+              </button>
+            )}
+            {selectedIds.size === 0 && !isLocked && gallery.photos.length > 0 && (
+              <button
+                type="button"
+                onClick={handleSelectAll}
+                disabled={!!pendingId || isFull || isBulkProcessing}
+                className="rounded-full border px-3 py-1.5 text-xs font-medium transition hover:bg-white/50 disabled:opacity-50 border-antique-gold text-antique-gold"
+              >
+                {isBulkProcessing ? "..." : "Pilih Semua"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

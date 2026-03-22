@@ -3,30 +3,33 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useToast } from "@/components/ui/toast";
+import { generateThumbnailUrlFromUrl } from "@/lib/cloudinary/utils";
 
-function extractCloudName(url: string): string {
-  try {
-    const match = url.match(/res\.cloudinary\.com\/([^/]+)\//);
-    return match?.[1] ?? "doweertbx";
-  } catch {
-    return "doweertbx";
-  }
+// SVG placeholder data URI — dipakai saat thumbnailUrl tidak ada atau gagal load
+// Tidak butuh API endpoint eksternal, tidak ada 404
+const PLACEHOLDER_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23f1f5f9'/%3E%3Cpath d='M160 140h80v80h-80z' fill='%23cbd5e1'/%3E%3Cpath d='M150 240l30-30 20 20 30-40 50 50H150z' fill='%23cbd5e1'/%3E%3C/svg%3E";
+
+/**
+ * Sub-component untuk thumbnail foto seleksi.
+ * Menggunakan React state untuk handle error — menghindari DOM manipulation
+ * langsung (e.target.src) yang merupakan anti-pattern dengan next/image.
+ */
+function SelectionThumbnail({ src, alt }: { src: string; alt: string }) {
+  const [imgSrc, setImgSrc] = useState(src);
+  return (
+    <Image
+      src={imgSrc}
+      alt={alt}
+      fill
+      className="object-cover"
+      unoptimized
+      onError={() => setImgSrc(PLACEHOLDER_SVG)}
+    />
+  );
 }
 
-function extractPublicId(url: string): string {
-  try {
-    const match = url.match(/\/upload\/(.+)$/);
-    return match?.[1] ?? "";
-  } catch {
-    return "";
-  }
-}
-
-function generateThumbnailUrl(url: string): string {
-  const cloudName = extractCloudName(url);
-  const publicId = extractPublicId(url);
-  return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,g_auto,h_400,q_auto:good,w_400/${publicId}`;
-}
+// Cloudinary utilities dipindahkan ke src/lib/cloudinary/utils.ts
+// Menggunakan generateThumbnailUrlFromUrl dari shared utils
 
 interface SelectedPhoto {
   id: string;
@@ -419,9 +422,11 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
               
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {filteredSelections.map((selection) => {
-                  const thumbnailUrl = selection.thumbnailUrl
-                    ? generateThumbnailUrl(selection.url ?? selection.thumbnailUrl)
-                    : "/api/placeholder/400/400";
+                  // Ekstrak source URL dulu, lalu gunakan untuk generate thumbnail atau fallback ke placeholder
+                  const sourceUrl = selection.url ?? selection.thumbnailUrl;
+                  const thumbnailUrl = sourceUrl
+                    ? generateThumbnailUrlFromUrl(sourceUrl)
+                    : PLACEHOLDER_SVG;
                   
                   return (
                     <div
@@ -448,18 +453,11 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
                         />
                       </div>
                       
-                      {/* Image */}
+                      {/* Image — pakai SelectionThumbnail agar error handling via React state */}
                       <div className="aspect-square relative">
-                        <Image
+                        <SelectionThumbnail
                           src={thumbnailUrl}
                           alt={selection.filename}
-                          fill
-                          className="object-cover"
-                          unoptimized
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = "/api/placeholder/400/400";
-                          }}
                         />
                         
                         {/* Lock overlay */}

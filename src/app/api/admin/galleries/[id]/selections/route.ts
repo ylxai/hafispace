@@ -35,7 +35,7 @@ export async function GET(
       },
       photos: {
         select: {
-          storageKey: true,
+          id: true,       // Dipakai sebagai key di photoMap (match dengan selection.fileId)
           url: true,
           thumbnailUrl: true,
         },
@@ -48,8 +48,10 @@ export async function GET(
 
     const gallery = ownership.gallery;
 
+    // Gunakan photo.id sebagai key — match dengan selection.fileId (UUID)
+    // Sebelumnya: storageKey → mismatch karena fileId sekarang pakai photo.id
     const photoMap = new Map(
-      gallery.photos.map((photo) => [photo.storageKey, photo])
+      gallery.photos.map((photo) => [photo.id, photo])
     );
 
     const selections = gallery.selections.map((selection) => {
