@@ -1,14 +1,9 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { v2 as cloudinary } from "cloudinary";
+import { deletePhotoFromCloudinary } from "@/lib/cloudinary/core";
 
 // Initialize Cloudinary
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 /**
  * DELETE /api/admin/galleries/[id]/photos/[photoId]
@@ -57,7 +52,7 @@ export async function DELETE(
     // Delete dari Cloudinary
     let cloudinaryError: string | null = null;
     try {
-      await cloudinary.uploader.destroy(photo.storageKey);
+      await deletePhotoFromCloudinary(session.user.id, photo.storageKey);
     } catch (error) {
       console.error(`Failed to delete ${photo.storageKey} from Cloudinary:`, error);
       cloudinaryError = error instanceof Error ? error.message : "Unknown error";

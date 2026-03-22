@@ -1,14 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { v2 as cloudinary } from "cloudinary";
-
-// Initialize Cloudinary
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+import { deletePhotoFromCloudinary } from "@/lib/cloudinary/core";
 
 /**
  * POST /api/admin/galleries/[id]/photos/bulk
@@ -85,7 +78,7 @@ export async function POST(
     for (const photo of photosToDelete) {
       try {
         // Delete dari Cloudinary menggunakan public_id (storageKey)
-        await cloudinary.uploader.destroy(photo.storageKey);
+        await deletePhotoFromCloudinary(session.user.id, photo.storageKey);
       } catch (error) {
         console.error(`Failed to delete ${photo.storageKey} from Cloudinary:`, error);
         cloudinaryErrors.push({
