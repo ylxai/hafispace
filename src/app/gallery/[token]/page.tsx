@@ -32,7 +32,7 @@ type AblyRealtime = InstanceType<typeof AblyModule.Realtime>;
 
 type Photo = {
   id: string;
-  storageKey: string;
+  // storageKey dihapus dari public API response (security) — pakai id sebagai fileId
   filename: string;
   url: string;
   thumbnailUrl: string | null;
@@ -132,8 +132,10 @@ export default function ViewspacePage() {
 
   const selectedPhotos = useMemo(() => {
     if (!data?.gallery?.photos || !data?.gallery?.selections) return [];
-    return data.gallery.photos.filter(photo => 
-      data.gallery.selections.includes(photo.storageKey)
+    // selections berisi array of fileId — bisa photo.id (baru) atau storageKey (data lama)
+    // filter match keduanya untuk backward compatibility
+    return data.gallery.photos.filter((photo: { id: string }) =>
+      data.gallery.selections.includes(photo.id)
     );
   }, [data?.gallery?.photos, data?.gallery?.selections]);
 
@@ -412,7 +414,7 @@ export default function ViewspacePage() {
           /* All Photos - Grid */
           <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 sm:gap-1.5 lg:grid-cols-4">
             {gallery.photos.map((photo, index) => {
-              const isSelected = gallery.selections.includes(photo.storageKey);
+              const isSelected = gallery.selections.includes(photo.id);
               return (
                 <PhotoCard
                   key={photo.id}
