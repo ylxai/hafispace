@@ -69,14 +69,13 @@ function PhotoSelectCard({
       onClick={() => canSelect && onToggle(photo)}
       disabled={!canSelect || isPending}
       aria-label={`${isSelected ? "Batalkan pilihan" : "Pilih"} foto ${index + 1}`}
-      className={`group relative aspect-square w-full overflow-hidden rounded-xl transition-all duration-200 ${
+      className={`group relative aspect-square w-full overflow-hidden rounded-xl transition-all duration-200 shadow-glass-md ${
         isSelected
           ? "ring-4 ring-[var(--rose-gold)] ring-offset-2"
           : canSelect
             ? "hover:shadow-lg"
             : "cursor-not-allowed opacity-40"
       }`}
-      style={{ boxShadow: 'var(--glass-shadow-md)' }}
     >
       <div className="relative h-full w-full">
         <Image
@@ -96,14 +95,14 @@ function PhotoSelectCard({
       </div>
 
       {/* Nomor foto */}
-      <div className="absolute bottom-1.5 left-1.5 rounded px-1.5 py-0.5 text-[10px] font-medium" style={{ background: 'rgba(255,255,255,0.8)', color: 'var(--charcoal)' }}>
+      <div className="absolute bottom-1.5 left-1.5 rounded px-1.5 py-0.5 text-[10px] font-medium bg-[rgba(255,255,255,0.8)] text-charcoal">
         {index + 1}
       </div>
 
       {/* Selection overlay */}
       {isSelected && (
-        <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(183, 110, 121, 0.2)' }}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full shadow-lg" style={{ background: 'var(--rose-gold)' }}>
+        <div className="absolute inset-0 flex items-center justify-center bg-[rgba(183,110,121,0.2)]">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full shadow-lg bg-rose-gold">
             <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
@@ -113,8 +112,8 @@ function PhotoSelectCard({
 
       {/* Pending overlay */}
       {isPending && (
-        <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.6)' }}>
-          <div className="h-5 w-5 animate-spin rounded-full border-2" style={{ borderColor: 'var(--champagne)', borderTopColor: 'var(--rose-gold)' }} />
+        <div className="absolute inset-0 flex items-center justify-center bg-[rgba(255,255,255,0.6)]">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-champagne border-t-rose-gold" />
         </div>
       )}
     </button>
@@ -390,7 +389,7 @@ export default function PickspacePage() {
       <div className="flex min-h-screen flex-col items-center justify-center">
         <div className="glass-card p-8 flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-2 border-[var(--antique-gold)] border-t-transparent rounded-full animate-spin" />
-          <p style={{ color: 'var(--warm-gray)' }}>Memuat galeri...</p>
+          <p className="text-warm-gray">Memuat galeri...</p>
         </div>
       </div>
     );
@@ -401,12 +400,12 @@ export default function PickspacePage() {
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <div className="glass-card p-8 flex flex-col items-center gap-4 text-center">
           <div className="w-16 h-16 rounded-full bg-[var(--champagne)] flex items-center justify-center">
-            <svg className="w-8 h-8" style={{ color: 'var(--warm-gray)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-8 h-8 text-warm-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
-          <p className="text-lg font-semibold" style={{ color: 'var(--charcoal)' }}>Galeri tidak ditemukan</p>
-          <p style={{ color: 'var(--warm-gray)' }}>
+          <p className="text-lg font-semibold text-charcoal">Galeri tidak ditemukan</p>
+          <p className="text-warm-gray">
             Link galeri tidak valid atau sudah kadaluarsa.
           </p>
         </div>
@@ -420,22 +419,22 @@ export default function PickspacePage() {
   const isFull = selectedIds.size >= maxSelection;
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, var(--pearl-white) 0%, var(--soft-cream) 50%, var(--champagne) 100%)' }}>
+    <div className="min-h-screen bg-pearl-gradient">
       {/* Success Modal */}
       {showSuccess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md" style={{ background: 'rgba(254, 252, 249, 0.8)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-[rgba(254,252,249,0.8)]">
           <div className="glass-card w-full max-w-sm p-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ background: 'rgba(212, 175, 55, 0.15)' }}>
-              <svg className="h-8 w-8" style={{ color: 'var(--antique-gold)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(212,175,55,0.15)]">
+              <svg className="h-8 w-8 text-antique-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold" style={{ color: 'var(--charcoal)' }}>Pilihan Berhasil Dikirim!</h2>
-            <p className="mt-2 text-sm" style={{ color: 'var(--warm-gray)' }}>
+            <h2 className="text-xl font-bold text-charcoal">Pilihan Berhasil Dikirim!</h2>
+            <p className="mt-2 text-sm text-warm-gray">
               Anda telah memilih <strong>{selectedIds.size} foto</strong>. Fotografer akan segera memproses pilihan Anda.
             </p>
             {gallery.settings.thankYouMessage && (
-              <p className="mt-4 rounded-xl p-3 text-sm italic" style={{ background: 'var(--champagne)', color: 'var(--warm-gray)' }}>
+              <p className="mt-4 rounded-xl p-3 text-sm italic bg-champagne text-warm-gray">
                 &ldquo;{gallery.settings.thankYouMessage}&rdquo;
               </p>
             )}
@@ -456,8 +455,7 @@ export default function PickspacePage() {
             <div className="min-w-0 flex-1">
               <Link
                 href={`/gallery/${token}`}
-                className="mb-1 flex items-center gap-1.5 text-xs font-medium transition-colors hover:underline"
-                style={{ color: 'var(--warm-gray)' }}
+                className="mb-1 flex items-center gap-1.5 text-xs font-medium transition-colors hover:underline text-warm-gray"
               >
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -477,16 +475,13 @@ export default function PickspacePage() {
           </div>
           {/* Counter tunggal di bawah header */}
           <div className="mt-2 flex items-center gap-2">
-            <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(212, 175, 55, 0.15)' }}>
+            <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-[rgba(212,175,55,0.15)]">
               <div
-                className="h-full rounded-full transition-all duration-300"
-                style={{ 
-                  width: `${Math.min((selectedIds.size / maxSelection) * 100, 100)}%`,
-                  background: isLocked ? '#22c55e' : isFull ? 'var(--rose-gold)' : 'var(--antique-gold)'
-                }}
+                className={`h-full rounded-full transition-all duration-300 ${isLocked ? 'bg-green-500' : isFull ? 'bg-rose-gold' : 'bg-antique-gold'}`}
+                style={{ width: `${Math.min((selectedIds.size / maxSelection) * 100, 100)}%` }}
               />
             </div>
-            <span className="text-xs shrink-0" style={{ color: 'var(--warm-gray)' }}>
+            <span className="text-xs shrink-0 text-warm-gray">
               {selectedIds.size} / {maxSelection} dipilih
             </span>
           </div>
@@ -498,17 +493,17 @@ export default function PickspacePage() {
         <div className="mx-auto max-w-5xl flex items-center justify-between gap-3 flex-wrap">
           {/* Hint — tampil hanya jika belum ada yang dipilih */}
           {showHint ? (
-            <p className="text-sm flex-1" style={{ color: 'var(--warm-gray)' }}>
+            <p className="text-sm flex-1 text-warm-gray">
               Ketuk foto untuk memilih · Maks. <strong>{maxSelection}</strong> foto
               {isFull && !isLocked && (
-                <span className="ml-2 font-semibold" style={{ color: 'var(--rose-gold)' }}>· Kuota penuh</span>
+                <span className="ml-2 font-semibold text-rose-gold">· Kuota penuh</span>
               )}
             </p>
           ) : (
-            <p className="text-sm flex-1" style={{ color: 'var(--warm-gray)' }}>
+            <p className="text-sm flex-1 text-warm-gray">
               {selectedIds.size} foto dipilih · Maks. <strong>{maxSelection}</strong>
               {isFull && !isLocked && (
-                <span className="ml-2 font-semibold" style={{ color: 'var(--rose-gold)' }}>· Kuota penuh</span>
+                <span className="ml-2 font-semibold text-rose-gold">· Kuota penuh</span>
               )}
             </p>
           )}
@@ -520,8 +515,7 @@ export default function PickspacePage() {
                   type="button"
                   onClick={handleClearAll}
                   disabled={!!pendingId || isBulkProcessing}
-                  className="rounded-full border px-3 py-1.5 text-xs font-medium transition hover:bg-white/50 disabled:opacity-50"
-                  style={{ borderColor: 'var(--rose-gold)', color: 'var(--rose-gold)' }}
+                  className="rounded-full border px-3 py-1.5 text-xs font-medium transition hover:bg-white/50 disabled:opacity-50 border-rose-gold text-rose-gold"
                 >
                   {isBulkProcessing ? "..." : "Batal Semua"}
                 </button>
@@ -531,8 +525,7 @@ export default function PickspacePage() {
                   type="button"
                   onClick={handleSelectAll}
                   disabled={!!pendingId || isFull || isBulkProcessing}
-                  className="rounded-full border px-3 py-1.5 text-xs font-medium transition hover:bg-white/50 disabled:opacity-50"
-                  style={{ borderColor: 'var(--antique-gold)', color: 'var(--antique-gold)' }}
+                  className="rounded-full border px-3 py-1.5 text-xs font-medium transition hover:bg-white/50 disabled:opacity-50 border-antique-gold text-antique-gold"
                 >
                   {isBulkProcessing ? "..." : "Pilih Semua"}
                 </button>
@@ -546,7 +539,7 @@ export default function PickspacePage() {
       <main className="mx-auto max-w-5xl px-3 py-5 sm:px-6">
         {gallery.photos.length === 0 ? (
           <div className="glass-card mx-4 py-20 text-center">
-            <p style={{ color: 'var(--warm-gray)' }}>Belum ada foto di galeri ini.</p>
+            <p className="text-warm-gray">Belum ada foto di galeri ini.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
@@ -567,7 +560,7 @@ export default function PickspacePage() {
 
         {/* Footer credit studio */}
         <div className="mt-10 pb-6 text-center">
-          <p className="text-xs" style={{ color: 'var(--light-gray)' }}>
+          <p className="text-xs text-light-gray">
             © {new Date().getFullYear()} {gallery.vendor.namaStudio ?? "Photography"}
           </p>
         </div>

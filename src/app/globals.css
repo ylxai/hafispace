@@ -477,6 +477,46 @@ body {
    MOBILE FIRST RESPONSIVE
    ============================ */
 
+/* ============================
+   TAILWIND UTILITY ALIASES
+   Menggantikan inline style={{ color: 'var(--xxx)' }}
+   Pakai sebagai className="text-charcoal", "text-warm-gray", dll
+   ============================ */
+
+@layer utilities {
+  /* Text colors */
+  .text-charcoal { color: var(--charcoal); }
+  .text-warm-gray { color: var(--warm-gray); }
+  .text-light-gray { color: var(--light-gray); }
+  .text-rose-gold { color: var(--rose-gold); }
+  .text-antique-gold { color: var(--antique-gold); }
+  .text-copper { color: var(--copper); }
+
+  /* Background colors */
+  .bg-pearl-white { background-color: var(--pearl-white); }
+  .bg-soft-cream { background-color: var(--soft-cream); }
+  .bg-champagne { background-color: var(--champagne); }
+  .bg-rose-gold { background-color: var(--rose-gold); }
+  .bg-antique-gold { background-color: var(--antique-gold); }
+  .bg-soft-rose { background-color: var(--soft-rose); }
+
+  /* Border colors */
+  .border-rose-gold { border-color: var(--rose-gold); }
+  .border-antique-gold { border-color: var(--antique-gold); }
+  .border-champagne { border-color: var(--champagne); }
+  .border-t-rose-gold { border-top-color: var(--rose-gold); }
+
+  /* Shadow utilities */
+  .shadow-glass { box-shadow: var(--glass-shadow); }
+  .shadow-glass-md { box-shadow: var(--glass-shadow-md); }
+  .shadow-glass-hover { box-shadow: var(--glass-shadow-hover); }
+
+  /* Background gradient utility */
+  .bg-pearl-gradient {
+    background: linear-gradient(135deg, var(--pearl-white) 0%, var(--soft-cream) 50%, var(--champagne) 100%);
+  }
+}
+
 @media (max-width: 640px) {
   .glass-card,
   .glass-banner,
