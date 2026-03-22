@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useToast } from "@/components/ui/toast";
+import { DeleteConfirmationModal } from "@/components/admin/delete-confirmation-modal";
 
 type Photo = {
   id: string;
@@ -28,6 +29,8 @@ export function GalleryPhotosList({
   const [selectedPhotoIds, setSelectedPhotoIds] = useState<Set<string>>(new Set());
   const [deletingPhotoIds, setDeletingPhotoIds] = useState<Set<string>>(new Set());
   const [isProcessing, setIsProcessing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<{ photoId: string; filename: string } | null>(null);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const toast = useToast();
   const queryClient = useQueryClient();
 
@@ -51,13 +54,11 @@ export function GalleryPhotosList({
 
   const handleBulkDelete = async () => {
     if (selectedPhotoIds.size === 0) return;
+    setConfirmBulkDelete(true);
+  };
 
-    if (!window.confirm(
-      `Delete ${selectedPhotoIds.size} photo(s)? This action cannot be undone.`
-    )) {
-      return;
-    }
-
+  const confirmBulkDeleteAction = async () => {
+    setConfirmBulkDelete(false);
     setIsProcessing(true);
     setDeletingPhotoIds(new Set(selectedPhotoIds));
 
@@ -100,15 +101,18 @@ export function GalleryPhotosList({
   };
 
   const handleSingleDelete = async (photoId: string, filename: string) => {
-    if (!window.confirm(`Delete "${filename}"? This action cannot be undone.`)) {
-      return;
-    }
+    setConfirmDelete({ photoId, filename });
+  };
 
-    setDeletingPhotoIds(new Set([photoId]));
+  const confirmSingleDeleteAction = async () => {
+    if (!confirmDelete) return;
+
+    setDeletingPhotoIds(new Set([confirmDelete.photoId]));
+    setConfirmDelete(null);
 
     try {
       const res = await fetch(
-        `/api/admin/galleries/${galleryId}/photos/${photoId}`,
+        `/api/admin/galleries/${galleryId}/photos/${confirmDelete.photoId}`,
         { method: "DELETE" }
       );
 
@@ -140,6 +144,31 @@ export function GalleryPhotosList({
 
   return (
     <div className="space-y-4">
+      {/* Delete Confirmation Modals */}
+      {confirmDelete && (
+        <DeleteConfirmationModal
+          title="Delete Photo?"
+          message={`Are you sure you want to delete "${confirmDelete.filename}"? This action cannot be undone.`}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          isDangerous={true}
+          onConfirm={confirmSingleDeleteAction}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
+
+      {confirmBulkDelete && (
+        <DeleteConfirmationModal
+          title="Delete Multiple Photos?"
+          message={`Are you sure you want to delete ${selectedPhotoIds.size} photo(s)? This action cannot be undone.`}
+          confirmLabel="Delete All"
+          cancelLabel="Cancel"
+          isDangerous={true}
+          onConfirm={confirmBulkDeleteAction}
+          onCancel={() => setConfirmBulkDelete(false)}
+        />
+      )}
+
       {/* Header dengan bulk actions */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-900">
