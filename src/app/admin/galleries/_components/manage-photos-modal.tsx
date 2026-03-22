@@ -24,34 +24,35 @@ export function ManagePhotosModal({ galleryId, onClose }: ManagePhotosModalProps
   const [error, setError] = useState<string | null>(null);
   const toast = useToast();
 
-  useEffect(() => {
-    const fetchPhotos = async () => {
-      try {
-        setIsLoading(true);
-        const res = await fetch(
-          `/api/admin/galleries/${galleryId}/photos`,
-          { method: "GET" }
-        );
+  // Extract fetchPhotos function so it can be reused in callback
+  const fetchPhotos = async () => {
+    try {
+      setIsLoading(true);
+      const res = await fetch(
+        `/api/admin/galleries/${galleryId}/photos`,
+        { method: "GET" }
+      );
 
-        const result = await res.json();
+      const result = await res.json();
 
-        if (!res.ok) {
-          setError(result.message ?? "Failed to load photos");
-          toast.error(result.message ?? "Failed to load photos");
-          return;
-        }
-
-        setPhotos(result.photos ?? []);
-        setError(null);
-      } catch (err) {
-        console.error("Fetch photos error:", err);
-        setError("Failed to load photos");
-        toast.error("Failed to load photos");
-      } finally {
-        setIsLoading(false);
+      if (!res.ok) {
+        setError(result.message ?? "Failed to load photos");
+        toast.error(result.message ?? "Failed to load photos");
+        return;
       }
-    };
 
+      setPhotos(result.photos ?? []);
+      setError(null);
+    } catch (err) {
+      console.error("Fetch photos error:", err);
+      setError("Failed to load photos");
+      toast.error("Failed to load photos");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchPhotos();
   }, [galleryId, toast]);
 
@@ -94,10 +95,7 @@ export function ManagePhotosModal({ galleryId, onClose }: ManagePhotosModalProps
           <GalleryPhotosList
             galleryId={galleryId}
             photos={photos}
-            onPhotosChanged={() => {
-              // Refresh photos setelah delete
-              // Refetch photos via state update;
-            }}
+            onPhotosChanged={fetchPhotos}
           />
         )}
       </div>
