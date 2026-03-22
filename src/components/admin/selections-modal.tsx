@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useToast } from "@/components/ui/toast";
+import { generateThumbnailUrlFromUrl } from "@/lib/cloudinary/utils";
 
 // SVG placeholder data URI — dipakai saat thumbnailUrl tidak ada atau gagal load
 // Tidak butuh API endpoint eksternal, tidak ada 404
@@ -27,29 +28,8 @@ function SelectionThumbnail({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-function extractCloudName(url: string): string {
-  try {
-    const match = url.match(/res\.cloudinary\.com\/([^/]+)\//);
-    return match?.[1] ?? "doweertbx";
-  } catch {
-    return "doweertbx";
-  }
-}
-
-function extractPublicId(url: string): string {
-  try {
-    const match = url.match(/\/upload\/(.+)$/);
-    return match?.[1] ?? "";
-  } catch {
-    return "";
-  }
-}
-
-function generateThumbnailUrl(url: string): string {
-  const cloudName = extractCloudName(url);
-  const publicId = extractPublicId(url);
-  return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,g_auto,h_400,q_auto:good,w_400/${publicId}`;
-}
+// Cloudinary utilities dipindahkan ke src/lib/cloudinary/utils.ts
+// Menggunakan generateThumbnailUrlFromUrl dari shared utils
 
 interface SelectedPhoto {
   id: string;
@@ -442,9 +422,10 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
               
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {filteredSelections.map((selection) => {
-                  const thumbnailUrl = selection.thumbnailUrl
-                    ? generateThumbnailUrl(selection.url ?? selection.thumbnailUrl)
-                    : PLACEHOLDER_SVG;
+                  // Gunakan URL dari selection.url jika ada, fallback ke thumbnailUrl
+                  const thumbnailUrl = selection.url 
+                    ? generateThumbnailUrlFromUrl(selection.url)
+                    : (selection.thumbnailUrl ? generateThumbnailUrlFromUrl(selection.thumbnailUrl) : PLACEHOLDER_SVG);
                   
                   return (
                     <div
