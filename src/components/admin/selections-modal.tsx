@@ -1,5 +1,10 @@
 "use client";
 
+// SVG placeholder data URI — dipakai saat thumbnailUrl tidak ada atau gagal load
+// Tidak butuh API endpoint eksternal, tidak ada 404
+const PLACEHOLDER_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23f1f5f9'/%3E%3Cpath d='M160 140h80v80h-80z' fill='%23cbd5e1'/%3E%3Cpath d='M150 240l30-30 20 20 30-40 50 50H150z' fill='%23cbd5e1'/%3E%3C/svg%3E";
+
+
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useToast } from "@/components/ui/toast";
@@ -421,7 +426,7 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
                 {filteredSelections.map((selection) => {
                   const thumbnailUrl = selection.thumbnailUrl
                     ? generateThumbnailUrl(selection.url ?? selection.thumbnailUrl)
-                    : "/api/placeholder/400/400";
+                    : PLACEHOLDER_SVG;
                   
                   return (
                     <div
@@ -458,7 +463,7 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
                           unoptimized
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            target.src = "/api/placeholder/400/400";
+                            target.src = PLACEHOLDER_SVG;
                           }}
                         />
                         
