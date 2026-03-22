@@ -307,11 +307,8 @@ export default function PickspacePage() {
     
     // FIX Bug 2: Clear all debounce timers before bulk operation
     clearAllDebounceTimers();
-    
-    // FIX Bug 5: Wait for any pending operations to complete
-    if (pendingId) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
+
+    // pendingId sudah dijamin null karena guard di awal fungsi: if (pendingId) return
     
     setIsBulkProcessing(true);
     try {
@@ -347,11 +344,8 @@ export default function PickspacePage() {
     
     // FIX Bug 2: Clear all debounce timers before bulk operation
     clearAllDebounceTimers();
-    
-    // FIX Bug 5: Wait for any pending operations to complete
-    if (pendingId) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
+
+    // pendingId sudah dijamin null karena guard di awal fungsi: if (pendingId) return
     
     setIsBulkProcessing(true);
     try {
