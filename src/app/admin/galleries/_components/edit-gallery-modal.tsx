@@ -7,6 +7,7 @@ import ViesusPreview from "@/components/admin/viesus-preview";
 import { useToast } from "@/components/ui/toast";
 import { SelectionsModal } from "@/components/admin/selections-modal";
 import { UploadPhotosModal } from "./upload-photos-modal";
+import { ManagePhotosModal } from "./manage-photos-modal";
 import type { AdminGallery } from "@/types/admin";
 
 const STATUS_OPTIONS: AdminGallery["status"][] = ["DRAFT", "IN_REVIEW", "DELIVERED"];
@@ -21,6 +22,7 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
   const [error, setError] = useState("");
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showSelections, setShowSelections] = useState(false);
+  const [showPhotosModal, setShowPhotosModal] = useState(false);
   const [showViesus, setShowViesus] = useState(false);
   const [firstPhoto, setFirstPhoto] = useState<{ url: string; publicId: string; vendorId: string } | null>(null);
   const [liveSelectionCount, setLiveSelectionCount] = useState(gallery.selectionCount);
@@ -266,6 +268,10 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
     return <UploadPhotosModal gallery={gallery} onClose={() => setShowUploadModal(false)} />;
   }
 
+  if (showPhotosModal) {
+    return <ManagePhotosModal galleryId={gallery.id} onClose={() => setShowPhotosModal(false)} />;
+  }
+
   if (showSelections) {
     return <SelectionsModal galleryId={gallery.id} onClose={() => setShowSelections(false)} />;
   }
@@ -284,7 +290,14 @@ export function EditGalleryModal({ gallery, onClose }: { gallery: AdminGallery; 
             <p className="text-base font-semibold text-slate-900">{gallery.namaProject}</p>
             <p className="text-sm text-slate-600">Client: {gallery.clientName}</p>
             <div className="flex gap-4 text-xs text-slate-500">
-              <span>{gallery.photoCount} photos</span>
+              <button 
+                type="button" 
+                onClick={() => setShowPhotosModal(true)} 
+                className="hover:text-slate-700 hover:underline transition-colors"
+                title="Manage Photos"
+              >
+                {gallery.photoCount} photos
+              </button>
               <button 
                 type="button" 
                 onClick={() => setShowSelections(true)} 
