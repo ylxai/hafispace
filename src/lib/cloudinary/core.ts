@@ -305,7 +305,18 @@ export async function getPhotoFromCloudinary(
   }
 }
 
-// Delete photo from Cloudinary
+/**
+ * Delete a single photo from Cloudinary.
+ * 
+ * @param vendorId - Vendor/studio ID for accessing vendor-specific credentials
+ * @param publicId - Cloudinary public ID (stored as Photo.storageKey in database)
+ * @param options - Optional resource type configuration
+ * @returns CloudinaryDeletionResult with success status and error details if any
+ * 
+ * NOTE: Photo.storageKey field stores the Cloudinary publicId.
+ * This naming convention is historical. Future refactoring should rename
+ * Photo.storageKey → Photo.cloudinaryPublicId for better clarity.
+ */
 export async function deletePhotoFromCloudinary(
   vendorId: string,
   publicId: string,
@@ -350,7 +361,18 @@ export async function deletePhotoFromCloudinary(
   }
 }
 
-// Delete multiple photos from Cloudinary
+/**
+ * Delete multiple photos from Cloudinary in batch.
+ * More efficient than individual deletes for bulk operations.
+ * 
+ * @param vendorId - Vendor/studio ID for accessing vendor-specific credentials
+ * @param publicIds - Array of Cloudinary public IDs to delete (Photo.storageKey values)
+ * @param options - Optional resource type configuration
+ * @returns Object with deleted, failed arrays and summary statistics
+ * 
+ * NOTE: Uses Promise.allSettled() to ensure all deletions are attempted
+ * even if some fail. Check failed array to see which IDs had errors.
+ */
 export async function deletePhotosFromCloudinary(
   vendorId: string,
   publicIds: string[],

@@ -54,6 +54,10 @@ export async function parseAndValidate<T>(
   return { ok: true, data: validation.data };
 }
 
+/**
+ * Return 401 Unauthorized response.
+ * Use when user is not authenticated.
+ */
 export function unauthorizedResponse() {
   return NextResponse.json<ApiErrorResponse>(
     { code: "UNAUTHORIZED", message: "Unauthorized" },
@@ -61,6 +65,21 @@ export function unauthorizedResponse() {
   );
 }
 
+/**
+ * Return 403 Forbidden response.
+ * Use when user is authenticated but not authorized for the resource.
+ */
+export function forbiddenResponse(message = "Forbidden") {
+  return NextResponse.json<ApiErrorResponse>(
+    { code: "FORBIDDEN", message },
+    { status: 403 }
+  );
+}
+
+/**
+ * Return 400 Validation Error response.
+ * Use when request body fails validation.
+ */
 export function validationErrorResponse(details: unknown) {
   return NextResponse.json<ApiErrorResponse>(
     { code: "VALIDATION_ERROR", message: "Invalid request", details },
@@ -68,6 +87,10 @@ export function validationErrorResponse(details: unknown) {
   );
 }
 
+/**
+ * Return 404 Not Found response.
+ * Use when requested resource doesn't exist.
+ */
 export function notFoundResponse(message = "Resource not found") {
   return NextResponse.json<ApiErrorResponse>(
     { code: "NOT_FOUND", message },
@@ -75,6 +98,10 @@ export function notFoundResponse(message = "Resource not found") {
   );
 }
 
+/**
+ * Return 500 Internal Server Error response.
+ * Use for unexpected server errors.
+ */
 export function internalErrorResponse(message = "Internal server error") {
   return NextResponse.json<ApiErrorResponse>(
     { code: "INTERNAL_ERROR", message },
