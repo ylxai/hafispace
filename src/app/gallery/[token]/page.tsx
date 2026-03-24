@@ -227,9 +227,16 @@ export default function ViewspacePage() {
         body: JSON.stringify({ photoIds: Array.from(selectedIds) }),
       });
       if (!res.ok) {
-        const err = await res.json();
+        let errorMessage = "Gagal mengirim seleksi. Coba lagi.";
+        try {
+          const err = await res.json();
+          errorMessage = err.message ?? err.error ?? errorMessage;
+        } catch {
+          // Response body was not valid JSON (e.g., 500 error HTML page)
+          // Use default error message
+        }
         setIsSubmitting(false); // ✅ Reset state BEFORE alert (allows UI to update immediately)
-        alert(err.message ?? err.error ?? "Gagal mengirim seleksi. Coba lagi.");
+        alert(errorMessage);
         return;
       }
       clearLocalSelections(token);
