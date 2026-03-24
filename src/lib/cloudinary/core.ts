@@ -2,18 +2,19 @@ import { v2 as cloudinary } from 'cloudinary';
 import type { UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
 import { prisma } from '../db';
 import { decrypt } from '../encryption';
+import { env } from '../env';
 import type { CloudinaryResource, CloudinaryResourceResult, CloudinaryDeletionResult, CloudinaryPingResult } from '@/types/cloudinary';
 import { getVendorGalleryFolder } from './constants';
 
 // Configure Cloudinary with environment variables
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: env.CLOUDINARY_CLOUD_NAME,
+  api_key: env.CLOUDINARY_API_KEY,
+  api_secret: env.CLOUDINARY_API_SECRET,
 });
 
 // Alternative configuration using CLOUDINARY_URL
-if (process.env.CLOUDINARY_URL) {
+if (env.CLOUDINARY_URL) {
   cloudinary.config(true); // Use environment variable CLOUDINARY_URL
 }
 
@@ -661,8 +662,8 @@ export async function applyViesusEnhancement(
 }
 
 // Generate an upload signature for client-side uploads (if needed)
-export function generateUploadSignature(vendorId: string, paramsToSign: Record<string, string | number | boolean>): string {
-  const secret = process.env.CLOUDINARY_API_SECRET ?? "";
+export function generateUploadSignature(_vendorId: string, paramsToSign: Record<string, string | number | boolean>): string {
+  const secret = env.CLOUDINARY_API_SECRET;
   const signature = cloudinary.utils.api_sign_request(paramsToSign, secret);
   return signature;
 }

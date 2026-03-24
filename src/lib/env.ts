@@ -28,6 +28,7 @@ export const env = {
   CLOUDINARY_API_KEY: optionalEnv("CLOUDINARY_API_KEY"),
   CLOUDINARY_API_SECRET: optionalEnv("CLOUDINARY_API_SECRET"),
   CLOUDINARY_MASTER_KEY: requireEnv("CLOUDINARY_MASTER_KEY"), // ✅ Critical for credentials encryption
+  CLOUDINARY_URL: optionalEnv("CLOUDINARY_URL"),
 
   // Ably
   ABLY_API_KEY: optionalEnv("ABLY_API_KEY"),
@@ -35,6 +36,12 @@ export const env = {
   // Upstash Redis
   UPSTASH_REDIS_REST_URL: optionalEnv("UPSTASH_REDIS_REST_URL"),
   UPSTASH_REDIS_REST_TOKEN: optionalEnv("UPSTASH_REDIS_REST_TOKEN"),
+
+  // CORS
+  ALLOWED_ORIGINS: optionalEnv("ALLOWED_ORIGINS"),
+
+  // Resend Email
+  RESEND_API_KEY: optionalEnv("RESEND_API_KEY"),
 
   // App
   NEXT_PUBLIC_APP_URL: optionalEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000"),

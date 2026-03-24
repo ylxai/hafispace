@@ -8,14 +8,15 @@
  */
 
 import { Redis } from "@upstash/redis";
+import { env } from "@/lib/env";
 
 function createRedisClient(): Redis | null {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const url = env.UPSTASH_REDIS_REST_URL;
+  const token = env.UPSTASH_REDIS_REST_TOKEN;
 
   if (!url || !token) {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("[Redis] UPSTASH_REDIS_REST_URL atau UPSTASH_REDIS_REST_TOKEN tidak dikonfigurasi. View deduplication akan fallback ke in-memory cache.");
+      console.warn("[Redis] UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN not configured. View deduplication will fall back to in-memory cache.");
     }
     return null;
   }

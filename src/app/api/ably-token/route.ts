@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Ably from "ably";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
+import { env } from "@/lib/env";
 import { randomBytes } from "node:crypto";
 
 export async function GET(request: Request) {
@@ -65,7 +66,7 @@ export async function GET(request: Request) {
   }
 
   // Create Ably token with the appropriate client ID
-  const ablyKey = process.env.ABLY_API_KEY;
+  const ablyKey = env.ABLY_API_KEY;
   if (!ablyKey) {
     return NextResponse.json({ error: "Ably not configured" }, { status: 503 });
   }

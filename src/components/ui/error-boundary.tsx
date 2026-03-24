@@ -1,6 +1,6 @@
 "use client";
 
-import { Component, type ReactNode, type ErrorInfo } from "react";
+import { Component, type ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
@@ -9,73 +9,30 @@ interface Props {
 
 interface State {
   hasError: boolean;
-  error: Error | null;
+  message: string;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, message: "" };
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { hasError: true, message: error.message };
   }
-
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error to error reporting service (e.g., Sentry)
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
-  }
-
-  handleReset = () => {
-    this.setState({ hasError: false, error: null });
-    window.location.reload();
-  };
 
   render() {
     if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
-
       return (
-        <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
-          <div className="max-w-md rounded-2xl border border-red-200 bg-white p-6 text-center shadow-sm">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <svg
-                className="h-6 w-6 text-red-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <h2 className="text-lg font-semibold text-slate-900">
-              Something went wrong
-            </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              {this.state.error?.message ?? "An unexpected error occurred"}
-            </p>
-            <button
-              type="button"
-              onClick={this.handleReset}
-              className="mt-4 rounded-full bg-slate-900 px-6 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
-            >
-              Reload Page
-            </button>
+        this.props.fallback ?? (
+          <div className="rounded-2xl border border-red-100 bg-red-50 p-6 text-center">
+            <p className="text-sm font-medium text-red-600">Something went wrong</p>
+            <p className="mt-1 text-xs text-red-400">{this.state.message}</p>
           </div>
-        </div>
+        )
       );
     }
-
     return this.props.children;
   }
 }
-
-export default ErrorBoundary;
