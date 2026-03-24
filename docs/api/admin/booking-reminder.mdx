@@ -1,0 +1,33 @@
+---
+title: "Booking Reminder"
+description: "API reminder booking — kirim reminder untuk booking yang akan datang"
+api: "POST /api/admin/bookings/reminder"
+---
+
+## Send Reminder
+
+Kirim reminder untuk booking tertentu atau semua booking yang akan datang.
+
+<ParamField body="bookingId" type="string">
+  Booking UUID untuk reminder spesifik. Kosongkan untuk semua booking minggu ini.
+</ParamField>
+
+### Response
+
+<ResponseField name="success" type="boolean">
+  Status operasi
+</ResponseField>
+
+<ResponseField name="reminded" type="number">
+  Jumlah reminder yang terkirim
+</ResponseField>
+
+<ResponseField name="errors" type="array">
+  Detail error per reminder yang gagal
+</ResponseField>
+
+### Behavior
+
+- Jika `bookingId` diisi: kirim reminder untuk booking tersebut
+- Jika kosong: kirim reminder untuk semua booking dengan tanggal sesi dalam 7 hari ke depan dan status `CONFIRMED`
+- Reminder dikirim via email (jika `RESEND_API_KEY` tersedia) dan notifikasi in-app

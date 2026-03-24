@@ -1,0 +1,66 @@
+---
+title: "Payments"
+description: "API pembayaran admin — kelola record pembayaran per booking"
+api: "GET /api/admin/bookings/{id}/payments"
+---
+
+## List Payments
+
+Ambil daftar pembayaran untuk booking tertentu.
+
+<ParamField path="id" type="string" required>
+  Booking UUID
+</ParamField>
+
+### Response
+
+<ResponseField name="payments" type="array">
+  Array pembayaran dengan data booking.
+</ResponseField>
+
+<ResponseField name="summary" type="object">
+  Ringkasan: `totalBayar`, `sisaTagihan`, `lunas`
+</ResponseField>
+
+## Create Payment
+
+Tambah record pembayaran baru.
+
+<ParamField body="jumlah" type="number" required>
+  Jumlah pembayaran
+</ParamField>
+
+<ParamField body="tipe" type="string" default="DP">
+  Tipe: `DP`, `PELUNASAN`, `LAINNYA`
+</ParamField>
+
+<ParamField body="method" type="string" default="CASH">
+  Metode: `CASH`, `TRANSFER`, `QRIS`, `OTHER`
+</ParamField>
+
+<ParamField body="keterangan" type="string">
+  Keterangan tambahan
+</ParamField>
+
+<ParamField body="buktiBayar" type="string">
+  URL bukti pembayaran
+</ParamField>
+
+### Auto Update
+
+Saat pembayaran dibuat, status DP booking otomatis diupdate:
+- Jika `totalBayar >= hargaPaket` → `dpStatus = PAID`
+- Jika `0 < totalBayar < hargaPaket` → `dpStatus = PARTIAL`
+- Jika `totalBayar = 0` → `dpStatus = UNPAID`
+
+## Delete Payment
+
+Hapus record pembayaran.
+
+<ParamField path="id" type="string" required>
+  Payment UUID
+</ParamField>
+
+<Warning>
+Menghapus pembayaran akan mengubah status DP booking. Pastikan data sudah benar.
+</Warning>

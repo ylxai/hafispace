@@ -1,0 +1,31 @@
+---
+title: "Ably Token"
+description: "API token Ably — generate token untuk realtime connection"
+api: "GET /api/ably-token"
+---
+
+## Get Ably Token
+
+Generate token untuk koneksi realtime Ably. Digunakan oleh client untuk subscribe channel seleksi foto.
+
+### Response
+
+<ResponseField name="token" type="string">
+  Ably token string untuk authentication
+</ResponseField>
+
+### Usage
+
+Token digunakan oleh client-side Ably SDK untuk connect ke realtime channel:
+
+```typescript
+const ably = new Ably.Realtime({ token: ablyToken });
+const channel = ably.channels.get(`gallery:${galleryId}:selection`);
+channel.subscribe((message) => {
+  // Update selection count secara real-time
+});
+```
+
+<Note>
+Token Ably bersifat temporary dan perlu di-refresh secara berkala. Client harus handle reconnect saat token expired.
+</Note>

@@ -1,0 +1,110 @@
+---
+title: "Contributing"
+description: "Panduan kontribusi — Git workflow, PR process, dan code style"
+---
+
+## Git Workflow
+
+### Branch Naming
+
+```
+feat/nama-fitur          # Fitur baru
+fix/nama-bug             # Bug fix
+chore/nama-task          # Maintenance
+refactor/nama-refactor   # Refactoring
+docs/nama-docs           # Dokumentasi
+```
+
+### Alur Kerja
+
+<Steps>
+  <Step title="Buat branch dari main">
+    ```bash
+    git checkout main
+    git pull origin main
+    git checkout -b feat/nama-fitur
+    ```
+  </Step>
+
+  <Step title="Kerjakan perubahan">
+    Commit secara atomic — satu fitur per commit.
+  </Step>
+
+  <Step title="Quality check sebelum push">
+    ```bash
+    npm run lint    # 0 error
+    npm run build   # Build sukses
+    ```
+  </Step>
+
+  <Step title="Push dan buat PR">
+    ```bash
+    git push origin feat/nama-fitur
+    ```
+    Buat Pull Request di GitHub.
+  </Step>
+
+  <Step title="Review dan merge">
+    Setelah review approve, merge ke `main` dengan `--no-ff`.
+  </Step>
+</Steps>
+
+## Commit Convention
+
+Gunakan **Conventional Commits**:
+
+```
+feat: tambah fitur X
+fix: perbaiki bug Y di komponen Z
+chore: hapus dependency tidak terpakai
+refactor: extract logic ke custom hook
+docs: update README setup guide
+style: perbaiki formatting
+test: tambah test untuk endpoint X
+```
+
+## Code Style
+
+### Naming
+
+| Item | Convention | Example |
+|------|-----------|---------|
+| File | kebab-case.tsx | `gallery-lightbox.tsx` |
+| Component | PascalCase | `GalleryLightbox` |
+| Function | camelCase | `getSelectionCount` |
+| Constant | UPPER_SNAKE_CASE | `MAX_SELECTION_LIMIT` |
+
+### TypeScript
+
+- **Strict mode** — tidak ada `any` type
+- **Zod validation** di semua API route yang menerima input
+- **Response helpers** dari `src/lib/api/response.ts`
+
+### Server-Side
+
+- Gunakan `logger` dari `@/lib/logger`, bukan `console.*`
+- Semua env var divalidasi via `src/lib/env.ts`
+- Prisma client langsung — hindari `$queryRaw` / `$executeRaw`
+
+### Client-Side
+
+- `use client` hanya jika butuh interaktivitas/browser hooks
+- `console.*` boleh di client-side
+- Gunakan TanStack Query untuk data fetching
+
+## Quality Gate
+
+Sebelum merge, semua harus pass:
+
+```bash
+npm run lint    # 0 error, 0 warning ESLint
+npm run build   # Build sukses tanpa error TypeScript
+```
+
+## Testing
+
+```bash
+npm run test           # Unit tests (Vitest)
+npm run test:watch     # Watch mode
+npx playwright test    # E2E tests
+```

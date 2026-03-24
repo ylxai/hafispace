@@ -1,0 +1,92 @@
+---
+title: "Realtime"
+description: "Realtime updates dengan Ably — selection counter dan notifikasi"
+---
+
+## Overview
+
+Platform menggunakan **Ably** untuk realtime updates. Fitur utama: selection counter yang update secara real-time tanpa refresh halaman.
+
+## Channel Structure
+
+Setiap galeri punya channel Ably sendiri:
+
+```
+gallery:{galleryId}:selection
+```
+
+## Client Setup
+
+### Get Token
+
+Client pertama kali request token dari API:
+
+```typescript
+const res = await fetch('/api/ably-token');
+const { token } = await res.json();
+```
+
+### Connect
+
+```typescript
+import Ably from 'ably';
+
+const ably = new Ably.Realtime({ token });
+const channel = ably.channels.get(`gallery:${galleryId}:selection`);
+```
+
+### Subscribe
+
+```typescript
+channel.subscribe((message) => {
+  if (message.name === 'selection_updated') {
+    // Update counter di UI
+    updateSelectionCount(message.data.count);
+  }
+});
+```
+
+### Publish (Admin)
+
+Admin bisa publish update saat selection berubah:
+
+```typescript
+const ably = getAblyRest();
+const channel = ably.channels.get(`gallery:${galleryId}:selection`);
+
+await channel.publish('selection_updated', {
+  count: newCount,
+  action: 'add', // atau 'remove'
+  photoId: 'photo-uuid',
+});
+```
+
+## Server-Side
+
+Ably REST client di-initialize via singleton:
+
+```typescript
+// src/lib/ably.ts
+import Ably from "ably";
+import { env } from "@/lib/env";
+
+let ablyInstance: Ably.Rest | null = null;
+
+export function getAblyRest(): Ably.Rest {
+  if (!ablyInstance) {
+    ablyInstance = new Ably.Rest({ key: env.ABLY_API_KEY });
+  }
+  return ablyInstance;
+}
+```
+
+## Fallback
+
+Jika Ably tidak dikonfigurasi (`ABLY_API_KEY` kosong):
+- Selection counter tetap berfungsi via API polling
+- Tidak ada realtime update
+- Client bisa poll `/api/public/gallery/{token}/count` setiap beberapa detik
+
+<Info>
+Ably bersifat optional. Platform tetap berfungsi penuh tanpa realtime — hanya tanpa auto-update counter.
+</Info>

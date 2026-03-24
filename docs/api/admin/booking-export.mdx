@@ -1,0 +1,39 @@
+---
+title: "Booking Export"
+description: "API export booking — download data booking sebagai CSV"
+api: "GET /api/admin/bookings/export"
+---
+
+## Export Bookings
+
+Download semua booking vendor dalam format CSV.
+
+### Query Parameters
+
+<ParamField query="status" type="string">
+  Filter by status: `PENDING`, `CONFIRMED`, `COMPLETED`, `CANCELLED`
+</ParamField>
+
+<ParamField query="from" type="string">
+  Filter dari tanggal (ISO date)
+</ParamField>
+
+<ParamField query="to" type="string">
+  Filter sampai tanggal (ISO date)
+</ParamField>
+
+### Response
+
+Response berupa file CSV dengan header:
+
+```csv
+Kode Booking,Nama Client,HP Client,Email,Paket,Tanggal Sesi,Lokasi,Status,Harga,DP Status
+BK2604-A1B2,Andi Pratama,081234567890,andi@example.com,Wedding Premium,2026-04-15,Jakarta,CONFIRMED,5000000,PAID
+```
+
+### Content-Type
+
+```
+Content-Type: text/csv
+Content-Disposition: attachment; filename="bookings-export.csv"
+```

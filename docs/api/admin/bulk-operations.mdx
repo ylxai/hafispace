@@ -1,0 +1,86 @@
+---
+title: "Bulk Operations"
+description: "API bulk operations — operasi massal untuk events, galleries, dan clients"
+---
+
+## Bulk Events
+
+```bash
+POST /api/admin/events/bulk
+```
+
+Create multiple bookings sekaligus.
+
+<ParamField body="events" type="array" required>
+  Array booking data. Setiap item sama dengan body `POST /api/admin/events`.
+</Field>
+
+### Response
+
+<ResponseField name="created" type="number">
+  Jumlah booking yang berhasil dibuat
+</ResponseField>
+
+<ResponseField name="failed" type="number">
+  Jumlah booking yang gagal
+</ResponseField>
+
+<ResponseField name="errors" type="array">
+  Detail error per booking yang gagal
+</ResponseField>
+
+---
+
+## Bulk Galleries
+
+```bash
+POST /api/admin/galleries/bulk
+```
+
+Create multiple galleries sekaligus.
+
+<ParamField body="galleries" type="array" required>
+  Array gallery data dengan `namaProject` dan `bookingId`.
+</ParamField>
+
+---
+
+## Bulk Clients
+
+```bash
+POST /api/admin/clients/bulk
+```
+
+Create multiple clients sekaligus.
+
+<ParamField body="clients" type="array" required>
+  Array client data. Setiap item sama dengan body `POST /api/admin/clients`.
+</ParamField>
+
+---
+
+## Bulk Photo Selections
+
+```bash
+POST /api/admin/galleries/{id}/selections/bulk
+```
+
+Lock atau unlock multiple selections sekaligus.
+
+<ParamField path="id" type="string" required>
+  Gallery UUID
+</ParamField>
+
+<ParamField body="selectionIds" type="string[]" required>
+  Array Selection UUID
+</ParamField>
+
+<ParamField body="isLocked" type="boolean" required>
+  `true` untuk lock semua, `false` untuk unlock semua
+</ParamField>
+
+### Response
+
+<ResponseField name="updated" type="number">
+  Jumlah seleksi yang berhasil diupdate
+</ResponseField>

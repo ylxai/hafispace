@@ -1,0 +1,104 @@
+---
+title: "Gallery Upload"
+description: "API upload foto ke galeri — upload batch ke Cloudinary"
+api: "POST /api/admin/galleries/{id}/upload"
+---
+
+## Upload Photos
+
+Upload foto ke galeri. File di-upload ke Cloudinary dan metadata disimpan di database.
+
+<ParamField path="id" type="string" required>
+  Gallery UUID
+</ParamField>
+
+<ParamField body="files" type="file[]" required>
+  Array file gambar (max 100 files, max 15MB per file)
+</ParamField>
+
+<ParamField body="accountId" type="string">
+  Cloudinary account ID (opsional, default: account default vendor)
+</ParamField>
+
+### Allowed Formats
+
+`image/jpeg`, `image/png`, `image/webp`, `image/heic`, `image/heif`, `image/tiff`, `image/avif`
+
+### Upload Process
+
+<Steps>
+  <Step title="Validasi">
+    Cek MIME type, file size (max 15MB), dan magic bytes (cegah file berbahaya).
+  </Step>
+  <Step title="Upload batch">
+    Upload ke Cloudinary 5 file per batch untuk menghindari OOM.
+  </Step>
+  <Step title="Simpan database">
+    `createMany` — satu query untuk semua foto baru. Skip duplicates.
+  </Step>
+  <Step title="Rollback otomatis">
+    Jika DB gagal, file yang sudah ter-upload di Cloudinary dihapus otomatis.
+  </Step>
+</Steps>
+
+### Response
+
+<ResponseField name="success" type="boolean">
+  Status upload
+</ResponseField>
+
+<ResponseField name="uploadedPhotos" type="array">
+  Array foto yang berhasil di-upload
+</ResponseField>
+
+<ResponseField name="failedFiles" type="array">
+  Array file yang gagal di-upload dengan error message
+</ResponseField>
+
+<ResponseField name="rollbackTriggered" type="boolean">
+  `true` jika rollback Cloudinary di-trigger karena DB error
+</ResponseField>
+
+<ResponseExample>
+
+```json 200
+{
+  "success": true,
+  "uploadedPhotos": [
+    {
+      "id": "photo-uuid",
+      "filename": "IMG_001.jpg",
+      "url": "https://res.cloudinary.com/...",
+      "thumbnailUrl": "https://res.cloudinary.com/.../w_400/...",
+      "storageKey": "galleries/vendor/galleryId/IMG_001",
+      "size": 2048000,
+      "width": 4000,
+      "height": 6000
+    }
+  ],
+  "failedFiles": [],
+  "rollbackTriggered": false
+}
+```
+
+</ResponseExample>
+
+## Sync Gallery
+
+Sync foto dari Cloudinary folder ke database. Tambah foto baru, skip yang sudah ada.
+
+```bash
+PUT /api/admin/galleries/{id}/upload
+```
+
+<ParamField path="id" type="string" required>
+  Gallery UUID
+</ParamField>
+
+<ResponseField name="synced" type="number">
+  Jumlah foto baru yang ditambahkan
+</ResponseField>
+
+<ResponseField name="total" type="number">
+  Total foto di database setelah sync
+</ResponseField>

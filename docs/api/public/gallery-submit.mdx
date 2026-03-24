@@ -1,0 +1,89 @@
+---
+title: "Gallery Submit"
+description: "API submit seleksi — submit pilihan foto klien"
+api: "POST /api/public/gallery/{token}/submit"
+---
+
+## Submit Selection
+
+Submit seleksi foto klien. Setelah submit, seleksi bisa dikunci oleh admin.
+
+<ParamField path="token" type="string" required>
+  Token akses galeri
+</ParamField>
+
+<ParamField body="selections" type="array" required>
+  Array foto yang dipilih. Setiap item berisi `fileId`, `filename`, `selectionType`, dan opsional `printSize`.
+</ParamField>
+
+### Selection Item
+
+<ParamField body="selections[].fileId" type="string" required>
+  Photo ID yang dipilih
+</ParamField>
+
+<ParamField body="selections[].filename" type="string" required>
+  Nama file foto
+</ParamField>
+
+<ParamField body="selections[].selectionType" type="string" default="EDIT">
+  Tipe: `EDIT` atau `PRINT`
+</ParamField>
+
+<ParamField body="selections[].printSize" type="string">
+  Ukuran cetak (jika tipe `PRINT`)
+</ParamField>
+
+### Validation
+
+- Jumlah seleksi tidak boleh melebihi `maxSelection` dari gallery settings
+- `fileId` harus ada di gallery
+- Tidak bisa submit jika seleksi sudah dikunci (`isLocked = true`)
+
+### Response
+
+<ResponseField name="success" type="boolean">
+  Status submit
+</ResponseField>
+
+<ResponseField name="selectionCount" type="number">
+  Total seleksi setelah submit
+</ResponseField>
+
+<ResponseField name="maxSelection" type="number">
+  Maks foto yang bisa dipilih
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://yourdomain.com/api/public/gallery/abc-123-token/submit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "selections": [
+      { "fileId": "photo-uuid-1", "filename": "IMG_001.jpg", "selectionType": "EDIT" },
+      { "fileId": "photo-uuid-2", "filename": "IMG_002.jpg", "selectionType": "PRINT", "printSize": "A4" }
+    ]
+  }'
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "success": true,
+  "selectionCount": 15,
+  "maxSelection": 40
+}
+```
+
+```json 400
+{
+  "code": "VALIDATION_ERROR",
+  "message": "Jumlah seleksi melebihi maksimum yang diizinkan (40)"
+}
+```
+
+</ResponseExample>

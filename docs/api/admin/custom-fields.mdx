@@ -1,0 +1,87 @@
+---
+title: "Custom Fields"
+description: "API custom fields admin — kelola field tambahan untuk booking form"
+api: "GET /api/admin/custom-fields"
+---
+
+## List Custom Fields
+
+Ambil daftar custom field milik vendor.
+
+### Response
+
+<ResponseField name="fields" type="array">
+  Array custom field dengan urutan tampilan.
+</ResponseField>
+
+<ResponseField name="fields[].id" type="string">
+  Field UUID
+</ResponseField>
+
+<ResponseField name="fields[].namaField" type="string">
+  Nama field yang ditampilkan
+</ResponseField>
+
+<ResponseField name="fields[].tipe" type="string">
+  Tipe field: `TEXT`, `NUMBER`, `DATE`, `SELECT`, `TEXTAREA`
+</ResponseField>
+
+<ResponseField name="fields[].options" type="array">
+  Opsi untuk tipe `SELECT`
+</ResponseField>
+
+<ResponseField name="fields[].wajib" type="boolean">
+  Apakah field wajib diisi
+</ResponseField>
+
+<ResponseField name="fields[].urutan" type="number">
+  Urutan tampilan
+</ResponseField>
+
+<ResponseField name="fields[].isActive" type="boolean">
+  Status aktif field
+</ResponseField>
+
+## Create Custom Field
+
+Buat custom field baru.
+
+<ParamField body="namaField" type="string" required>
+  Nama field (min 1 karakter)
+</ParamField>
+
+<ParamField body="tipe" type="string" default="TEXT">
+  Tipe: `TEXT`, `NUMBER`, `DATE`, `SELECT`, `TEXTAREA`
+</ParamField>
+
+<ParamField body="options" type="array">
+  Opsi untuk tipe `SELECT` (array string)
+</ParamField>
+
+<ParamField body="wajib" type="boolean" default="false">
+  Apakah field wajib diisi
+</ParamField>
+
+<ParamField body="urutan" type="number" default="0">
+  Urutan tampilan
+</ParamField>
+
+<ParamField body="isActive" type="boolean" default="true">
+  Status aktif
+</ParamField>
+
+## Update Custom Field
+
+Update custom field existing.
+
+<ParamField body="id" type="string" required>
+  Field UUID
+</ParamField>
+
+## Delete Custom Field
+
+Hapus custom field.
+
+<ParamField query="id" type="string" required>
+  Field UUID
+</ParamField>

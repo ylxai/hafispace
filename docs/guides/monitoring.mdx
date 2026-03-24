@@ -1,0 +1,101 @@
+---
+title: "Monitoring"
+description: "Error monitoring dengan Sentry dan structured logging dengan Pino"
+---
+
+## Sentry
+
+Platform menggunakan **@sentry/nextjs** untuk error tracking di 3 environment:
+
+| Environment | Config File | Runtime |
+|-------------|-------------|---------|
+| Server | `sentry.server.config.ts` | Node.js |
+| Edge | `sentry.edge.config.ts` | Edge (middleware) |
+| Client | `instrumentation-client.ts` | Browser |
+
+### Konfigurasi
+
+```bash
+SENTRY_DSN='https://your-dsn@sentry.io/project'
+NEXT_PUBLIC_SENTRY_DSN='https://your-dsn@sentry.io/project'
+SENTRY_AUTH_TOKEN='your-auth-token'
+```
+
+### Setup Files
+
+<AccordionGroup>
+  <Accordion title="sentry.server.config.ts">
+    Konfigurasi untuk server-side error tracking. Menangkap error di API routes, server components, dan Prisma queries.
+  </Accordion>
+
+  <Accordion title="sentry.edge.config.ts">
+    Konfigurasi untuk edge runtime (middleware). Menangkap error di middleware.ts.
+  </Accordion>
+
+  <Accordion title="instrumentation-client.ts">
+    Konfigurasi untuk client-side error tracking. Menangkap error di browser, React components, dan API calls.
+  </Accordion>
+
+  <Accordion title="instrumentation.ts">
+    Register hook untuk server-side Sentry. Juga menangkap `onRequestError` untuk Next.js App Router.
+  </Accordion>
+</AccordionGroup>
+
+### What Gets Tracked
+
+- Unhandled exceptions di API routes
+- Prisma query errors
+- Cloudinary upload failures
+- Authentication errors
+- Client-side React errors
+- Network request failures
+
+## Pino Logging
+
+Server-side logging menggunakan **Pino** dengan structured JSON output.
+
+### Usage
+
+```typescript
+import logger from "@/lib/logger";
+
+// Error dengan stack trace
+logger.error({ err: error }, "Error message");
+
+// Warning dengan context
+logger.warn({ context: "upload", vendorId }, "Warning message");
+
+// Info dengan data
+logger.info({ photoCount: 15 }, "Info message");
+```
+
+### Log Levels
+
+| Level | Usage |
+|-------|-------|
+| `error` | Exceptions, failures, critical issues |
+| `warn` | Degraded functionality, rate limits |
+| `info` | Important events, successful operations |
+| `debug` | Development-only, detailed tracing |
+
+### Development Mode
+
+Di development, Pino menggunakan `pino-pretty` untuk human-readable output:
+
+```bash
+[10:23:45] INFO: Photo uploaded successfully
+    photoCount: 15
+    vendorId: "abc-123"
+```
+
+### Production Mode
+
+Di production, output berupa structured JSON untuk log aggregation:
+
+```json
+{"level":30,"time":1711273425000,"msg":"Photo uploaded successfully","photoCount":15,"vendorId":"abc-123"}
+```
+
+<Warning>
+Jangan gunakan `console.*` di server-side code. Selalu gunakan `logger` dari `@/lib/logger`. Console methods tidak ter-track di production.
+</Warning>

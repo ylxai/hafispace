@@ -1,0 +1,78 @@
+---
+title: "Cache"
+description: "Strategi caching menggunakan Next.js unstable_cache dan Upstash Redis"
+---
+
+## Overview
+
+Platform menggunakan 2 mekanisme caching:
+
+1. **Next.js `unstable_cache`** — untuk data yang jarang berubah (metrics)
+2. **Upstash Redis** — untuk data yang sering berubah (rate limits, view dedup)
+
+## Dashboard Metrics Cache
+
+Dashboard metrics di-cache menggunakan Next.js `unstable_cache`:
+
+```typescript
+// src/lib/services/metrics.service.ts
+export function getCachedVendorMetrics(vendorId: string) {
+  return unstable_cache(
+    () => fetchVendorMetrics(vendorId),
+    [`metrics-${vendorId}`],
+    { revalidate: METRICS_CACHE_TTL_SECONDS, tags: [`metrics-${vendorId}`] }
+  )();
+}
+```
+
+### TTL
+
+| Data | TTL | Default |
+|------|-----|---------|
+| Dashboard metrics | `METRICS_CACHE_TTL_SECONDS` | 300 detik (5 menit) |
+
+### Revalidation
+
+Cache otomatis expire setelah TTL. Untuk manual revalidation:
+
+```typescript
+import { revalidateTag } from 'next/cache';
+revalidateTag(`metrics-${vendorId}`);
+```
+
+## Redis Cache
+
+### View Count Deduplication
+
+Cegah view count ganda dari session yang sama:
+
+```
+Key: view:{fingerprint}:{galleryId}
+TTL: 24 jam
+```
+
+Jika key sudah ada → skip increment.
+
+### Rate Limit Counters
+
+```
+Key: {endpoint}:{ip}:{token}
+Value: hit count
+TTL: window duration (1 menit / 1 jam / 24 jam)
+```
+
+### Graceful Degradation
+
+Jika Redis tidak tersedia (`UPSTASH_REDIS_REST_URL` tidak diset):
+- View count tanpa dedup (bisa double-count, minor issue)
+- Rate limiting disabled (tetap aman, ada auth layer)
+- App tetap berfungsi penuh
+
+## Cache Configuration
+
+```bash
+# .env
+METRICS_CACHE_TTL_SECONDS=300      # 5 menit
+UPSTASH_REDIS_REST_URL=https://... # Redis URL
+UPSTASH_REDIS_REST_TOKEN=...       # Redis token
+```

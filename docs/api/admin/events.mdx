@@ -1,0 +1,129 @@
+---
+title: "Events"
+description: "API event/booking admin — CRUD events dengan pagination"
+api: "GET /api/admin/events"
+---
+
+## List Events
+
+Ambil daftar event/booking dengan pagination.
+
+<ParamField query="page" type="number" default="1">
+  Halaman
+</ParamField>
+
+<ParamField query="limit" type="number" default="20">
+  Jumlah per halaman (max: 100)
+</ParamField>
+
+### Response
+
+<ResponseField name="items" type="array">
+  Array booking dengan data lengkap termasuk paket, gallery count, dan harga.
+</ResponseField>
+
+<ResponseField name="pagination" type="object">
+  Pagination: `page`, `limit`, `total`, `totalPages`
+</ResponseField>
+
+## Create Event
+
+Buat booking/event baru.
+
+<ParamField body="namaClient" type="string" required>
+  Nama klien (min 1 karakter)
+</ParamField>
+
+<ParamField body="hpClient" type="string" required>
+  Nomor HP (min 8 karakter)
+</ParamField>
+
+<ParamField body="emailClient" type="string">
+  Email klien
+</ParamField>
+
+<ParamField body="paketId" type="string">
+  Package UUID. Jika diisi, `maxSelection` diambil dari paket.
+</ParamField>
+
+<ParamField body="paketCustom" type="string">
+  Nama paket custom (jika tidak pakai paket existing)
+</ParamField>
+
+<ParamField body="hargaPaket" type="number">
+  Harga paket
+</ParamField>
+
+<ParamField body="tanggalSesi" type="string" required>
+  Tanggal sesi (ISO date)
+</ParamField>
+
+<ParamField body="lokasiSesi" type="string">
+  Lokasi sesi
+</ParamField>
+
+<ParamField body="maxSelection" type="number" default="40">
+  Maks foto yang bisa dipilih klien
+</ParamField>
+
+<ParamField body="notes" type="string">
+  Catatan tambahan
+</ParamField>
+
+### Response
+
+<ResponseField name="id" type="string">
+  Booking UUID
+</ResponseField>
+
+<ResponseField name="kodeBooking" type="string">
+  Kode booking unik (format: `BK-{timestamp36}`)
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Status awal: `PENDING`
+</ResponseField>
+
+## Update Event
+
+Update data booking.
+
+<ParamField body="id" type="string" required>
+  Booking UUID
+</ParamField>
+
+<ParamField body="status" type="string">
+  Status baru: `PENDING`, `CONFIRMED`, `COMPLETED`, `CANCELLED`
+</ParamField>
+
+<ParamField body="tanggalSesi" type="string">
+  Tanggal sesi baru
+</ParamField>
+
+<ParamField body="lokasiSesi" type="string">
+  Lokasi sesi baru
+</ParamField>
+
+<ParamField body="hargaPaket" type="number">
+  Harga paket baru
+</ParamField>
+
+<ParamField body="paketId" type="string">
+  Package UUID baru
+</ParamField>
+
+<ParamField body="maxSelection" type="number">
+  Maks foto yang bisa dipilih
+</ParamField>
+
+## Delete Event
+
+Hapus booking. Booking dengan galeri tidak bisa dihapus — hapus galeri terlebih dahulu.
+
+<ParamField query="id" type="string" required>
+  Booking UUID (via query param)
+</ParamField>
+
+<Warning>
+Booking dengan galeri aktif tidak bisa dihapus. Hapus semua galeri terlebih dahulu.
+</Warning>

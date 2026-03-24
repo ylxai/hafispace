@@ -1,0 +1,45 @@
+---
+title: "Gallery Token"
+description: "API token galeri — regenerate token akses untuk klien"
+api: "PATCH /api/admin/galleries/{id}/token"
+---
+
+## Regenerate Token
+
+Buat token akses baru untuk galeri. Token lama langsung tidak berlaku.
+
+<ParamField path="id" type="string" required>
+  Gallery UUID
+</ParamField>
+
+### Response
+
+<ResponseField name="success" type="boolean">
+  Status operasi
+</ResponseField>
+
+<ResponseField name="clientToken" type="string">
+  Token baru untuk akses galeri
+</ResponseField>
+
+<ResponseField name="clientUrl" type="string">
+  URL lengkap untuk akses galeri klien
+</ResponseField>
+
+<ResponseField name="tokenExpiresAt" type="string">
+  Tanggal kadaluarsa token (ISO format)
+</ResponseField>
+
+<Warning>
+Token lama langsung tidak valid setelah regenerate. Pastikan klien sudah mendapat token baru.
+</Warning>
+
+## Token Format
+
+Token berupa UUID yang unik per galeri. Client mengakses galeri via:
+
+```
+https://domain.com/gallery/{clientToken}
+```
+
+Token bisa memiliki tanggal kadaluarsa (`tokenExpiresAt`). Setelah kadaluarsa, akses galeri mengembalikan `410 TOKEN_EXPIRED`.

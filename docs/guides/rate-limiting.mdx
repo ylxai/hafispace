@@ -1,0 +1,69 @@
+---
+title: "Rate Limiting"
+description: "Sistem rate limiting menggunakan Upstash Redis — konfigurasi dan perilaku"
+---
+
+## Overview
+
+Platform menggunakan **Upstash Redis** untuk rate limiting pada public API routes. Rate limiting mencegah abuse dan spam.
+
+## How It Works
+
+Setiap request public API dicek oleh rate limiter sebelum diproses:
+
+```
+Request → Rate Limit Check → Allowed? → Process → Response
+                              ↓
+                           Rejected → 429 Too Many Requests
+```
+
+## Rate Limits
+
+| Endpoint | Limit | Window | Key Pattern |
+|----------|-------|--------|-------------|
+| Gallery view | 1 | 24 jam | `view:{ip}:{token}` |
+| Photo selection | 300 | per menit | `select:{ip}:{token}` |
+| Selection submit | 10 | per menit | `submit:{ip}:{token}` |
+| Gallery notify | 5 | per jam | `notify:{ip}:{token}` |
+| Public booking | 20 | per jam | `booking:{ip}` |
+
+## Konfigurasi
+
+Set di `.env`:
+
+```bash
+UPSTASH_REDIS_REST_URL='https://your-region.upstash.io'
+UPSTASH_REDIS_REST_TOKEN='your-upstash-token'
+
+# Override default limits (opsional)
+RATE_LIMIT_SELECT_PER_MINUTE=300
+RATE_LIMIT_NOTIFY_PER_HOUR=5
+RATE_LIMIT_BOOKING_PER_HOUR=20
+RATE_LIMIT_SUBMIT_PER_MINUTE=10
+```
+
+## Graceful Degradation
+
+Jika Redis tidak tersedia, request tetap diproses tanpa rate limiting. Ini memastikan availability lebih penting dari proteksi rate limit.
+
+```typescript
+// src/lib/rate-limit.ts
+if (!redis) {
+  return { success: true, remaining: 0, limit: 0 }; // No-op: always allow
+}
+```
+
+## Response saat Rate Limited
+
+```json
+{
+  "code": "RATE_LIMITED",
+  "message": "Terlalu banyak request. Coba lagi nanti."
+}
+```
+
+HTTP Status: `429 Too Many Requests`
+
+<Info>
+Rate limit dihitung per kombinasi IP + endpoint key. Client yang sama bisa punya limit berbeda untuk endpoint yang berbeda.
+</Info>

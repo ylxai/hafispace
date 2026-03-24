@@ -38,7 +38,12 @@
           "guides/database",
           "guides/authentication",
           "guides/cloudinary",
-          "guides/deployment"
+          "guides/deployment",
+          "guides/rate-limiting",
+          "guides/monitoring",
+          "guides/realtime",
+          "guides/cache",
+          "guides/contributing"
         ]
       },
       {
@@ -46,13 +51,29 @@
         "pages": [
           "api/overview",
           "api/health",
+          "api/ably-token",
           "api/public/gallery",
+          "api/public/gallery-count",
+          "api/public/gallery-submit",
+          "api/public/gallery-notify",
           "api/public/booking",
           "api/public/invoice",
           "api/admin/bookings",
+          "api/admin/booking-reminder",
+          "api/admin/booking-export",
+          "api/admin/payments",
+          "api/admin/events",
           "api/admin/clients",
           "api/admin/galleries",
-          "api/admin/metrics"
+          "api/admin/gallery-upload",
+          "api/admin/gallery-photos",
+          "api/admin/gallery-selections",
+          "api/admin/gallery-token",
+          "api/admin/packages",
+          "api/admin/custom-fields",
+          "api/admin/settings",
+          "api/admin/metrics",
+          "api/admin/bulk-operations"
         ]
       }
     ]

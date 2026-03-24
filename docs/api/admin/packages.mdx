@@ -1,0 +1,87 @@
+---
+title: "Packages"
+description: "API paket admin — CRUD paket fotografi"
+api: "GET /api/admin/packages"
+---
+
+## List Packages
+
+Ambil daftar paket fotografi milik vendor.
+
+<ParamField query="page" type="number" default="1">
+  Halaman
+</ParamField>
+
+<ParamField query="limit" type="number" default="20">
+  Jumlah per halaman
+</ParamField>
+
+### Response
+
+<ResponseField name="items" type="array">
+  Array paket dengan `bookingsCount` (jumlah booking yang menggunakan paket ini).
+</ResponseField>
+
+## Create Package
+
+Buat paket baru.
+
+<ParamField body="namaPaket" type="string" required>
+  Nama paket (min 1 karakter)
+</ParamField>
+
+<ParamField body="harga" type="number" default="0">
+  Harga paket
+</ParamField>
+
+<ParamField body="deskripsi" type="string">
+  Deskripsi paket
+</ParamField>
+
+<ParamField body="fitur" type="array">
+  Array fitur yang termasuk dalam paket
+</ParamField>
+
+<ParamField body="isCustomable" type="boolean" default="false">
+  Apakah paket bisa dikustomisasi
+</ParamField>
+
+<ParamField body="urutan" type="number" default="0">
+  Urutan tampilan
+</ParamField>
+
+<ParamField body="status" type="string" default="active">
+  Status paket: `active` atau `inactive`
+</ParamField>
+
+<ParamField body="kategori" type="string">
+  Kategori: `PREWED`, `WEDDING`, `PERSONAL`, `EVENT`, `LAINNYA`
+</ParamField>
+
+<ParamField body="kuotaEdit" type="number">
+  Kuota edit foto
+</ParamField>
+
+<ParamField body="includeCetak" type="array">
+  Array item cetak yang termasuk
+</ParamField>
+
+<ParamField body="maxSelection" type="number" default="40">
+  Maks foto yang bisa dipilih klien
+</ParamField>
+
+## Update Package
+
+Update paket existing.
+
+<ParamField body="id" type="string" required>
+  Package UUID
+</ParamField>
+
+## Delete Package
+
+Hapus paket. Paket yang sedang digunakan oleh booking tidak bisa dihapus.
+
+<Warning>
+Paket dengan booking aktif tidak bisa dihapus. Update booking ke paket lain terlebih dahulu.
+</Warning>

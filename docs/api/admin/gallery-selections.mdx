@@ -1,0 +1,93 @@
+---
+title: "Gallery Selections"
+description: "API seleksi foto — kelola pilihan foto klien"
+api: "GET /api/admin/galleries/{id}/selections"
+---
+
+## List Selections
+
+Ambil semua seleksi foto dari galeri.
+
+<ParamField path="id" type="string" required>
+  Gallery UUID
+</ParamField>
+
+### Response
+
+<ResponseField name="selections" type="array">
+  Array seleksi dengan data foto terkait.
+</ResponseField>
+
+<ResponseField name="selections[].id" type="string">
+  Selection UUID
+</ResponseField>
+
+<ResponseField name="selections[].fileId" type="string">
+  Photo ID yang dipilih
+</ResponseField>
+
+<ResponseField name="selections[].filename" type="string">
+  Nama file foto
+</ResponseField>
+
+<ResponseField name="selections[].selectionType" type="string">
+  Tipe: `EDIT` atau `PRINT`
+</ResponseField>
+
+<ResponseField name="selections[].printSize" type="string">
+  Ukuran cetak (jika tipe PRINT)
+</ResponseField>
+
+<ResponseField name="selections[].isLocked" type="boolean">
+  Status lock
+</ResponseField>
+
+<ResponseField name="selections[].thumbnailUrl" type="string">
+  URL thumbnail foto
+</ResponseField>
+
+<ResponseField name="stats" type="object">
+  Statistik: `total`, `edit`, `print`, `locked`
+</ResponseField>
+
+## Toggle Lock
+
+Lock/unlock seleksi foto. Seleksi yang terkunci tidak bisa diubah klien.
+
+```bash
+PATCH /api/admin/galleries/{id}/selections
+```
+
+<ParamField body="selectionId" type="string" required>
+  Selection UUID
+</ParamField>
+
+<ParamField body="isLocked" type="boolean" required>
+  `true` untuk lock, `false` untuk unlock
+</ParamField>
+
+### Response
+
+<ResponseField name="success" type="boolean">
+  Status operasi
+</ResponseField>
+
+<ResponseField name="selection" type="object">
+  Data seleksi yang diupdate
+</ResponseField>
+
+## Delete Selection
+
+Hapus seleksi foto dari galeri.
+
+```bash
+DELETE /api/admin/galleries/{id}/selections
+```
+
+<ParamField body="selectionId" type="string" required>
+  Selection UUID
+</ParamField>
+
+<Note>
+Menghapus selection hanya menghapus record seleksi, tidak menghapus foto asli dari Cloudinary.
+</Note>

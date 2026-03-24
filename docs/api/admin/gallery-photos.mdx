@@ -1,0 +1,92 @@
+---
+title: "Gallery Photos"
+description: "API foto galeri — list, hapus single, dan bulk delete foto"
+api: "GET /api/admin/galleries/{id}/photos"
+---
+
+## List Photos
+
+Ambil semua foto dari galeri.
+
+<ParamField path="id" type="string" required>
+  Gallery UUID
+</ParamField>
+
+### Response
+
+<ResponseField name="photos" type="array">
+  Array foto diurutkan berdasarkan `urutan` (ascending).
+</ResponseField>
+
+<ResponseField name="photos[].id" type="string">
+  Photo UUID
+</ResponseField>
+
+<ResponseField name="photos[].filename" type="string">
+  Nama file
+</ResponseField>
+
+<ResponseField name="photos[].url" type="string">
+  URL foto (Cloudinary)
+</ResponseField>
+
+<ResponseField name="photos[].width" type="number">
+  Lebar foto (pixel)
+</ResponseField>
+
+<ResponseField name="photos[].height" type="number">
+  Tinggi foto (pixel)
+</ResponseField>
+
+<ResponseField name="photos[].createdAt" type="string">
+  Tanggal upload
+</ResponseField>
+
+## Delete Photo
+
+Hapus satu foto dari galeri dan Cloudinary.
+
+```bash
+DELETE /api/admin/galleries/{id}/photos/{photoId}
+```
+
+<ParamField path="id" type="string" required>
+  Gallery UUID
+</ParamField>
+
+<ParamField path="photoId" type="string" required>
+  Photo UUID
+</ParamField>
+
+### Behavior
+
+1. Hapus foto dari Cloudinary
+2. Hapus record dari database
+3. Hapus semua selection terkait foto ini
+4. Log aktivitas
+
+<Warning>
+Menghapus foto akan menghapus semua selection yang terkait dengan foto tersebut.
+</Warning>
+
+## Bulk Delete Photos
+
+Hapus multiple foto sekaligus.
+
+```bash
+POST /api/admin/galleries/{id}/photos/bulk
+```
+
+<ParamField body="photoIds" type="string[]" required>
+  Array Photo UUID untuk dihapus
+</ParamField>
+
+### Response
+
+<ResponseField name="deleted" type="number">
+  Jumlah foto yang berhasil dihapus
+</ResponseField>
+
+<ResponseField name="failed" type="number">
+  Jumlah foto yang gagal dihapus
+</ResponseField>

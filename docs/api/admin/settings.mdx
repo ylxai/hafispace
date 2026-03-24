@@ -1,0 +1,115 @@
+---
+title: "Settings"
+description: "API pengaturan vendor — kelola profil dan konfigurasi"
+api: "GET /api/admin/settings"
+---
+
+## Get Settings
+
+Ambil data profil dan pengaturan vendor.
+
+### Response
+
+<ResponseField name="vendor" type="object">
+  Data vendor lengkap termasuk pengaturan notifikasi, DP, tema, dll.
+</ResponseField>
+
+<ResponseField name="vendor.namaStudio" type="string">
+  Nama studio/vendor
+</ResponseField>
+
+<ResponseField name="vendor.email" type="string">
+  Email vendor
+</ResponseField>
+
+<ResponseField name="vendor.phone" type="string">
+  Nomor telepon
+</ResponseField>
+
+<ResponseField name="vendor.logoUrl" type="string">
+  URL logo
+</ResponseField>
+
+<ResponseField name="vendor.dpPercentage" type="number">
+  Persentase DP (default: 30)
+</ResponseField>
+
+<ResponseField name="vendor.rekeningPembayaran" type="string">
+  Info rekening pembayaran
+</ResponseField>
+
+<ResponseField name="vendor.themeColor" type="string">
+  Warna tema (hex)
+</ResponseField>
+
+<ResponseField name="vendor.bookingFormActive" type="boolean">
+  Status form booking
+</ResponseField>
+
+<ResponseField name="vendor.successMessage" type="string">
+  Pesan sukses setelah booking
+</ResponseField>
+
+<ResponseField name="vendor.syaratKetentuan" type="string">
+  Syarat dan ketentuan
+</ResponseField>
+
+## Update Settings
+
+Update pengaturan vendor.
+
+<ParamField body="namaStudio" type="string">
+  Nama studio
+</ParamField>
+
+<ParamField body="email" type="string">
+  Email vendor
+</ParamField>
+
+<ParamField body="phone" type="string">
+  Nomor telepon
+</ParamField>
+
+<ParamField body="logoUrl" type="string">
+  URL logo
+</ParamField>
+
+<ParamField body="dpPercentage" type="number">
+  Persentase DP (0-100)
+</ParamField>
+
+<ParamField body="rekeningPembayaran" type="string">
+  Info rekening pembayaran
+</ParamField>
+
+<ParamField body="themeColor" type="string">
+  Warna tema (hex)
+</ParamField>
+
+<ParamField body="bookingFormActive" type="boolean">
+  Aktif/nonaktif form booking
+</ParamField>
+
+<ParamField body="successMessage" type="string">
+  Pesan sukses
+</ParamField>
+
+<ParamField body="syaratKetentuan" type="string">
+  Syarat dan ketentuan
+</ParamField>
+
+<ParamField body="waAdmin" type="string">
+  Nomor WhatsApp admin
+</ParamField>
+
+<ParamField body="notifEmail" type="boolean">
+  Notifikasi email
+</ParamField>
+
+<ParamField body="notifGalleryDelivered" type="boolean">
+  Notifikasi saat galeri delivered
+</ParamField>
+
+<ParamField body="notifNewBooking" type="boolean">
+  Notifikasi booking baru
+</ParamField>

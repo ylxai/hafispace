@@ -1,0 +1,47 @@
+---
+title: "Gallery Count"
+description: "API hitung seleksi — jumlah foto yang dipilih di galeri"
+api: "GET /api/public/gallery/{token}/count"
+---
+
+## Get Selection Count
+
+Ambil jumlah foto yang sudah dipilih di galeri. Endpoint ini ringan dan bisa dipanggil berulang.
+
+<ParamField path="token" type="string" required>
+  Token akses galeri
+</ParamField>
+
+### Response
+
+<ResponseField name="count" type="number">
+  Jumlah foto yang dipilih (tidak termasuk yang terkunci).
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl https://yourdomain.com/api/public/gallery/abc-123-token/count
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "count": 12
+}
+```
+
+```json 200
+{
+  "count": 0
+}
+```
+
+</ResponseExample>
+
+<Note>
+Endpoint ini tidak memerlukan autentikasi dan tidak di-rate limit. Cocok untuk polling real-time counter.
+</Note>

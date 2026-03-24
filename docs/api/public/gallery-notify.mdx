@@ -1,0 +1,72 @@
+---
+title: "Gallery Notify"
+description: "API notifikasi galeri — kirim notifikasi ke admin saat seleksi selesai"
+api: "POST /api/public/gallery/{token}/notify"
+---
+
+## Send Notification
+
+Kirim notifikasi ke admin vendor saat klien melakukan aksi di galeri.
+
+<ParamField path="token" type="string" required>
+  Token akses galeri
+</ParamField>
+
+<ParamField body="type" type="string" required>
+  Tipe notifikasi. Saat ini hanya `"selection_submitted"`.
+</ParamField>
+
+<ParamField body="photoCount" type="number" required>
+  Jumlah foto yang dipilih (min: 0, max: 10000)
+</ParamField>
+
+<ParamField body="photos" type="string[]">
+  Array URL foto (opsional, max 1000 item, max 500 karakter per item)
+</ParamField>
+
+### Response
+
+<ResponseField name="success" type="boolean">
+  Status kirim notifikasi
+</ResponseField>
+
+<ResponseField name="notificationId" type="string">
+  ID notifikasi yang dibuat
+</ResponseField>
+
+### Rate Limit
+
+Maksimal **5 notifikasi per jam** per kombinasi IP + token.
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://yourdomain.com/api/public/gallery/abc-123-token/notify \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "selection_submitted",
+    "photoCount": 15,
+    "photos": ["https://res.cloudinary.com/.../IMG_001.jpg"]
+  }'
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "success": true,
+  "message": "Notification sent",
+  "notificationId": "notif-uuid"
+}
+```
+
+```json 429
+{
+  "code": "RATE_LIMITED",
+  "message": "Terlalu banyak notifikasi. Coba lagi nanti."
+}
+```
+
+</ResponseExample>
