@@ -218,6 +218,7 @@ export default function ViewspacePage() {
       if (!res.ok) {
         const err = await res.json();
         alert(err.message ?? err.error ?? "Gagal mengirim seleksi. Coba lagi.");
+        setIsSubmitting(false); // ✅ Fix: Reset state on error before return
         return;
       }
       clearLocalSelections(token);
@@ -297,7 +298,7 @@ export default function ViewspacePage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <div className="glass-card p-8 flex flex-col items-center gap-4 text-center">
-          <div className="w-16 rounded-full bg-[var(--champagne)] flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-[var(--champagne)] flex items-center justify-center"> {/* ✅ Fix: Added h-16 for perfect circle */}
             <svg className="w-8 h-8 text-[var(--warm-gray)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
