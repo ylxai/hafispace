@@ -179,7 +179,7 @@ export async function POST(
       ALREADY_LOCKED: "Seleksi sudah dikirim sebelumnya dan tidak dapat diubah.",
       QUOTA_EXCEEDED: error.message ?? `Jumlah foto melebihi batas maksimum.`,
       PHOTO_NOT_FOUND: "Beberapa foto tidak ditemukan di galeri ini.",
-    };
+      PHOTO_NOT_FOUND: error.message ?? "Beberapa foto tidak ditemukan di galeri ini.",
 
     if (error.code && error.status) {
       const safeMessage = SAFE_ERROR_MESSAGES[error.code] ?? "Terjadi kesalahan. Silakan coba lagi.";
