@@ -2,7 +2,7 @@
 
 Tanggal: 2026-03-24
 Update: 2026-03-24
-Status: **IN PROGRESS** — Phase 7 (Critical #1-4, #16) MERGED ✅
+Status: **IN PROGRESS** — Phase 7 (Critical #1-4, #16) MERGED ✅, Phase 8 (High #9, #11, #12, #13) MERGED ✅
 
 ---
 
@@ -51,29 +51,29 @@ Total: **22 issues** — 6 Critical, 7 High, 6 Medium, 3 Low.
   - Fix: Hapus module-level config, pastikan semua operasi pakai per-request credentials
   - Impact: Concurrent requests dari vendor berbeda bisa cross-contaminate config
 
-- [ ] **#9** N+1 query pada gallery PUT sync
+- [x] **#9** N+1 query pada gallery PUT sync ✅ MERGED
   - File: `src/app/api/admin/galleries/[id]/route.ts:139-171`
-  - Fix: Batch select existing keys + single `createMany`
-  - Impact: 100 foto = 300 DB queries → timeout
+  - Fix: Batch select existing keys + single `createMany` + `skipDuplicates: true`
+  - Impact: 100 foto = 300 DB queries → 3 queries
 
 - [ ] **#10** `generateUploadSignature` pakai global env bukan vendor secret
   - File: `src/lib/cloudinary/core.ts:662-665`
   - Fix: Fetch vendor-specific credentials untuk signing
   - Impact: Signature salah di multi-tenant → upload gagal
 
-- [ ] **#11** Booking DELETE tanpa transaction — TOCTOU race
+- [x] **#11** Booking DELETE tanpa transaction — TOCTOU race ✅ MERGED
   - File: `src/app/api/admin/events/route.ts:183-194`
   - Fix: Wrap check + delete dalam `$transaction`
   - Impact: Concurrent request bisa buat orphan galleries
 
-- [ ] **#12** Inconsistent API error response format
-  - File: Multiple routes
+- [x] **#12** Inconsistent API error response format ✅ MERGED
+  - File: Multiple routes (booking, gallery notify, invoice)
   - Fix: Selalu gunakan helper dari `src/lib/api/response.ts`
   - Impact: Client tidak bisa handle error secara konsisten
 
-- [ ] **#13** `selection-counter.ts` fungsi increment/decrement misleading
-  - File: `src/lib/selection-counter.ts:23-30`
-  - Fix: Rename ke `getCountAfterAdd` / `getCountAfterRemove` untuk kejelasan
+- [x] **#13** `selection-counter.ts` fungsi increment/decrement misleading ✅ MERGED
+  - File: `src/lib/selection-counter.ts` (DELETED — dead code)
+  - Fix: Hapus file — fungsi tidak pernah diimport/dipakai
   - Impact: Developer confusion — bukan bug aktif, by design (DB-only, no Redis), tapi nama fungsi menyesatkan
 
 ---
