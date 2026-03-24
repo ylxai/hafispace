@@ -77,9 +77,9 @@ export async function POST(
       );
     }
 
-    // Delete dari Cloudinary menggunakan batch API (lebih efisien)
+    // Delete dari Cloudinary menggunakan batch API dengan gallery vendorId (verified ownership)
     const cloudinaryResult = await deletePhotosFromCloudinary(
-      session.user.id,
+      gallery.vendorId,
       photosToDelete.map(p => p.storageKey)
     );
     
