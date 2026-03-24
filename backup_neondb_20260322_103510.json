@@ -1,0 +1,19 @@
+{
+  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "project": "platform",
+  "database": "neondb",
+  "tables": [
+    "User",
+    "Vendor", 
+    "Client",
+    "Package",
+    "Booking",
+    "Gallery",
+    "Photo",
+    "PhotoSelection",
+    "Payment",
+    "GallerySetting"
+  ],
+  "status": "pending_export",
+  "note": "Use Neon console or pg_dump via connection pool to export full database"
+}
