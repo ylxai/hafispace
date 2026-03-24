@@ -1,11 +1,14 @@
 /**
- * CORS utility — single source of truth untuk allowed origins
- * Dipakai di middleware.ts dan next.config.ts
+ * CORS utility — single source of truth for allowed origins.
+ * Used in middleware.ts and next.config.ts.
  *
- * Konfigurasi via env var ALLOWED_ORIGINS (comma-separated):
+ * Configure via ALLOWED_ORIGINS env var (comma-separated):
  * ALLOWED_ORIGINS=https://hafiportrait.com,https://www.hafiportrait.com
  *
- * Fallback ke NEXT_PUBLIC_APP_URL, lalu localhost untuk development
+ * Falls back to NEXT_PUBLIC_APP_URL, then localhost for development.
+ *
+ * NOTE: This file is imported by next.config.ts at build time,
+ * so it cannot use the @/lib/env path alias. Direct process.env access is intentional here.
  */
 export function getAllowedOrigins(): string[] {
   const envOrigins = process.env.ALLOWED_ORIGINS;

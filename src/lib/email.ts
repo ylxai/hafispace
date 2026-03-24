@@ -1,8 +1,9 @@
 import { Resend } from 'resend';
 import { formatRupiah } from './format';
+import { env } from '@/lib/env';
 
 function getResend() {
-  return new Resend(process.env.RESEND_API_KEY);
+  return new Resend(env.RESEND_API_KEY);
 }
 
 export async function sendBookingConfirmationEmail({
@@ -30,8 +31,8 @@ export async function sendBookingConfirmationEmail({
   rekeningPembayaran?: string | null;
   invoiceUrl: string;
 }) {
-  if (!process.env.RESEND_API_KEY) {
-    // RESEND_API_KEY tidak diset — email dilewati (set di .env untuk mengaktifkan)
+  if (!env.RESEND_API_KEY) {
+    // RESEND_API_KEY not set — email skipped (set in .env to enable)
     return { success: false, error: 'No API key' };
   }
 
