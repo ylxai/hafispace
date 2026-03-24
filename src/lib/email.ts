@@ -12,9 +12,10 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#039;');
 }
 
-const resend = new Resend(env.RESEND_API_KEY);
+let resend: Resend | null = null;
 
 function getResend() {
+  resend ??= new Resend(env.RESEND_API_KEY);
   return resend;
 }
 
