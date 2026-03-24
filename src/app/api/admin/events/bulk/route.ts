@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { unauthorizedResponse } from "@/lib/api/response";
 import { z } from "zod";
+import logger from "@/lib/logger";
 
 const bulkUpdateSchema = z.object({
   bookingIds: z.array(z.string().uuid()),
@@ -111,7 +112,7 @@ export async function POST(request: Request) {
       );
     }
     
-    console.error("Bulk booking operation error:", error);
+    logger.error({ err: error }, "Bulk booking operation error");
     return NextResponse.json(
       { code: "INTERNAL_ERROR", message: "Failed to perform bulk operation" },
       { status: 500 }

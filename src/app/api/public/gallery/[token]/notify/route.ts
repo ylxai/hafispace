@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { z } from "zod";
+import { RATE_LIMIT_NOTIFY_PER_HOUR } from "@/lib/constants.server";
+import logger from "@/lib/logger";
 
 const notifySchema = z.object({
   type: z.enum(["selection_submitted"]),
@@ -18,7 +20,7 @@ export async function POST(
 
     // Rate limit: maks 5 notifikasi per jam per IP+token (cegah spam)
     const ip = getClientIp(request);
-    const rl = await checkRateLimit(`notify:${ip}:${token}`, { limit: 5, windowMs: 60 * 60_000 });
+    const rl = await checkRateLimit(`notify:${ip}:${token}`, { limit: RATE_LIMIT_NOTIFY_PER_HOUR, windowMs: 60 * 60_000 });
     if (!rl.success) {
       return NextResponse.json(
         { code: "RATE_LIMITED", message: "Terlalu banyak notifikasi. Coba lagi nanti." },
@@ -66,7 +68,7 @@ export async function POST(
 
     return NextResponse.json({ error: "Invalid notification type" }, { status: 400 });
   } catch (error) {
-    console.error("Error sending notification:", error);
+    logger.error({ err: error }, "Error sending notification");
     return NextResponse.json({ error: "Failed to send notification" }, { status: 500 });
   }
 }

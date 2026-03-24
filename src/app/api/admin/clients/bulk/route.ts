@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { unauthorizedResponse } from "@/lib/api/response";
 import { z } from "zod";
+import logger from "@/lib/logger";
 
 const bulkDeleteSchema = z.object({
   clientIds: z.array(z.string().uuid()),
@@ -82,7 +83,7 @@ export async function POST(request: Request) {
       );
     }
     
-    console.error("Bulk client operation error:", error);
+    logger.error({ err: error }, "Bulk client operation error");
     return NextResponse.json(
       { code: "INTERNAL_ERROR", message: "Failed to perform bulk operation" },
       { status: 500 }

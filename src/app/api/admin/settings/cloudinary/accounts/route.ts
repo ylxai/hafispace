@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
 import { testCloudinaryConnectionWithCredentials } from "@/lib/cloudinary";
+import logger from "@/lib/logger";
 import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 
 interface CloudinaryAccount {
@@ -45,7 +46,7 @@ export async function GET() {
 
     return NextResponse.json({ accounts: accountsFormatted });
   } catch (error) {
-    console.error("Error fetching Cloudinary accounts:", error);
+    logger.error({ err: error }, "Error fetching Cloudinary accounts");
     return internalErrorResponse("Failed to fetch accounts");
   }
 }
@@ -113,7 +114,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Error adding Cloudinary account:", error);
+    logger.error({ err: error }, "Error adding Cloudinary account");
     return internalErrorResponse("Failed to add Cloudinary account");
   }
 }
@@ -168,7 +169,7 @@ export async function PUT(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Error updating Cloudinary account:", error);
+    logger.error({ err: error }, "Error updating Cloudinary account");
     return internalErrorResponse("Failed to update account");
   }
 }
@@ -227,7 +228,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ message: "Account deleted successfully" });
   } catch (error) {
-    console.error("Error deleting Cloudinary account:", error);
+    logger.error({ err: error }, "Error deleting Cloudinary account");
     return internalErrorResponse("Failed to delete account");
   }
 }

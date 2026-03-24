@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { deletePhotosFromCloudinary } from "@/lib/cloudinary/core";
+import logger from "@/lib/logger";
 
 /**
  * POST /api/admin/galleries/[id]/photos/bulk
@@ -126,7 +127,7 @@ export async function POST(
 
     return NextResponse.json(responseData, { status: 200 });
   } catch (error) {
-    console.error("POST /api/admin/galleries/[id]/photos/bulk:", error);
+    logger.error({ err: error }, "POST /api/admin/galleries/[id]/photos/bulk");
     return NextResponse.json(
       {
         code: "ERROR",

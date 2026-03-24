@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { formatRupiah } from './format';
 import { env } from '@/lib/env';
+import logger from '@/lib/logger';
 
 function getResend() {
   return new Resend(env.RESEND_API_KEY);
@@ -63,7 +64,7 @@ export async function sendBookingConfirmationEmail({
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown email error';
-    console.error('Email error:', message);
+    logger.error({ err: error }, 'Email error');
     return { success: false, error: message };
   }
 }

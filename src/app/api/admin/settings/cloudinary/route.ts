@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { v2 as cloudinary } from "cloudinary";
 import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse, parseRequestBody } from "@/lib/api/response";
+import logger from "@/lib/logger";
 
 interface CloudinaryConfig {
   cloudName: string;
@@ -40,7 +41,7 @@ export async function GET() {
       apiKey: vendor.cloudinaryApiKey ? `${vendor.cloudinaryApiKey.substring(0, 4)}...` : null, // Mask the API key
     });
   } catch (error) {
-    console.error("Error fetching Cloudinary config:", error);
+    logger.error({ err: error }, "Error fetching Cloudinary config");
     return internalErrorResponse("Failed to fetch Cloudinary configuration");
   }
 }
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
       const result = await cloudinary.api.ping();
       cloudinaryConnected = result.status === 'ok';
     } catch (cloudinaryError) {
-      console.error("Cloudinary connection test failed:", cloudinaryError);
+      logger.error({ err: cloudinaryError }, "Cloudinary connection test failed");
       cloudinaryConnected = false;
     }
     
@@ -97,7 +98,7 @@ export async function POST(request: Request) {
       hasConfig: true,
     });
   } catch (error) {
-    console.error("Error saving Cloudinary config:", error);
+    logger.error({ err: error }, "Error saving Cloudinary config");
     return internalErrorResponse("Failed to save Cloudinary configuration");
   }
 }
@@ -125,7 +126,7 @@ export async function DELETE() {
       hasConfig: false,
     });
   } catch (error) {
-    console.error("Error removing Cloudinary config:", error);
+    logger.error({ err: error }, "Error removing Cloudinary config");
     return internalErrorResponse("Failed to remove Cloudinary configuration");
   }
 }

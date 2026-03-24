@@ -6,6 +6,7 @@ import { bookingSchema, bookingUpdateSchema } from "@/lib/api/validation";
 import { unauthorizedResponse, validationErrorResponse, internalErrorResponse, parseAndValidate, notFoundResponse } from "@/lib/api/response";
 import { parsePaginationParams, createPaginationResponse } from "@/lib/api/pagination";
 import { verifyBookingOwnership } from "@/lib/api/resource-auth";
+import logger from "@/lib/logger";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -73,7 +74,7 @@ export async function GET(request: Request) {
       pagination: createPaginationResponse(page, limit, total),
     });
   } catch (error) {
-    console.error("Error fetching bookings:", error);
+    logger.error({ err: error }, "Error fetching bookings");
     return internalErrorResponse("Failed to load bookings");
   }
 }
@@ -148,7 +149,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(booking, { status: 201 });
   } catch (error) {
-    console.error("Error creating booking:", error);
+    logger.error({ err: error }, "Error creating booking");
     return internalErrorResponse("Failed to create booking");
   }
 }
@@ -198,7 +199,7 @@ export async function DELETE(request: Request) {
       message: "Booking deleted successfully",
     });
   } catch (error) {
-    console.error("Error deleting booking:", error);
+    logger.error({ err: error }, "Error deleting booking");
     return internalErrorResponse("Failed to delete booking");
   }
 }
@@ -267,7 +268,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(updatedBooking);
   } catch (error) {
-    console.error("Error updating booking:", error);
+    logger.error({ err: error }, "Error updating booking");
     return internalErrorResponse("Failed to update booking");
   }
 }

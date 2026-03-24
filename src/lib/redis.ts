@@ -9,6 +9,7 @@
 
 import { Redis } from "@upstash/redis";
 import { env } from "@/lib/env";
+import logger from "@/lib/logger";
 
 function createRedisClient(): Redis | null {
   const url = env.UPSTASH_REDIS_REST_URL;
@@ -16,7 +17,7 @@ function createRedisClient(): Redis | null {
 
   if (!url || !token) {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("[Redis] UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN not configured. View deduplication will fall back to in-memory cache.");
+      logger.warn("[Redis] UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN not configured. View deduplication will fall back to in-memory cache.");
     }
     return null;
   }

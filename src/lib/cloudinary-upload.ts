@@ -2,6 +2,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import { uploadPhotoToCloudinary, getCloudinaryAccount } from './cloudinary';
 import type { CloudinaryResource } from '@/types/cloudinary';
 import { TRANSFORMATION_PRESETS } from '@/lib/cloudinary/constants';
+import logger from '@/lib/logger';
 
 // Tidak ada global config mutation di module level.
 // Setiap fungsi yang butuh credentials harus pass config per-request.
@@ -76,7 +77,7 @@ export async function uploadImageToCloudinary(
       accountId: result.accountId,
     };
   } catch (error) {
-    console.error('Error in uploadImageToCloudinary:', error);
+    logger.error({ err: error }, 'Error in uploadImageToCloudinary');
     throw new Error('Failed to upload image to Cloudinary');
   }
 }
@@ -239,7 +240,7 @@ export async function deleteImageFromCloudinary(
 
     return result.result === 'ok' || result.result === 'not found';
   } catch (error) {
-    console.error('Error deleting image from Cloudinary:', error);
+    logger.error({ err: error }, 'Error deleting image from Cloudinary');
     throw new Error('Failed to delete image from Cloudinary');
   }
 }
@@ -300,7 +301,7 @@ export async function getImageMetadata(publicId: string): Promise<{
       context: result.context?.custom as Record<string, string>,
     };
   } catch (error) {
-    console.error('Error getting image metadata:', error);
+    logger.error({ err: error }, 'Error getting image metadata');
     throw new Error('Failed to get image metadata from Cloudinary');
   }
 }
@@ -358,7 +359,7 @@ export async function listImagesInFolder(options: {
       total: items.length,
     };
   } catch (error) {
-    console.error('Error listing images:', error);
+    logger.error({ err: error }, 'Error listing images');
     throw new Error('Failed to list images from Cloudinary');
   }
 }
@@ -399,7 +400,7 @@ export async function createUploadPreset(
       unsigned: true, // Allow unsigned uploads from client
     });
   } catch (error) {
-    console.error('Error creating upload preset:', error);
+    logger.error({ err: error }, 'Error creating upload preset');
     // Preset might already exist
   }
 }

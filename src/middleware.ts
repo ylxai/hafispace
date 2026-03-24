@@ -7,7 +7,10 @@ export default withAuth(
     if (req.nextUrl.pathname === "/login" && req.nextauth.token) {
       return NextResponse.redirect(new URL("/admin", req.url));
     }
-    return NextResponse.next();
+    const requestId = crypto.randomUUID();
+    const res = NextResponse.next();
+    res.headers.set("x-request-id", requestId);
+    return res;
   },
   {
     callbacks: {
