@@ -225,7 +225,6 @@ export default function ViewspacePage() {
       // Refetch untuk dapatkan state locked terbaru
       void queryClient.invalidateQueries({ queryKey: ["gallery", token] });
     } catch {
-      alert("Terjadi kesalahan. Periksa koneksi internet Anda."); // ✅ Use state instead of alert
       alert("Terjadi kesalahan. Periksa koneksi internet Anda.");
       setIsSubmitting(false);
     }
