@@ -1,0 +1,109 @@
+---
+title: "Public Booking"
+description: "API booking publik — submit booking tanpa login"
+api: "POST /api/public/booking"
+---
+
+## Get Booking Form
+
+Ambil info vendor dan paket aktif untuk form booking.
+
+<ParamField query="vendorId" type="string" required>
+  Vendor ID
+</ParamField>
+
+### Response
+
+<ResponseField name="vendor" type="object">
+  Data vendor dengan paket aktif dan custom fields
+</ResponseField>
+
+## Submit Booking
+
+Submit booking baru dari klien.
+
+### Request Body
+
+<ParamField body="vendorId" type="string" required>
+  Vendor ID
+</ParamField>
+
+<ParamField body="namaClient" type="string" required>
+  Nama klien (min 1 karakter)
+</ParamField>
+
+<ParamField body="hpClient" type="string" required>
+  Nomor HP (min 8 karakter)
+</ParamField>
+
+<ParamField body="emailClient" type="string">
+  Email klien (opsional)
+</ParamField>
+
+<ParamField body="tanggalSesi" type="string" required>
+  Tanggal sesi (ISO date string)
+</ParamField>
+
+<ParamField body="lokasiSesi" type="string">
+  Lokasi sesi (opsional)
+</ParamField>
+
+<ParamField body="paketId" type="string" required>
+  Package UUID
+</ParamField>
+
+<ParamField body="catatan" type="string">
+  Catatan tambahan
+</ParamField>
+
+<ParamField body="customFields" type="object">
+  Custom field values (key-value pairs)
+</ParamField>
+
+### Response
+
+<ResponseField name="success" type="boolean">
+  Status booking
+</ResponseField>
+
+<ResponseField name="booking" type="object">
+  Data booking yang dibuat, termasuk `kodeBooking`, `dpAmount`, `dpPercentage`
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST https://yourdomain.com/api/public/booking \
+  -H "Content-Type: application/json" \
+  -d '{
+    "vendorId": "vendor-uuid",
+    "namaClient": "Andi Pratama",
+    "hpClient": "081234567890",
+    "emailClient": "andi@example.com",
+    "tanggalSesi": "2026-04-15",
+    "lokasiSesi": "Jakarta",
+    "paketId": "package-uuid"
+  }'
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 201
+{
+  "success": true,
+  "booking": {
+    "id": "booking-uuid",
+    "kodeBooking": "BK2604-A1B2",
+    "namaClient": "Andi Pratama",
+    "tanggalSesi": "2026-04-15T00:00:00.000Z",
+    "status": "PENDING",
+    "hargaPaket": 5000000,
+    "dpAmount": 1500000,
+    "dpPercentage": 30
+  }
+}
+```
+
+</ResponseExample>

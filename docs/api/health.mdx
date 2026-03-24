@@ -1,0 +1,41 @@
+---
+title: "Health Check"
+description: "GET /api/health — cek status server dan database"
+api: "GET /api/health"
+---
+
+## Response
+
+<ResponseField name="status" type="string">
+  Server status: `"ok"` atau `"error"`
+</ResponseField>
+
+<ResponseField name="db" type="string">
+  Database status: `"ok"` atau `"unreachable"`
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl https://yourdomain.com/api/health
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "status": "ok",
+  "db": "ok"
+}
+```
+
+```json 503
+{
+  "status": "error",
+  "db": "unreachable"
+}
+```
+
+</ResponseExample>

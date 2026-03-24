@@ -1,0 +1,110 @@
+---
+title: "Deployment"
+description: "Deploy Hafiportrait Platform ke production"
+---
+
+## Prerequisites
+
+- Neon PostgreSQL database (production)
+- Cloudinary account
+- Domain name (opsional)
+
+## Environment Setup
+
+Pastikan semua required environment variables sudah diset:
+
+```bash
+# Required
+DATABASE_URL=postgresql://...
+NEXTAUTH_SECRET=your-secret-here
+CLOUDINARY_MASTER_KEY=your-encryption-key-here
+
+# Recommended
+NEXTAUTH_URL=https://yourdomain.com
+NEXT_PUBLIC_APP_URL=https://yourdomain.com
+CLOUDINARY_CLOUD_NAME=your-cloud
+CLOUDINARY_API_KEY=your-key
+CLOUDINARY_API_SECRET=your-secret
+ALLOWED_ORIGINS=https://yourdomain.com
+```
+
+## Build & Deploy
+
+```bash
+# Install dependencies
+npm ci
+
+# Generate Prisma client
+npx prisma generate
+
+# Run production migration
+npx prisma migrate deploy
+
+# Build
+npm run build
+
+# Start
+npm start
+```
+
+## Health Check
+
+Endpoint `/api/health` mengecek koneksi database:
+
+```bash
+curl https://yourdomain.com/api/health
+
+# Response:
+# { "status": "ok", "db": "ok" }
+```
+
+## Database Backup
+
+Script backup disediakan:
+
+```bash
+./backup_database.sh
+```
+
+## Monitoring
+
+### Sentry
+
+Error monitoring sudah terkonfigurasi untuk:
+- Server-side errors (`sentry.server.config.ts`)
+- Edge runtime errors (`sentry.edge.config.ts`)
+- Client-side errors (`instrumentation-client.ts`)
+
+### Pino Logging
+
+Structured logging di server-side via `src/lib/logger.ts`:
+
+```typescript
+import logger from "@/lib/logger";
+
+logger.error({ err: error }, "Error message");
+logger.warn({ context }, "Warning message");
+logger.info({ data }, "Info message");
+```
+
+<Warning>
+Jangan gunakan `console.*` di server-side code. Selalu gunakan `logger` dari `@/lib/logger`.
+</Warning>
+
+## Performance
+
+| Config | Value |
+|--------|-------|
+| Prisma connection limit | 10 (production) |
+| Metrics cache TTL | 300 detik (5 menit) |
+| Gallery max photos | 1000 |
+| bcrypt cost factor | 12 |
+
+## Security Checklist
+
+- [ ] Semua environment variables sudah diset
+- [ ] `NEXTAUTH_SECRET` sudah digenerate dengan `openssl rand -base64 32`
+- [ ] `CLOUDINARY_MASTER_KEY` sudah digenerate dengan `openssl rand -hex 32`
+- [ ] `ALLOWED_ORIGINS` hanya berisi domain yang diizinkan
+- [ ] Database SSL enabled (Neon default)
+- [ ] Sentry DSN sudah diset untuk error monitoring

@@ -1,0 +1,69 @@
+---
+title: "Admin Clients"
+description: "API klien admin — CRUD klien dengan pagination"
+api: "GET /api/admin/clients"
+---
+
+## List Clients
+
+Ambil daftar klien dengan pagination.
+
+<ParamField query="page" type="number" default="1">
+  Halaman
+</ParamField>
+
+<ParamField query="limit" type="number" default="20">
+  Jumlah per halaman (max: 100)
+</ParamField>
+
+### Response
+
+<ResponseField name="items" type="array">
+  Array klien dengan `totalBooking` count
+</ResponseField>
+
+<ResponseField name="pagination" type="object">
+  Pagination: `page`, `limit`, `total`, `totalPages`
+</ResponseField>
+
+## Create Client
+
+```bash
+POST /api/admin/clients
+```
+
+<ParamField body="name" type="string" required>
+  Nama klien (min 2 karakter)
+</ParamField>
+
+<ParamField body="email" type="string">
+  Email klien
+</ParamField>
+
+<ParamField body="phone" type="string">
+  Nomor HP (min 6 karakter)
+</ParamField>
+
+<ParamField body="instagram" type="string">
+  Username Instagram
+</ParamField>
+
+## Update Client
+
+```bash
+PUT /api/admin/clients
+```
+
+<ParamField body="id" type="string" required>
+  Client UUID
+</ParamField>
+
+## Delete Client
+
+```bash
+DELETE /api/admin/clients?id={clientId}
+```
+
+<Warning>
+Client dengan booking tidak bisa dihapus. Hapus booking terlebih dahulu.
+</Warning>

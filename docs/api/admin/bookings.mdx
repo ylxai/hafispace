@@ -1,0 +1,60 @@
+---
+title: "Admin Bookings"
+description: "API booking admin — CRUD bookings dengan auth"
+api: "GET /api/admin/bookings/{id}"
+---
+
+## Get Booking Detail
+
+Ambil detail booking lengkap termasuk payments, galleries, dan client.
+
+<ParamField path="id" type="string" required>
+  Booking UUID
+</ParamField>
+
+<ResponseField name="booking" type="object">
+  Data booking lengkap
+</ResponseField>
+
+<ResponseField name="summary" type="object">
+  Ringkasan: `totalBayar`, `sisaTagihan`, `lunas`
+</ResponseField>
+
+## Update Booking
+
+Update status, lokasi, tanggal, atau harga booking.
+
+```bash
+PATCH /api/admin/bookings/{id}
+```
+
+<ParamField body="status" type="string">
+  Status baru: `PENDING`, `CONFIRMED`, `COMPLETED`, `CANCELLED`
+</ParamField>
+
+<ParamField body="tanggalSesi" type="string">
+  Tanggal sesi baru
+</ParamField>
+
+<ParamField body="lokasiSesi" type="string">
+  Lokasi sesi baru
+</ParamField>
+
+<ParamField body="hargaPaket" type="number">
+  Harga paket baru
+</ParamField>
+
+<ParamField body="paketId" type="string">
+  Package UUID baru
+</ParamField>
+
+<RequestExample>
+
+```bash cURL
+curl -X PATCH https://yourdomain.com/api/admin/bookings/booking-uuid \
+  -H "Content-Type: application/json" \
+  -H "Cookie: next-auth.session-token=..." \
+  -d '{ "status": "CONFIRMED" }'
+```
+
+</RequestExample>

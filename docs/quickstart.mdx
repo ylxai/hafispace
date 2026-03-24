@@ -1,0 +1,104 @@
+---
+title: "Quickstart"
+description: "Setup dan jalankan Hafiportrait Platform dalam hitungan menit"
+---
+
+## Prerequisites
+
+- Node.js v20+ (LTS)
+- PostgreSQL database (Neon recommended)
+- Cloudinary account
+- npm atau pnpm
+
+## 1. Clone & Install
+
+```bash
+git clone https://github.com/ylxai/hafispace.git
+cd hafispace
+npm install
+```
+
+## 2. Environment Variables
+
+Copy file `.env.example` ke `.env` dan isi value-nya:
+
+```bash
+cp .env.example .env
+```
+
+<AccordionGroup>
+  <Accordion title="Required variables">
+    | Variable | Description |
+    |----------|-------------|
+    | `DATABASE_URL` | PostgreSQL connection string (Neon) |
+    | `NEXTAUTH_SECRET` | Secret key untuk NextAuth JWT. Generate: `openssl rand -base64 32` |
+    | `CLOUDINARY_MASTER_KEY` | AES-256-GCM encryption key. Generate: `openssl rand -hex 32` |
+  </Accordion>
+
+  <Accordion title="Optional variables">
+    | Variable | Description | Default |
+    |----------|-------------|---------|
+    | `NEXTAUTH_URL` | App URL | `http://localhost:3000` |
+    | `CLOUDINARY_CLOUD_NAME` | Default Cloudinary cloud name | - |
+    | `CLOUDINARY_API_KEY` | Default Cloudinary API key | - |
+    | `CLOUDINARY_API_SECRET` | Default Cloudinary API secret | - |
+    | `ABLY_API_KEY` | Ably realtime API key | - |
+    | `UPSTASH_REDIS_REST_URL` | Redis URL untuk rate limiting | - |
+    | `UPSTASH_REDIS_REST_TOKEN` | Redis token | - |
+    | `RESEND_API_KEY` | Email service API key | - |
+    | `SENTRY_DSN` | Sentry error monitoring | - |
+    | `BCRYPT_COST_FACTOR` | bcrypt cost | 12 (prod) / 8 (dev) |
+    | `GALLERY_MAX_PHOTOS` | Max photos per gallery | 1000 |
+  </Accordion>
+</AccordionGroup>
+
+## 3. Database Setup
+
+```bash
+# Push schema ke database
+npx prisma db push
+
+# Generate Prisma client
+npx prisma generate
+
+# Seed admin user
+npx tsx scripts/seed-admin.ts
+```
+
+## 4. Jalankan Development Server
+
+```bash
+npm run dev
+```
+
+Buka [http://localhost:3000](http://localhost:3000). Anda akan di-redirect ke `/login`.
+
+## 5. Login
+
+Gunakan credentials dari hasil seed admin. Akses dashboard di `/admin`.
+
+## Perintah Berguna
+
+<CodeGroup>
+```bash Development
+npm run dev          # Jalankan dev server
+npm run lint         # ESLint check
+npm run build        # Production build
+npm run test         # Jalankan unit tests (Vitest)
+```
+
+```bash Database
+npx prisma studio    # Buka Prisma Studio (visual DB editor)
+npx prisma db push   # Push schema changes
+npx prisma migrate   # Buat migration baru
+```
+
+```bash Debug
+npx tsx scripts/seed-full-data.ts           # Seed data test lengkap
+npx tsx scripts/migrate-encrypt-credentials.ts  # Migrasi credentials ke encrypted
+```
+</CodeGroup>
+
+<Warning>
+Jangan jalankan `npx prisma db push` di production. Gunakan `npx prisma migrate deploy` untuk production migration.
+</Warning>

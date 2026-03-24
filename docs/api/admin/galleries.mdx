@@ -1,0 +1,131 @@
+---
+title: "Admin Galleries"
+description: "API galeri admin — CRUD galeri, upload foto, kelola seleksi"
+api: "GET /api/admin/galleries"
+---
+
+## List Galleries
+
+Ambil daftar galeri milik vendor.
+
+<ParamField query="page" type="number" default="1">
+  Halaman
+</ParamField>
+
+<ParamField query="limit" type="number" default="20">
+  Jumlah per halaman
+</ParamField>
+
+## Create Gallery
+
+```bash
+POST /api/admin/galleries
+```
+
+<ParamField body="namaProject" type="string" required>
+  Nama project galeri
+</ParamField>
+
+<ParamField body="bookingId" type="string" required>
+  Booking UUID
+</ParamField>
+
+## Get Gallery Detail
+
+```bash
+GET /api/admin/galleries/{id}
+```
+
+## Update Gallery
+
+```bash
+PUT /api/admin/galleries/{id}
+```
+
+## Delete Gallery
+
+```bash
+DELETE /api/admin/galleries/{id}
+```
+
+## Upload Photos
+
+```bash
+POST /api/admin/galleries/{id}/upload
+```
+
+Upload multiple files ke Cloudinary dan simpan ke database.
+
+<ParamField body="files" type="file[]" required>
+  Array file gambar (max 100 files, max 15MB per file)
+</ParamField>
+
+<ParamField body="accountId" type="string">
+  Cloudinary account ID (opsional, default: account default)
+</ParamField>
+
+### Allowed Formats
+
+- JPEG, PNG, WebP, HEIC/HEIF, TIFF, AVIF
+
+### Upload Flow
+
+<Steps>
+  <Step title="Validasi">MIME type, file size, magic bytes verification</Step>
+  <Step title="Upload">Batch upload ke Cloudinary (5 files per batch)</Step>
+  <Step title="Simpan">`createMany` ke database</Step>
+  <Step title="Rollback">Jika DB gagal, hapus file dari Cloudinary</Step>
+</Steps>
+
+## Gallery Token
+
+Regenerate atau ambil token akses galeri:
+
+```bash
+GET /api/admin/galleries/{id}/token
+```
+
+## Photo Management
+
+### List Photos
+
+```bash
+GET /api/admin/galleries/{id}/photos
+```
+
+### Delete Photo
+
+```bash
+DELETE /api/admin/galleries/{id}/photos/{photoId}
+```
+
+### Bulk Delete Photos
+
+```bash
+POST /api/admin/galleries/{id}/photos/bulk
+Body: { "ids": ["photo-uuid-1", "photo-uuid-2"] }
+```
+
+## Selection Management
+
+### List Selections
+
+```bash
+GET /api/admin/galleries/{id}/selections
+```
+
+Response termasuk stats: `total`, `edit`, `print`, `locked`.
+
+### Toggle Lock
+
+```bash
+PATCH /api/admin/galleries/{id}/selections
+Body: { "selectionId": "...", "isLocked": true }
+```
+
+### Delete Selection
+
+```bash
+DELETE /api/admin/galleries/{id}/selections
+Body: { "selectionId": "..." }
+```

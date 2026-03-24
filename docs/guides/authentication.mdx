@@ -1,0 +1,109 @@
+---
+title: "Authentication"
+description: "Sistem autentikasi dengan NextAuth.js JWT dan middleware protection"
+---
+
+## Overview
+
+Platform menggunakan **NextAuth.js v4** dengan **Credentials provider** dan **JWT strategy**. Hanya ada satu role: **ADMIN** (vendor/studio owner).
+
+## Auth Flow
+
+<Steps>
+  <Step title="Login">
+    User submit username + password ke `/api/auth/callback/credentials`.
+  </Step>
+
+  <Step title="Validation">
+    NextAuth `authorize()` callback:
+    1. Cari vendor by username di database
+    2. Verifikasi password dengan bcrypt
+    3. Return user object jika valid
+  </Step>
+
+  <Step title="JWT Creation">
+    NextAuth buat JWT token dan set cookie `next-auth.session-token`.
+  </Step>
+
+  <Step title="Session">
+    JWT callback menambahkan `user.id` (vendor ID) ke session.
+  </Step>
+</Steps>
+
+## Middleware Protection
+
+Root `middleware.ts` melindungi:
+
+| Path | Protection |
+|------|-----------|
+| `/` | Redirect ke `/admin` jika authenticated, `/login` jika tidak |
+| `/admin/*` | Auth required — redirect ke `/login` jika tidak authenticated |
+| `/api/admin/*` | Auth required — return 401 JSON jika tidak authenticated |
+| `/api/public/*` | Tidak dilindungi middleware (token-based auth sendiri) |
+
+```typescript
+// middleware.ts (simplified)
+export async function middleware(request: NextRequest) {
+  const needsAuth = pathname.startsWith("/admin") 
+    || pathname.startsWith("/api/admin") 
+    || pathname === "/";
+
+  if (needsAuth) {
+    const token = await getToken({ req: request });
+    if (!token) {
+      // API → 401, Page → redirect /login
+    }
+  }
+}
+```
+
+## Session Access di API Route
+
+Setiap protected API route harus cek session:
+
+```typescript
+import { auth } from "@/lib/auth/options";
+
+export async function GET() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return unauthorizedResponse();
+  }
+
+  // session.user.id = vendor ID
+  const vendorId = session.user.id;
+}
+```
+
+## Password Security
+
+- Hash: **bcrypt** dengan configurable cost factor
+- Production: cost factor 12
+- Development: cost factor 8
+
+```typescript
+// src/lib/auth/password.ts
+export async function hashPassword(password: string) {
+  const salt = await bcrypt.genSalt(BCRYPT_COST_FACTOR);
+  return bcrypt.hash(password, salt);
+}
+
+export async function verifyPassword(password: string, hashedPassword: string) {
+  return bcrypt.compare(password, hashedPassword);
+}
+```
+
+## CORS
+
+API routes mendukung CORS untuk origin yang diizinkan:
+
+```bash
+# .env
+ALLOWED_ORIGINS=https://hafiportrait.com,https://www.hafiportrait.com
+```
+
+Middleware otomatis set CORS headers untuk `/api/*` routes jika origin diizinkan.
+
+<Warning>
+Jangan set `ALLOWED_ORIGINS=*`. Gunakan domain spesifik untuk keamanan.
+</Warning>

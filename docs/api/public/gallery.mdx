@@ -1,0 +1,126 @@
+---
+title: "Gallery"
+description: "API galeri foto untuk klien — akses via token"
+api: "GET /api/public/gallery/{token}"
+---
+
+## Get Gallery
+
+Ambil data galeri, foto, dan seleksi berdasarkan token akses.
+
+### Path Parameters
+
+<ParamField path="token" type="string" required>
+  Token akses unik galeri (UUID format)
+</ParamField>
+
+### Query Parameters
+
+<ParamField query="cursor" type="string">
+  Cursor untuk pagination (Photo ID)
+</ParamField>
+
+<ParamField query="limit" type="number" default="50">
+  Jumlah foto per halaman (max: 100)
+</ParamField>
+
+### Response
+
+<ResponseField name="gallery" type="object">
+  Data galeri lengkap dengan foto dan seleksi
+</ResponseField>
+
+<ResponseField name="gallery.id" type="string">
+  Gallery ID
+</ResponseField>
+
+<ResponseField name="gallery.namaProject" type="string">
+  Nama project galeri
+</ResponseField>
+
+<ResponseField name="gallery.status" type="string">
+  Status galeri: `DRAFT`, `IN_REVIEW`, atau `DELIVERED`
+</ResponseField>
+
+<ResponseField name="gallery.photos" type="array">
+  Array foto dengan pagination
+</ResponseField>
+
+<ResponseField name="gallery.selections" type="array">
+  Array fileId yang sudah dipilih klien
+</ResponseField>
+
+<ResponseField name="gallery.isSelectionLocked" type="boolean">
+  `true` jika seleksi sudah di-submit dan tidak bisa diubah
+</ResponseField>
+
+<ResponseField name="pagination" type="object">
+  Pagination info: `hasNextPage`, `nextCursor`, `totalPhotos`
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl https://yourdomain.com/api/public/gallery/abc-123-token
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "gallery": {
+    "id": "gallery-uuid",
+    "namaProject": "Wedding Andi & Sari",
+    "status": "DELIVERED",
+    "clientToken": "abc-123-token",
+    "viewCount": 5,
+    "vendor": {
+      "namaStudio": "Hafiportrait",
+      "logoUrl": "https://..."
+    },
+    "settings": {
+      "maxSelection": 40,
+      "enableDownload": true,
+      "welcomeMessage": "Selamat datang!",
+      "thankYouMessage": "Terima kasih!"
+    },
+    "photos": [
+      {
+        "id": "photo-uuid",
+        "filename": "IMG_001.jpg",
+        "url": "https://res.cloudinary.com/...",
+        "thumbnailUrl": "https://res.cloudinary.com/...",
+        "width": 4000,
+        "height": 6000,
+        "urutan": 0
+      }
+    ],
+    "selectionCount": 5,
+    "selections": ["photo-uuid-1", "photo-uuid-2"],
+    "isSelectionLocked": false
+  },
+  "pagination": {
+    "hasNextPage": true,
+    "nextCursor": "photo-uuid-50",
+    "totalPhotos": 200
+  }
+}
+```
+
+```json 404
+{
+  "code": "NOT_FOUND",
+  "message": "Gallery not found"
+}
+```
+
+```json 410
+{
+  "code": "TOKEN_EXPIRED",
+  "message": "Link galeri ini sudah tidak aktif. Hubungi fotografer untuk mendapatkan link baru."
+}
+```
+
+</ResponseExample>

@@ -1,0 +1,94 @@
+---
+title: "API Overview"
+description: "Dokumentasi API Hafiportrait Platform — 34 endpoint"
+---
+
+## Base URL
+
+```
+Production: https://yourdomain.com/api
+Development: http://localhost:3000/api
+```
+
+## Authentication
+
+API dibagi menjadi dua kategori:
+
+<Columns cols={2}>
+  <Card title="Public Routes" icon="globe">
+    `/api/public/*`
+    
+    Diakses via **gallery token** atau **kode booking**. Tidak perlu login. Rate limited.
+  </Card>
+  <Card title="Admin Routes" icon="shield">
+    `/api/admin/*`
+    
+    Memerlukan **JWT session**. Dilindungi middleware + ownership check.
+  </Card>
+</Columns>
+
+## Response Format
+
+Semua API menggunakan format response konsisten:
+
+### Success
+
+```json
+{
+  "data": { ... },
+  "pagination": { ... }  // untuk list endpoints
+}
+```
+
+### Error
+
+```json
+{
+  "code": "ERROR_CODE",
+  "message": "Human-readable message",
+  "details": { ... }  // untuk validation errors
+}
+```
+
+### Error Codes
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `UNAUTHORIZED` | 401 | Tidak authenticated |
+| `FORBIDDEN` | 403 | Tidak authorized |
+| `NOT_FOUND` | 404 | Resource tidak ditemukan |
+| `VALIDATION_ERROR` | 400 | Input tidak valid |
+| `RATE_LIMITED` | 429 | Terlalu banyak request |
+| `INTERNAL_ERROR` | 500 | Server error |
+
+## Pagination
+
+List endpoints mendukung cursor-based dan offset pagination:
+
+```
+GET /api/admin/events?page=1&limit=20
+```
+
+Response:
+
+```json
+{
+  "items": [...],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 150,
+    "totalPages": 8
+  }
+}
+```
+
+## Rate Limits
+
+| Endpoint | Limit | Window |
+|----------|-------|--------|
+| Gallery view | 1 view per session | 24 jam |
+| Photo selection | 300 requests | per menit |
+| Selection submit | 10 requests | per menit |
+| Notification | 20 requests | per jam |
+| Public booking | 20 requests | per jam |

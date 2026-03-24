@@ -1,0 +1,96 @@
+---
+title: "Invoice"
+description: "API invoice publik — lihat detail invoice berdasarkan kode booking"
+api: "GET /api/public/invoice/{kodeBooking}"
+---
+
+## Get Invoice
+
+Ambil detail invoice berdasarkan kode booking.
+
+### Path Parameters
+
+<ParamField path="kodeBooking" type="string" required>
+  Kode booking (format: `BK2604-XXXX`)
+</ParamField>
+
+### Response
+
+<ResponseField name="booking" type="object">
+  Data booking dengan info paket, vendor, dan payments
+</ResponseField>
+
+<ResponseField name="booking.hargaPaket" type="number">
+  Total harga paket
+</ResponseField>
+
+<ResponseField name="booking.dpAmount" type="number">
+  Jumlah DP yang harus dibayar
+</ResponseField>
+
+<ResponseField name="booking.payments" type="array">
+  Riwayat pembayaran
+</ResponseField>
+
+<ResponseField name="summary" type="object">
+  Ringkasan: `totalBayar`, `sisaTagihan`, `lunas`
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl https://yourdomain.com/api/public/invoice/BK2604-A1B2
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "booking": {
+    "id": "booking-uuid",
+    "kodeBooking": "BK2604-A1B2",
+    "namaClient": "Andi Pratama",
+    "hpClient": "081234567890",
+    "tanggalSesi": "2026-04-15T00:00:00.000Z",
+    "lokasiSesi": "Jakarta",
+    "status": "PENDING",
+    "hargaPaket": 5000000,
+    "dpAmount": 1500000,
+    "dpStatus": "PAID",
+    "paket": {
+      "namaPaket": "Wedding Premium",
+      "kategori": "WEDDING"
+    },
+    "payments": [
+      {
+        "id": "payment-uuid",
+        "jumlah": 1500000,
+        "tipe": "DP",
+        "keterangan": "DP Wedding",
+        "createdAt": "2026-03-01T10:00:00.000Z"
+      }
+    ],
+    "vendor": {
+      "namaStudio": "Hafiportrait",
+      "logoUrl": "https://...",
+      "themeColor": "#0f172a",
+      "dpPercentage": 30
+    }
+  },
+  "summary": {
+    "totalBayar": 1500000,
+    "sisaTagihan": 3500000,
+    "lunas": false
+  }
+}
+```
+
+```json 404
+{
+  "error": "Invoice tidak ditemukan"
+}
+```
+
+</ResponseExample>

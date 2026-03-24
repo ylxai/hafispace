@@ -1,0 +1,90 @@
+---
+title: "Introduction"
+description: "Hafiportrait Platform — platform manajemen galeri foto pernikahan dan event berbasis Next.js 15"
+---
+
+Hafiportrait Platform adalah platform manajemen galeri foto profesional untuk fotografer pernikahan dan event. Dibangun dengan **Next.js 15** (App Router), **TypeScript** strict, dan **Prisma ORM**.
+
+## Fitur Utama
+
+<Columns cols={2}>
+  <Card title="Booking Management" icon="calendar">
+    Kelola sesi foto dengan paket, harga, tanggal, dan lokasi. Status tracking dari PENDING hingga COMPLETED.
+  </Card>
+  <Card title="Client Management" icon="users">
+    Database klien terintegrasi dengan riwayat booking. Custom fields untuk data tambahan.
+  </Card>
+  <Card title="Gallery Management" icon="image">
+    Upload ke Cloudinary (preview/thumbnail). Token akses unik per galeri untuk klien.
+  </Card>
+  <Card title="Photo Selection" icon="check-circle">
+    Klien memilih foto via token. Real-time counter via Ably. Lock mechanism untuk finalisasi.
+  </Card>
+</Columns>
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | Next.js 15, React 19, TypeScript 5, Tailwind CSS 4 |
+| **Backend** | Next.js API Routes |
+| **Database** | PostgreSQL (Neon) via Prisma ORM 5 |
+| **Auth** | NextAuth.js 4 (JWT, Credentials) |
+| **Storage** | Cloudinary (preview/thumbnail), Cloudflare R2 (planned) |
+| **Realtime** | Ably |
+| **Cache** | Upstash Redis |
+| **Validation** | Zod |
+| **Logging** | Pino (server-side) |
+| **Monitoring** | Sentry |
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── admin/           # Admin dashboard pages
+│   ├── api/
+│   │   ├── admin/       # Protected API routes
+│   │   ├── public/      # Public API routes (token-based)
+│   │   └── health/      # Health check endpoint
+│   ├── gallery/[token]/ # Client gallery page
+│   └── login/           # Login page
+├── components/
+│   ├── admin/           # Admin panel components
+│   ├── gallery/         # Gallery lightbox
+│   └── ui/              # Shared UI components
+├── hooks/               # Custom React hooks
+├── lib/
+│   ├── api/             # Response helpers & Zod schemas
+│   ├── auth/            # NextAuth config & password utils
+│   ├── cloudinary/      # Cloudinary SDK wrapper (multi-tenant)
+│   ├── services/        # Business logic services
+│   ├── db.ts            # Prisma singleton
+│   ├── env.ts           # Startup env validation
+│   ├── logger.ts        # Pino logger
+│   ├── rate-limit.ts    # Upstash Redis rate limiting
+│   └── redis.ts         # Redis client
+└── types/               # Shared TypeScript types
+```
+
+## Data Models
+
+Platform menggunakan 13 model Prisma dengan PostgreSQL:
+
+- **Vendor** — Fotografer/studio, owner semua resource
+- **Client** — Data klien, relasi ke booking
+- **Booking** — Sesi foto (paket, harga, tanggal, lokasi)
+- **Gallery** — Galeri foto dengan token akses unik
+- **Photo** — Foto individual, disimpan di Cloudinary
+- **PhotoSelection** — Seleksi foto oleh klien
+- **Payment** — Record pembayaran
+- **Package** — Paket fotografi
+- **GallerySetting** — Konfigurasi per galeri
+- **VendorCloudinary** — Multi-akun Cloudinary per vendor
+- **CustomField** — Field custom untuk booking form
+- **Notification** — Notifikasi in-app
+- **ActivityLog** — Log aktivitas
+
+<Card title="Lihat Architecture" icon="sitemap" horizontal href="/architecture">
+  Pelajari arsitektur sistem secara detail.
+</Card>

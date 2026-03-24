@@ -1,0 +1,119 @@
+---
+title: "Admin Metrics"
+description: "API metrics dashboard — statistik aktif untuk vendor"
+api: "GET /api/admin/metrics"
+---
+
+## Get Dashboard Metrics
+
+Ambil statistik dashboard untuk vendor yang sedang login. Response di-cache selama 5 menit.
+
+### Response
+
+<ResponseField name="overview" type="object">
+  Ringkasan statistik
+</ResponseField>
+
+<ResponseField name="overview.totalBookings" type="number">
+  Total booking sepanjang waktu
+</ResponseField>
+
+<ResponseField name="overview.bookingsBulanIni" type="number">
+  Booking baru bulan ini
+</ResponseField>
+
+<ResponseField name="overview.totalClients" type="number">
+  Total klien
+</ResponseField>
+
+<ResponseField name="overview.totalOmset" type="number">
+  Total omset (semua pembayaran)
+</ResponseField>
+
+<ResponseField name="overview.pemasukanBulanIni" type="number">
+  Pemasukan bulan ini
+</ResponseField>
+
+<ResponseField name="overview.dpBulanIni" type="number">
+  DP diterima bulan ini
+</ResponseField>
+
+<ResponseField name="topPackages" type="array">
+  Top 5 paket terpopuler
+</ResponseField>
+
+<ResponseField name="upcomingSessions" type="array">
+  Sesi foto bulan ini (PENDING, CONFIRMED, COMPLETED)
+</ResponseField>
+
+<ResponseField name="recentBookings" type="array">
+  5 booking terbaru
+</ResponseField>
+
+<ResponseField name="trendData" type="array">
+  Tren pemasukan 6 bulan terakhir
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl https://yourdomain.com/api/admin/metrics \
+  -H "Cookie: next-auth.session-token=..."
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "overview": {
+    "totalBookings": 150,
+    "bookingsBulanIni": 12,
+    "totalClients": 80,
+    "totalOmset": 750000000,
+    "pemasukanBulanIni": 45000000,
+    "dpBulanIni": 15000000
+  },
+  "topPackages": [
+    {
+      "paketId": "uuid",
+      "count": 45,
+      "namaPaket": "Wedding Premium",
+      "kategori": "WEDDING"
+    }
+  ],
+  "upcomingSessions": [
+    {
+      "id": "uuid",
+      "namaClient": "Andi Pratama",
+      "tanggalSesi": "2026-04-15T00:00:00.000Z",
+      "status": "CONFIRMED",
+      "namaPaket": "Wedding Premium"
+    }
+  ],
+  "recentBookings": [
+    {
+      "id": "uuid",
+      "kodeBooking": "BK2604-A1B2",
+      "namaClient": "Andi Pratama",
+      "status": "PENDING",
+      "tanggalSesi": "2026-04-15T00:00:00.000Z",
+      "hargaPaket": 5000000,
+      "dpStatus": "UNPAID",
+      "createdAt": "2026-03-24T10:00:00.000Z",
+      "namaPaket": "Wedding Premium"
+    }
+  ],
+  "trendData": [
+    {
+      "bulan": "Okt 25",
+      "pemasukan": 50000000,
+      "dp": 15000000,
+      "pelunasan": 35000000
+    }
+  ]
+}
+```
+
+</ResponseExample>
