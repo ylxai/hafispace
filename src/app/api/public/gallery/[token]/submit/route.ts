@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { DEFAULT_MAX_SELECTION } from "@/lib/constants";
 import { getAblyRest, ABLY_CHANNEL_SELECTION } from "@/lib/ably";
+import { z } from "zod";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { RATE_LIMIT_SUBMIT_PER_MINUTE } from "@/lib/constants.server";
 import logger from "@/lib/logger";
+
+const submitSchema = z.object({
+  photoIds: z
+    .array(z.string().uuid())
+    .min(1, "Pilih minimal 1 foto")
+    .max(500, "Maksimal 500 foto per pengiriman"),
+});
 
 export async function POST(
   request: Request,
@@ -12,7 +21,7 @@ export async function POST(
   try {
     const { token } = await params;
 
-    // Rate limit: maks 3 submission per menit per IP+token (cegah spam)
+    // Rate limit: maks 3 submission per menit per IP+token
     const ip = getClientIp(request);
     const rl = await checkRateLimit(`submit:${ip}:${token}`, { limit: RATE_LIMIT_SUBMIT_PER_MINUTE, windowMs: 60_000 });
     if (!rl.success) {
@@ -22,9 +31,27 @@ export async function POST(
       );
     }
 
+    const body = await request.json();
+    const parsed = submitSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { code: "VALIDATION_ERROR", message: "Invalid request", details: parsed.error.format() },
+        { status: 400 }
+      );
+    }
+
+    const { photoIds } = parsed.data;
+
     const gallery = await prisma.gallery.findUnique({
       where: { clientToken: token },
-      select: { id: true, vendorId: true, namaProject: true, status: true },
+      select: {
+        id: true,
+        vendorId: true,
+        namaProject: true,
+        status: true,
+        booking: { select: { maxSelection: true } },
+      },
     });
 
     if (!gallery) {
@@ -35,74 +62,135 @@ export async function POST(
       return NextResponse.json({ error: "Gallery is not published" }, { status: 403 });
     }
 
-    // Gabungkan lock + notifikasi + log dalam SATU transaksi
-    // Mencegah partial success (seleksi terkunci tapi notifikasi gagal dibuat)
-    const { lockedCount, allSelections } = await prisma.$transaction(async (tx) => {
-      // Lock semua seleksi yang belum di-lock
-      const lockResult = await tx.photoSelection.updateMany({
-        where: { galleryId: gallery.id, isLocked: false },
-        data: { isLocked: true, lockedAt: new Date() },
+    const maxSelection = gallery.booking?.maxSelection ?? DEFAULT_MAX_SELECTION;
+
+    // Single atomic transaction: validate → replace → lock → notify
+    const { createdCount, allSelections } = await prisma.$transaction(async (tx) => {
+      // Check existing locked selections — if locked, reject new submission
+      const existingLocked = await tx.photoSelection.count({
+        where: { galleryId: gallery.id, isLocked: true },
+      });
+      if (existingLocked > 0) {
+        throw Object.assign(new Error("ALREADY_LOCKED"), {
+          code: "ALREADY_LOCKED",
+          message: "Seleksi sudah dikirim sebelumnya dan tidak dapat diubah.",
+          status: 409,
+        });
+      }
+
+      // Validate quota
+      if (photoIds.length > maxSelection) {
+        throw Object.assign(new Error("QUOTA_EXCEEDED"), {
+          code: "QUOTA_EXCEEDED",
+          message: `Maksimal ${maxSelection} foto yang dapat dipilih, Anda memilih ${photoIds.length} foto.`,
+          status: 422,
+        });
+      }
+
+      // Validate all photoIds exist in this gallery — single query
+      const photos = await tx.photo.findMany({
+        where: { galleryId: gallery.id, id: { in: photoIds } },
+        select: { id: true, filename: true, url: true },
       });
 
-      // Ambil semua seleksi yang sudah terkunci (termasuk yang baru dikunci)
+      if (photos.length !== photoIds.length) {
+        const foundIds = new Set(photos.map((p) => p.id));
+        const missing = photoIds.filter((id) => !foundIds.has(id));
+        throw Object.assign(new Error("PHOTO_NOT_FOUND"), {
+          code: "PHOTO_NOT_FOUND",
+          message: `${missing.length} foto tidak ditemukan di galeri ini.`,
+          status: 404,
+        });
+      }
+
+      // Delete existing unlocked selections (replace with new batch)
+      await tx.photoSelection.deleteMany({
+        where: { galleryId: gallery.id, isLocked: false },
+      });
+
+      // Create new selections — already locked
+      const now = new Date();
+      await tx.photoSelection.createMany({
+        data: photos.map((photo) => ({
+          galleryId: gallery.id,
+          fileId: photo.id,
+          filename: photo.filename,
+          filePath: photo.url,
+          selectionType: "EDIT" as const,
+          isLocked: true,
+          lockedAt: now,
+        })),
+      });
+
+      // Fetch all locked selections for notification
       const selections = await tx.photoSelection.findMany({
         where: { galleryId: gallery.id, isLocked: true },
         select: { filename: true },
         orderBy: { selectedAt: "asc" },
       });
 
-      // Hanya buat notifikasi & log jika ada seleksi baru yang dikunci
-      // Mencegah spam notifikasi jika endpoint dipanggil berulang kali
-      if (lockResult.count > 0) {
-        await tx.notification.create({
-          data: {
-            vendorId: gallery.vendorId,
-            type: "SELECTION_SUBMITTED",
-            title: "Seleksi Foto Dikirim",
-            message: `${selections.length} foto dipilih dari galeri "${gallery.namaProject}"`,
-            isRead: false,
-          },
-        });
+      // Create notification & activity log
+      await tx.notification.create({
+        data: {
+          vendorId: gallery.vendorId,
+          type: "SELECTION_SUBMITTED",
+          title: "Seleksi Foto Dikirim",
+          message: `${selections.length} foto dipilih dari galeri "${gallery.namaProject}"`,
+          isRead: false,
+        },
+      });
 
-        await tx.activityLog.create({
-          data: {
-            vendorId: gallery.vendorId,
-            galleryId: gallery.id,
-            action: "SELECTION_SUBMITTED",
-            details: `Client submitted ${selections.length} photo selection(s) for gallery "${gallery.namaProject}"`,
-          },
-        });
-      }
+      await tx.activityLog.create({
+        data: {
+          vendorId: gallery.vendorId,
+          galleryId: gallery.id,
+          action: "SELECTION_SUBMITTED",
+          details: `Client submitted ${selections.length} photo selection(s) for gallery "${gallery.namaProject}"`,
+        },
+      });
 
-      return { lockedCount: lockResult.count, allSelections: selections };
+      return { createdCount: photos.length, allSelections: selections };
     });
 
     // Publish realtime event ke admin via Ably (di luar transaksi — non-critical)
-    if (lockedCount > 0) {
-      try {
-        const ably = getAblyRest();
-        await ably.channels
-          .get(ABLY_CHANNEL_SELECTION(gallery.id))
-          .publish("selection-submitted", {
-            count: allSelections.length,
-            galleryId: gallery.id,
-            submittedAt: new Date().toISOString(),
-          });
-      } catch {
-        // Non-critical — jangan gagalkan request jika Ably error
-      }
+    try {
+      const ably = getAblyRest();
+      await ably.channels
+        .get(ABLY_CHANNEL_SELECTION(gallery.id))
+        .publish("selection-submitted", {
+          count: allSelections.length,
+          galleryId: gallery.id,
+          submittedAt: new Date().toISOString(),
+        });
+    } catch {
+      // Non-critical — jangan gagalkan request jika Ably error
     }
 
     return NextResponse.json({
       success: true,
-      lockedCount,
+      lockedCount: createdCount,
       totalSelections: allSelections.length,
-      message: lockedCount > 0
-        ? `${lockedCount} seleksi berhasil dikunci`
-        : "Semua seleksi sudah dikunci sebelumnya",
+      message: `${createdCount} seleksi berhasil dikirim`,
     });
-  } catch (error) {
-    logger.error({ err: error }, "Error submitting selection");
+  } catch (err) {
+    const error = err as { code?: string; message?: string; status?: number };
+
+    const SAFE_ERROR_MESSAGES: Record<string, string> = {
+      ALREADY_LOCKED: "Seleksi sudah dikirim sebelumnya dan tidak dapat diubah.",
+      QUOTA_EXCEEDED: error.message ?? `Jumlah foto melebihi batas maksimum.`,
+      PHOTO_NOT_FOUND: "Beberapa foto tidak ditemukan di galeri ini.",
+    };
+
+    if (error.code && error.status) {
+      const safeMessage = SAFE_ERROR_MESSAGES[error.code] ?? "Terjadi kesalahan. Silakan coba lagi.";
+      logger.warn({ code: error.code, message: error.message }, "[submit/route] Client error");
+      return NextResponse.json(
+        { code: error.code, message: safeMessage },
+        { status: error.status }
+      );
+    }
+
+    logger.error({ err }, "Error submitting selection");
     return NextResponse.json({ error: "Failed to submit selection" }, { status: 500 });
   }
 }

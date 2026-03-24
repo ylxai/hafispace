@@ -1,15 +1,14 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
-import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useState, useMemo, useEffect, useRef } from "react";
-import type * as AblyModule from "ably";
+import { useState, useMemo, useCallback } from "react";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import cloudinaryLoader from '@/lib/image-loader';
 import { extractCloudName, extractPublicId, generateThumbnailUrl, generateDownloadUrl } from '@/lib/cloudinary/utils';
+import { useLocalSelection, clearLocalSelections } from "@/hooks/use-local-selection";
 
 // Lazy-load Lightbox component to reduce initial bundle size
 const Lightbox = dynamic(
@@ -27,18 +26,13 @@ const Lightbox = dynamic(
   }
 );
 
-
-type AblyRealtime = InstanceType<typeof AblyModule.Realtime>;
-
 type Photo = {
   id: string;
-  // storageKey dihapus dari public API response (security) — pakai id sebagai fileId
   filename: string;
   url: string;
   thumbnailUrl: string | null;
   width: number | null;
   height: number | null;
-  urutan: number;
 };
 
 type GalleryData = {
@@ -65,10 +59,25 @@ type GalleryData = {
     photos: Photo[];
     selectionCount: number;
     selections: string[];
+    isSelectionLocked: boolean;
   };
 };
 
-function PhotoCard({ photo, index, onClick, isSelected }: { photo: Photo; index: number; onClick: () => void; isSelected?: boolean }) {
+function PhotoCard({ 
+  photo, 
+  index, 
+  onClick, 
+  isSelected, 
+  canSelect, 
+  onToggleSelect 
+}: { 
+  photo: Photo; 
+  index: number; 
+  onClick: () => void; 
+  isSelected?: boolean;
+  canSelect?: boolean;
+  onToggleSelect?: () => void;
+}) {
   const cloudName = extractCloudName(photo.url);
   const publicId = extractPublicId(photo.url);
   const thumbnailUrl = generateThumbnailUrl(cloudName, publicId);
@@ -92,12 +101,31 @@ function PhotoCard({ photo, index, onClick, isSelected }: { photo: Photo; index:
           target.src = photo.url;
         }}
       />
-      {isSelected && (
-        <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full shadow-md bg-rose-gold">
-          <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-          </svg>
-        </div>
+      {/* Checkbox overlay — klik terpisah dari open lightbox */}
+      {canSelect && onToggleSelect && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelect();
+          }}
+          aria-label={isSelected ? "Batalkan pilihan" : "Pilih foto"}
+          className={`absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full shadow-md transition-all duration-200 ${
+            isSelected
+              ? "bg-rose-gold scale-110"
+              : "bg-white/70 backdrop-blur-sm hover:bg-white hover:scale-110"
+          }`}
+        >
+          {isSelected ? (
+            <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          ) : (
+            <svg className="h-4 w-4 text-warm-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          )}
+        </button>
       )}
       {/* Nomor foto — muncul saat hover */}
       <div className="absolute bottom-1.5 left-1.5 rounded bg-white/80 px-1.5 py-0.5 text-[10px] font-medium backdrop-blur-sm opacity-0 transition-opacity duration-200 group-hover:opacity-100 text-charcoal">
@@ -115,8 +143,11 @@ export default function ViewspacePage() {
   const [activeTab, setActiveTab] = useState<"all" | "editing">("all");
   const [bannerOpen, setBannerOpen] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const queryClient = useQueryClient();
 
-  const { data, isLoading, isError, refetch } = useQuery<GalleryData>({
+  const { data, isLoading, isError } = useQuery<GalleryData>({
     queryKey: ["gallery", token],
     queryFn: async () => {
       const res = await fetch(`/api/public/gallery/${token}`);
@@ -129,56 +160,41 @@ export default function ViewspacePage() {
     retry: false,
   });
 
-  const selectedPhotos = useMemo(() => {
+  const maxSelection = data?.gallery?.settings.maxSelection ?? 0;
+  const isLocked = !!data?.gallery?.isSelectionLocked;
+  const hasPickspace = maxSelection > 0;
+
+  // Local-first selection state
+  const { selectedIds, toggle, selectAll, clearAll, count: localSelectionCount, isMaxed } = useLocalSelection({
+    token,
+    maxSelection,
+    disabled: isLocked,
+  });
+
+  // Jika gallery sudah locked, bersihkan localStorage
+  const lockClearedRef = useState(false);
+  if (isLocked && !lockClearedRef[0]) {
+    clearLocalSelections(token);
+    lockClearedRef[1](true);
+  }
+
+  // Server-side selected photos (untuk locked gallery — backward compat storageKey)
+  const serverSelectedPhotos = useMemo(() => {
     if (!data?.gallery?.photos || !data?.gallery?.selections) return [];
-    // selections berisi array of fileId — bisa photo.id (baru) atau storageKey (data lama)
-    // filter match keduanya untuk backward compatibility
-    return data.gallery.photos.filter((photo: { id: string; storageKey?: string }) =>
-      data.gallery.selections.includes(photo.id) || 
-      // ✅ Also match with storageKey for backward compatibility with legacy data
-      (photo.storageKey && data.gallery.selections.includes(photo.storageKey))
+    return data.gallery.photos.filter((photo: Photo) =>
+      data.gallery.selections.includes(photo.id)
     );
   }, [data?.gallery?.photos, data?.gallery?.selections]);
 
-  // Debounce timer ref untuk Ably refetch
-  const refetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Draft selected photos (dari local state) — hanya relevan saat tidak locked
+  const draftSelectedPhotos = useMemo(() => {
+    if (isLocked || !data?.gallery?.photos) return [];
+    return data.gallery.photos.filter((p: Photo) => selectedIds.has(p.id));
+  }, [isLocked, data?.gallery?.photos, selectedIds]);
 
-  // Ably real-time subscription for selection updates
-  useEffect(() => {
-    if (!data?.gallery?.id) return;
-
-    let ably: AblyRealtime | null = null;
-
-    const connect = async () => {
-      try {
-        const Ably = (await import('ably')).default;
-        ably = new Ably.Realtime({ 
-          authUrl: `/api/ably-token?gallery=${token}` 
-        });
-        const channel = ably.channels.get(`gallery:${data.gallery.id}:selection`);
-        await channel.subscribe("count-updated", () => {
-          if (refetchDebounceRef.current) {
-            clearTimeout(refetchDebounceRef.current);
-          }
-          refetchDebounceRef.current = setTimeout(() => {
-            refetch();
-            refetchDebounceRef.current = null;
-          }, 500);
-        });
-      } catch {
-        // Ably connection failed — silent fallback
-      }
-    };
-
-    connect();
-
-    return () => {
-      ably?.close();
-      if (refetchDebounceRef.current) {
-        clearTimeout(refetchDebounceRef.current);
-      }
-    };
-  }, [data?.gallery?.id, token, refetch]);
+  // Yang ditampilkan di tab "Selected" tergantung locked atau tidak
+  const activeSelectedPhotos = isLocked ? serverSelectedPhotos : draftSelectedPhotos;
+  const activeSelectionCount = isLocked ? serverSelectedPhotos.length : localSelectionCount;
 
   const handleCopyLink = async () => {
     try {
@@ -187,6 +203,83 @@ export default function ViewspacePage() {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // fallback
+    }
+  };
+
+  const handleSubmit = useCallback(async () => {
+    if (localSelectionCount === 0 || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/public/gallery/${token}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photoIds: Array.from(selectedIds) }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.message ?? err.error ?? "Gagal mengirim seleksi. Coba lagi.");
+        return;
+      }
+      clearLocalSelections(token);
+      setShowSuccess(true);
+      // Refetch untuk dapatkan state locked terbaru
+      void queryClient.invalidateQueries({ queryKey: ["gallery", token] });
+    } catch {
+      alert("Terjadi kesalahan. Periksa koneksi internet Anda.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [localSelectionCount, isSubmitting, token, selectedIds, queryClient]);
+
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const handleLightboxToggleSelect = useCallback((photo: Photo) => {
+    if (isLocked) return;
+    toggle(photo.id);
+  }, [isLocked, toggle]);
+
+  const handleSubmitToWhatsApp = async () => {
+    try {
+      await fetch(`/api/public/gallery/${token}/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'selection_submitted',
+          photoCount: activeSelectedPhotos.length,
+          photos: activeSelectedPhotos.map(p => p.filename),
+        }),
+      });
+    } catch (e) {
+      console.error('Failed to send notification:', e);
+    }
+
+    const phone = data?.gallery?.vendor.phone?.replace(/\D/g, '') ?? '';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
+    const adminLink = `${appUrl}/admin/galleries`;
+    const message = `Halo ${data?.gallery?.vendor.namaStudio ?? 'Admin'}, saya telah memilih *${activeSelectedPhotos.length} foto* dari galeri *"${data?.gallery?.namaProject}"*.\n\nSilakan cek seleksi saya di panel admin:\n${adminLink}\n\nTerima kasih! 🙏`;
+    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank');
+  };
+
+  const handleDownloadOriginal = async () => {
+    if (!data?.gallery?.settings.enableDownload || activeSelectedPhotos.length === 0) return;
+
+    for (const photo of activeSelectedPhotos) {
+      const downloadUrl = generateDownloadUrl(photo.url);
+      if (!downloadUrl) continue;
+
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = photo.filename;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
   };
 
@@ -205,7 +298,7 @@ export default function ViewspacePage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <div className="glass-card p-8 flex flex-col items-center gap-4 text-center">
-          <div className="w-16 h-16 rounded-full bg-[var(--champagne)] flex items-center justify-center">
+          <div className="w-16 rounded-full bg-[var(--champagne)] flex items-center justify-center">
             <svg className="w-8 h-8 text-[var(--warm-gray)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
@@ -220,62 +313,41 @@ export default function ViewspacePage() {
   }
 
   const { gallery } = data;
-  const hasPickspace = gallery.settings.maxSelection > 0;
   const hasDownload = gallery.settings.enableDownload;
   const isAllTab = activeTab === "all";
   const hasBanner = !!(gallery.settings.welcomeMessage ?? gallery.settings.bannerClientName);
 
-  const openLightbox = (index: number) => {
-    setLightboxIndex(index);
-    setLightboxOpen(true);
-  };
-
-  const handleSubmitToWhatsApp = async () => {
-    try {
-      await fetch(`/api/public/gallery/${token}/notify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'selection_submitted',
-          photoCount: selectedPhotos.length,
-          photos: selectedPhotos.map(p => p.filename),
-        }),
-      });
-    } catch (e) {
-      console.error('Failed to send notification:', e);
-    }
-
-    const phone = gallery.vendor.phone?.replace(/\D/g, '') ?? '';
-    // Kirim pesan ringkasan — bukan daftar filename (mencegah URL terpotong jika foto banyak)
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
-    const adminLink = `${appUrl}/admin/galleries`;
-    const message = `Halo ${gallery.vendor.namaStudio ?? 'Admin'}, saya telah memilih *${selectedPhotos.length} foto* dari galeri *"${gallery.namaProject}"*.\n\nSilakan cek seleksi saya di panel admin:\n${adminLink}\n\nTerima kasih! 🙏`;
-    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    window.open(waUrl, '_blank');
-  };
-
-  const handleDownloadOriginal = async () => {
-    if (!hasDownload || selectedPhotos.length === 0) return;
-
-    for (const photo of selectedPhotos) {
-      // generateDownloadUrl validasi URL — return "" jika bukan Cloudinary URL (XSS prevention)
-      const downloadUrl = generateDownloadUrl(photo.url);
-      if (!downloadUrl) continue; // skip foto dengan URL tidak valid
-
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = photo.filename;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-  };
-
   return (
     <div className="min-h-screen bg-pearl-gradient">
+      {/* Success Modal */}
+      {showSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-[rgba(254,252,249,0.8)]">
+          <div className="glass-card w-full max-w-sm p-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(212,175,55,0.15)]">
+              <svg className="h-8 w-8 text-antique-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-charcoal">Pilihan Berhasil Dikirim!</h2>
+            <p className="mt-2 text-sm text-warm-gray">
+              Fotografer akan segera memproses pilihan Anda.
+            </p>
+            {gallery.settings.thankYouMessage && (
+              <p className="mt-4 rounded-xl p-3 text-sm italic bg-champagne text-warm-gray">
+                &ldquo;{gallery.settings.thankYouMessage}&rdquo;
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowSuccess(false)}
+              className="glass-btn-primary mt-6 inline-block w-full px-8 py-3 text-sm font-semibold"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-30 glass backdrop-blur-md">
         <div className="flex items-center justify-between px-4 py-3">
@@ -310,24 +382,54 @@ export default function ViewspacePage() {
               )}
             </button>
 
-            {hasPickspace && (
-              <Link
-                href={`/gallery/${token}/select`}
-                className="glass-btn-primary flex shrink-0 items-center gap-1.5 px-4 py-2 text-sm font-semibold"
+            {/* Kirim Seleksi — hanya muncul jika ada draft seleksi dan tidak locked */}
+            {hasPickspace && !isLocked && localSelectionCount > 0 && (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="glass-btn-primary flex shrink-0 items-center gap-1.5 px-4 py-2 text-sm font-semibold disabled:opacity-60"
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-                <span className="hidden sm:inline">Pilih Foto</span>
-                {gallery.selectionCount > 0 && (
-                  <span className="ml-0.5 rounded-full bg-white/30 px-1.5 py-0.5 text-xs text-white">
-                    {gallery.selectionCount}
-                  </span>
+                {isSubmitting ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
                 )}
-              </Link>
+                <span className="hidden sm:inline">Kirim ({localSelectionCount})</span>
+                <span className="sm:hidden">{localSelectionCount}</span>
+              </button>
+            )}
+
+            {/* Locked indicator */}
+            {hasPickspace && isLocked && (
+              <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-green-100 px-3 py-2 text-xs font-medium text-green-700">
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="hidden sm:inline">Terkirim</span>
+              </span>
             )}
           </div>
         </div>
+
+        {/* Progress bar — hanya muncul saat ada draft seleksi dan tidak locked */}
+        {hasPickspace && !isLocked && localSelectionCount > 0 && (
+          <div className="px-4 pb-2">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-1.5 rounded-full overflow-hidden bg-[rgba(212,175,55,0.15)]">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${isMaxed ? 'bg-rose-gold' : 'bg-antique-gold'}`}
+                  style={{ width: `${Math.min((localSelectionCount / maxSelection) * 100, 100)}%` }}
+                />
+              </div>
+              <span className="text-xs shrink-0 text-warm-gray">
+                {localSelectionCount} / {maxSelection}
+              </span>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Welcome Banner — collapsible */}
@@ -395,9 +497,9 @@ export default function ViewspacePage() {
               }`}
               style={activeTab === "editing" ? { color: 'var(--rose-gold)' } : { color: 'var(--warm-gray)' }}
             >
-              Foto Pilihan Saya
+              {isLocked ? "Foto Terpilih" : "Pilihan Saya"}
               <span className="ml-2 rounded-full badge-rose px-2 py-0.5 text-xs">
-                {gallery.selectionCount}
+                {activeSelectionCount}
               </span>
             </button>
           </div>
@@ -414,42 +516,60 @@ export default function ViewspacePage() {
           /* All Photos - Grid */
           <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 sm:gap-1.5 lg:grid-cols-4">
             {gallery.photos.map((photo, index) => {
-              const isSelected = gallery.selections.includes(photo.id);
+              // Di tab all: tanda selected dari local draft (jika tidak locked) atau server data (jika locked)
+              const isSelected = isLocked
+                ? gallery.selections.includes(photo.id)
+                : selectedIds.has(photo.id);
+
               return (
                 <PhotoCard
                   key={photo.id}
                   photo={photo}
                   index={index}
                   isSelected={isSelected}
+                  canSelect={hasPickspace && !isLocked}
+                  onToggleSelect={() => toggle(photo.id)}
                   onClick={() => openLightbox(index)}
                 />
               );
             })}
           </div>
         ) : (
-          /* Tab: Foto Pilihan Saya */
+          /* Tab: Selected Photos */
           <div className="space-y-4 px-2">
-            {selectedPhotos.length === 0 ? (
+            {activeSelectedPhotos.length === 0 ? (
               <div className="glass-card mx-4 flex flex-col items-center justify-center py-16">
                 <svg className="h-12 w-12 text-light-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0" />
                 </svg>
-                <p className="mt-4 text-warm-gray">Belum ada foto yang dipilih.</p>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("all")}
-                  className="mt-4 text-sm hover:underline text-rose-gold"
-                >
-                  Lihat semua foto →
-                </button>
+                <p className="mt-4 text-warm-gray">
+                  {isLocked ? "Tidak ada foto terpilih." : "Belum ada foto yang dipilih."}
+                </p>
+                {!isLocked && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("all")}
+                    className="mt-4 text-sm hover:underline text-rose-gold"
+                  >
+                    Lihat semua foto →
+                  </button>
+                )}
               </div>
             ) : (
               <>
                 <p className="text-sm px-4 text-warm-gray">
-                  {selectedPhotos.length} foto siap diproses:
+                  {isLocked
+                    ? `${activeSelectedPhotos.length} foto dipilih fotografer:`
+                    : `${activeSelectedPhotos.length} foto dipilih — `}
+                  {!isLocked && isMaxed && (
+                    <span className="font-semibold text-rose-gold">Kuota penuh</span>
+                  )}
+                  {!isLocked && !isMaxed && (
+                    <span>Maks. {maxSelection} foto</span>
+                  )}
                 </p>
                 <div className="space-y-2 px-2">
-                  {selectedPhotos.map((photo, idx) => {
+                  {activeSelectedPhotos.map((photo, idx) => {
                     const cloudName = extractCloudName(photo.url);
                     const publicId = extractPublicId(photo.url);
                     const thumbnailUrl = generateThumbnailUrl(cloudName, publicId);
@@ -490,6 +610,16 @@ export default function ViewspacePage() {
                             </p>
                           )}
                         </div>
+                        {!isLocked && (
+                          <button
+                            type="button"
+                            onClick={() => toggle(photo.id)}
+                            className="rounded-full border px-2 py-1 text-xs font-medium transition hover:bg-white/50 border-rose-gold text-rose-gold"
+                            aria-label="Hapus dari pilihan"
+                          >
+                            Hapus
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => openLightbox(originalIndex >= 0 ? originalIndex : 0)}
@@ -506,46 +636,72 @@ export default function ViewspacePage() {
                   })}
                 </div>
 
-                {/* Submit Section */}
-                <div className="mx-2 mt-4 rounded-2xl glass p-4 border-rose-gold bg-[rgba(255,255,255,0.6)]">
-                  <p className="mb-3 text-center text-sm text-warm-gray">
-                    {selectedPhotos.length} foto siap — kirim untuk mulai editing
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {hasDownload && selectedPhotos.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={handleDownloadOriginal}
-                        className="glass-btn-secondary flex flex-1 items-center justify-center gap-2 px-4 py-2 text-sm font-medium"
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        Unduh Original
-                      </button>
-                    )}
-                    {gallery.vendor.phone ? (
-                      <button
-                        type="button"
-                        onClick={handleSubmitToWhatsApp}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 bg-[#25D366]"
-                      >
-                        <WhatsappIcon className="h-4 w-4" />
-                        Kirim via WhatsApp
-                      </button>
-                    ) : (
-                      <a
-                        href={`mailto:${gallery.vendor.namaStudio}?subject=Seleksi Foto: ${gallery.namaProject}&body=${selectedPhotos.map((_, i) => `Foto ${i + 1}`).join('\n')}`}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 bg-rose-gold"
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        Kirim via Email
-                      </a>
-                    )}
+                {/* Action Section */}
+                {isLocked ? (
+                  /* Locked: WhatsApp + Download (existing behavior) */
+                  <div className="mx-2 mt-4 rounded-2xl glass p-4 border-rose-gold bg-[rgba(255,255,255,0.6)]">
+                    <p className="mb-3 text-center text-sm text-warm-gray">
+                      {activeSelectedPhotos.length} foto — seleksi sudah dikirim
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {hasDownload && activeSelectedPhotos.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleDownloadOriginal}
+                          className="glass-btn-secondary flex flex-1 items-center justify-center gap-2 px-4 py-2 text-sm font-medium"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Unduh Original
+                        </button>
+                      )}
+                      {gallery.vendor.phone ? (
+                        <button
+                          type="button"
+                          onClick={handleSubmitToWhatsApp}
+                          className="flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 bg-[#25D366]"
+                        >
+                          <WhatsappIcon className="h-4 w-4" />
+                          Kirim via WhatsApp
+                        </button>
+                      ) : (
+                        <a
+                          href={`mailto:${gallery.vendor.namaStudio}?subject=Seleksi Foto: ${gallery.namaProject}&body=${activeSelectedPhotos.map((_, i) => `Foto ${i + 1}`).join('\n')}`}
+                          className="flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 bg-rose-gold"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          Kirim via Email
+                        </a>
+                      )}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  /* Draft: Submit + Quick actions */
+                  <div className="mx-2 mt-4 rounded-2xl glass p-4 border-rose-gold bg-[rgba(255,255,255,0.6)]">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => selectAll(gallery.photos.map(p => p.id))}
+                        disabled={isMaxed}
+                        className="glass-btn-secondary flex flex-1 items-center justify-center gap-2 px-4 py-2 text-sm font-medium disabled:opacity-50"
+                      >
+                        Pilih Semua
+                      </button>
+                      {localSelectionCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={clearAll}
+                          className="rounded-full border px-4 py-2 text-sm font-medium transition hover:bg-white/50 border-rose-gold text-rose-gold flex-1"
+                        >
+                          Hapus Semua
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -565,6 +721,10 @@ export default function ViewspacePage() {
         initialIndex={lightboxIndex}
         isOpen={lightboxOpen}
         onClose={() => setLightboxOpen(false)}
+        showSelectionControls={hasPickspace && !isLocked}
+        isSelected={(photo) => selectedIds.has(photo.id)}
+        onSelect={handleLightboxToggleSelect}
+        onDeselect={handleLightboxToggleSelect}
       />
     </div>
   );
