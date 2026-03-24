@@ -6,7 +6,7 @@
 import { unstable_cache } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { METRICS_CACHE_TTL_SECONDS } from "@/lib/constants";
+import { METRICS_CACHE_TTL_SECONDS } from "@/lib/constants.server";
 
 /**
  * Cached wrapper untuk fetchVendorMetrics.

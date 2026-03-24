@@ -4,7 +4,7 @@ import { z } from "zod";
 import { sendBookingConfirmationEmail } from "@/lib/email";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { randomInt } from "node:crypto";
-import { RATE_LIMIT_BOOKING_PER_HOUR } from "@/lib/constants";
+import { RATE_LIMIT_BOOKING_PER_HOUR } from "@/lib/constants.server";
 import logger from "@/lib/logger";
 
 const bookingSchema = z.object({

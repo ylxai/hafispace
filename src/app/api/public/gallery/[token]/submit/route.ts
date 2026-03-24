@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAblyRest, ABLY_CHANNEL_SELECTION } from "@/lib/ably";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { RATE_LIMIT_SUBMIT_PER_MINUTE } from "@/lib/constants";
+import { RATE_LIMIT_SUBMIT_PER_MINUTE } from "@/lib/constants.server";
 import logger from "@/lib/logger";
 
 export async function POST(

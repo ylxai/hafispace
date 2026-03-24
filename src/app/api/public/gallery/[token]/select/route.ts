@@ -4,7 +4,7 @@ import { DEFAULT_MAX_SELECTION } from "@/lib/constants";
 import { getAblyRest, ABLY_CHANNEL_SELECTION } from "@/lib/ably";
 import { z } from "zod";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { RATE_LIMIT_SELECT_PER_MINUTE } from "@/lib/constants";
+import { RATE_LIMIT_SELECT_PER_MINUTE } from "@/lib/constants.server";
 import logger from "@/lib/logger";
 
 const selectSchema = z.object({

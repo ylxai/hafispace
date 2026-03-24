@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { BCRYPT_COST_FACTOR } from "@/lib/constants";
+import { BCRYPT_COST_FACTOR } from "@/lib/constants.server";
 
 export async function hashPassword(password: string) {
   const salt = await bcrypt.genSalt(BCRYPT_COST_FACTOR);

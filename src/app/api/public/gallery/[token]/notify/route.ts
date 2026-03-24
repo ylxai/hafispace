@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { z } from "zod";
-import { RATE_LIMIT_NOTIFY_PER_HOUR } from "@/lib/constants";
+import { RATE_LIMIT_NOTIFY_PER_HOUR } from "@/lib/constants.server";
 import logger from "@/lib/logger";
 
 const notifySchema = z.object({

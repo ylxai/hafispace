@@ -1,6 +1,5 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
-import { randomUUID } from "crypto";
 
 export default withAuth(
   function middleware(req) {
@@ -8,7 +7,7 @@ export default withAuth(
     if (req.nextUrl.pathname === "/login" && req.nextauth.token) {
       return NextResponse.redirect(new URL("/admin", req.url));
     }
-    const requestId = randomUUID();
+    const requestId = crypto.randomUUID();
     const res = NextResponse.next();
     res.headers.set("x-request-id", requestId);
     return res;
