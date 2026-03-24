@@ -199,7 +199,7 @@ export async function DELETE(request: Request) {
       message: "Booking deleted successfully",
     });
   } catch (error) {
-    if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'HAS_GALLERIES') {
+    if (error instanceof Error && 'code' in error && (error as any).code === 'HAS_GALLERIES') {
       return validationErrorResponse(error.message);
     }
     logger.error({ err: error }, "Error deleting booking");
