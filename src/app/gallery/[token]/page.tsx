@@ -69,7 +69,8 @@ function PhotoCard({
   onClick, 
   isSelected, 
   canSelect, 
-  onToggleSelect 
+  onToggleSelect,
+  priority = false 
 }: { 
   photo: Photo; 
   index: number; 
@@ -77,6 +78,7 @@ function PhotoCard({
   isSelected?: boolean;
   canSelect?: boolean;
   onToggleSelect?: () => void;
+  priority?: boolean;
 }) {
   const cloudName = extractCloudName(photo.url);
   const publicId = extractPublicId(photo.url);
@@ -93,9 +95,10 @@ function PhotoCard({
         src={thumbnailUrl}
         alt={`Foto ${index + 1}`}
         fill
+        priority={priority} // ✅ Add priority prop for LCP images
         className="object-cover transition-transform duration-300 group-hover:scale-105"
         sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-        loading="lazy"
+        loading={priority ? "eager" : "lazy"} // ✅ Eager loading for priority images
         onError={(e) => {
           const target = e.target as HTMLImageElement;
           target.src = photo.url;
@@ -103,14 +106,22 @@ function PhotoCard({
       />
       {/* Checkbox overlay — klik terpisah dari open lightbox */}
       {canSelect && onToggleSelect && (
-        <button
-          type="button"
+        <div
+          role="button"
+          tabIndex={0}
           onClick={(e) => {
             e.stopPropagation();
             onToggleSelect();
           }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleSelect();
+            }
+          }}
           aria-label={isSelected ? "Batalkan pilihan" : "Pilih foto"}
-          className={`absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full shadow-md transition-all duration-200 ${
+          className={`absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full shadow-md transition-all duration-200 cursor-pointer ${
             isSelected
               ? "bg-rose-gold scale-110"
               : "bg-white/70 backdrop-blur-sm hover:bg-white hover:scale-110"
@@ -125,7 +136,7 @@ function PhotoCard({
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           )}
-        </button>
+        </div>
       )}
       {/* Nomor foto — muncul saat hover */}
       <div className="absolute bottom-1.5 left-1.5 rounded bg-white/80 px-1.5 py-0.5 text-[10px] font-medium backdrop-blur-sm opacity-0 transition-opacity duration-200 group-hover:opacity-100 text-charcoal">
@@ -530,6 +541,7 @@ export default function ViewspacePage() {
                   canSelect={hasPickspace && !isLocked}
                   onToggleSelect={() => toggle(photo.id)}
                   onClick={() => openLightbox(index)}
+                  priority={index === 0} // ✅ Priority for first image (LCP)
                 />
               );
             })}

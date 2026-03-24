@@ -23,6 +23,8 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+    // ✅ Configure quality levels for Next.js 16 compatibility
+    qualities: [75, 80, 90, 95],
   },
   async headers() {
     return [
