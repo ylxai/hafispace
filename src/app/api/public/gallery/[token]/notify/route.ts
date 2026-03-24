@@ -4,6 +4,7 @@ import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { z } from "zod";
 import { RATE_LIMIT_NOTIFY_PER_HOUR } from "@/lib/constants.server";
 import logger from "@/lib/logger";
+import { validationErrorResponse, notFoundResponse, internalErrorResponse } from "@/lib/api/response";
 
 const notifySchema = z.object({
   type: z.enum(["selection_submitted"]),
@@ -32,7 +33,7 @@ export async function POST(
     const rawBody = await request.json();
     const parsed = notifySchema.safeParse(rawBody);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+      return validationErrorResponse(parsed.error.format());
     }
     const { type, photoCount, photos } = parsed.data;
 
@@ -42,7 +43,7 @@ export async function POST(
     });
 
     if (!gallery) {
-      return NextResponse.json({ error: "Gallery not found" }, { status: 404 });
+      return notFoundResponse("Gallery not found");
     }
 
     if (type === "selection_submitted") {
@@ -66,9 +67,9 @@ export async function POST(
       });
     }
 
-    return NextResponse.json({ error: "Invalid notification type" }, { status: 400 });
+    return validationErrorResponse("Invalid notification type");
   } catch (error) {
     logger.error({ err: error }, "Error sending notification");
-    return NextResponse.json({ error: "Failed to send notification" }, { status: 500 });
+    return internalErrorResponse("Failed to send notification");
   }
 }

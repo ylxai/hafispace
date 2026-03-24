@@ -20,12 +20,12 @@ export async function getTotalSelectionCount(galleryId: string): Promise<number>
 }
 
 /** Kembalikan count terkini setelah aksi add */
-export async function incrementSelection(galleryId: string): Promise<number> {
+export async function getCountAfterAdd(galleryId: string): Promise<number> {
   return getSelectionCount(galleryId);
 }
 
 /** Kembalikan count terkini setelah aksi remove */
-export async function decrementSelection(galleryId: string): Promise<number> {
+export async function getCountAfterRemove(galleryId: string): Promise<number> {
   return getSelectionCount(galleryId);
 }
 

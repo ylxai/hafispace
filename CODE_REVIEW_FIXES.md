@@ -1,8 +1,8 @@
 # Code Review Fixes — Progress Checklist
 
 Tanggal: 2026-03-24
-Branch: `fix/code-review-issues`
-Status: **IN PROGRESS**
+Update: 2026-03-24
+Status: **IN PROGRESS** — Phase 7 (Critical #1-4, #16) MERGED ✅
 
 ---
 
@@ -15,25 +15,17 @@ Total: **22 issues** — 6 Critical, 7 High, 6 Medium, 3 Low.
 
 ## CRITICAL
 
-- [ ] **#1** Selection DELETE menghapus foto asli dari Cloudinary
-  - File: `src/app/api/admin/galleries/[id]/selections/route.ts:172`
+- [x] **#1** Selection DELETE menghapus foto asli dari Cloudinary ✅ MERGED
   - Fix: Hapus `deletePhotoFromCloudinary` dari DELETE handler selection
-  - Impact: Data loss permanen — foto asli hilang saat client hapus selection
 
-- [ ] **#2** XSS di email template — user input tidak di-escape
-  - File: `src/lib/email.ts:48-58`
-  - Fix: Tambah `escapeHtml()` untuk semua user input di HTML template
-  - Impact: Attacker bisa inject HTML/JS via `namaClient`, `namaPaket`, `rekeningPembayaran`
+- [x] **#2** XSS di email template — user input tidak di-escape ✅ MERGED
+  - Fix: `escapeHtml()` + `[\r\n]` stripping (email header injection prevention)
 
-- [ ] **#3** Public invoice endpoint leak data sensitif vendor
-  - File: `src/app/api/public/invoice/[kodeBooking]/route.ts:46-54`
+- [x] **#3** Public invoice endpoint leak data sensitif vendor ✅ MERGED
   - Fix: Hapus `phone`, `email`, `rekeningPembayaran` dari public response
-  - Impact: Siapa saja yang tahu kode booking bisa akses rekening bank vendor
 
-- [ ] **#4** Race condition pada kodeBooking generation
-  - File: `src/app/api/public/booking/route.ts:159-161`
-  - Fix: Retry loop dengan unique check atau gunakan UUID
-  - Impact: Concurrent request bisa dapat kode booking duplikat
+- [x] **#4** Race condition pada kodeBooking generation ✅ MERGED
+  - Fix: Atomic retry on Prisma P2002 — hapus pre-check `findFirst`
 
 - [x] ~~**#5** `src/middleware.ts` dead code — x-request-id tidak pernah diset~~ **INVALID**
   - `x-request-id` sudah diset dengan benar di `middleware.ts` via `res.headers.set("x-request-id", requestId)`
@@ -96,9 +88,8 @@ Total: **22 issues** — 6 Critical, 7 High, 6 Medium, 3 Low.
   - File: `src/app/api/public/gallery/[token]/route.ts:156-163`
   - Fix: Gunakan Redis atomic SETNX + INCR
 
-- [ ] **#16** Email: `new Resend()` dibuat setiap call
-  - File: `src/lib/email.ts:6-8`
-  - Fix: Singleton pattern
+- [x] **#16** Email: `new Resend()` dibuat setiap call ✅ MERGED
+  - Fix: Lazy-init singleton (`resend ??= new Resend(...)`)
 
 - [ ] **#17** `kodeBooking` format tidak konsisten antara admin dan public
   - File: `admin/events/route.ts:106` vs `public/booking/route.ts:21-29`

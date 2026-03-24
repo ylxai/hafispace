@@ -7,6 +7,7 @@ import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { randomInt } from "node:crypto";
 import { RATE_LIMIT_BOOKING_PER_HOUR } from "@/lib/constants.server";
 import logger from "@/lib/logger";
+import { forbiddenResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 
 const bookingSchema = z.object({
   namaClient: z.string().min(1, "Nama wajib diisi"),
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
   const vendorId = searchParams.get("vendorId");
 
   if (!vendorId) {
-    return NextResponse.json({ error: "Vendor ID required" }, { status: 400 });
+    return validationErrorResponse("Vendor ID required");
   }
 
   const vendor = await prisma.vendor.findUnique({
@@ -79,9 +80,9 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  if (!vendor) return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
+  if (!vendor) return notFoundResponse("Vendor not found");
   if (!vendor.bookingFormActive) {
-    return NextResponse.json({ error: "Booking form is not active" }, { status: 403 });
+    return forbiddenResponse("Booking form is not active");
   }
 
   return NextResponse.json({ vendor });
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
   const { vendorId } = body;
 
   if (!vendorId || typeof vendorId !== "string") {
-    return NextResponse.json({ error: "Vendor ID required" }, { status: 400 });
+    return validationErrorResponse("Vendor ID required");
   }
 
   // Validasi vendor aktif dan form aktif
@@ -118,14 +119,14 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  if (!vendor) return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
+  if (!vendor) return notFoundResponse("Vendor not found");
   if (!vendor.bookingFormActive) {
-    return NextResponse.json({ error: "Booking form is not active" }, { status: 403 });
+    return forbiddenResponse("Booking form is not active");
   }
 
   const parsed = bookingSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Validasi gagal", details: parsed.error.format() }, { status: 400 });
+    return validationErrorResponse(parsed.error.format());
   }
 
   const { namaClient, hpClient, emailClient, tanggalSesi, lokasiSesi, paketId, catatan } = parsed.data;
@@ -135,7 +136,7 @@ export async function POST(request: NextRequest) {
     where: { id: paketId, vendorId, status: "active" },
     select: { id: true, namaPaket: true, harga: true },
   });
-  if (!paket) return NextResponse.json({ error: "Paket tidak ditemukan" }, { status: 404 });
+  if (!paket) return notFoundResponse("Paket tidak ditemukan");
 
   // Cari atau buat client berdasarkan phone
   let client = await prisma.client.findFirst({
@@ -196,7 +197,7 @@ export async function POST(request: NextRequest) {
     }
   }
   if (!booking) {
-    return NextResponse.json({ code: 'INTERNAL_ERROR', message: 'Gagal generate kode booking' }, { status: 500 });
+    return internalErrorResponse('Gagal generate kode booking');
   }
 
   // Kirim email konfirmasi jika emailClient ada
