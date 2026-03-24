@@ -6,59 +6,61 @@
   "colors": {
     "primary": "#0f172a",
     "light": "#334155",
-    "dark": "#0f172a",
-    "anchors": {
-      "from": "#0f172a",
-      "to": "#1e293b"
+    "dark": "#0f172a"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/ylxai/hafispace",
+        "type": "github"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Dashboard",
+      "href": "https://hafiportrait.com/admin"
     }
   },
-  "topbarLinks": [],
-  "topbarCtaButton": {
-    "name": "Dashboard",
-    "url": "https://hafiportrait.com/admin"
+  "navigation": {
+    "groups": [
+      {
+        "group": "Memulai",
+        "pages": [
+          "introduction",
+          "quickstart",
+          "architecture"
+        ]
+      },
+      {
+        "group": "Panduan",
+        "pages": [
+          "guides/database",
+          "guides/authentication",
+          "guides/cloudinary",
+          "guides/deployment"
+        ]
+      },
+      {
+        "group": "API Reference",
+        "pages": [
+          "api/overview",
+          "api/health",
+          "api/public/gallery",
+          "api/public/booking",
+          "api/public/invoice",
+          "api/admin/bookings",
+          "api/admin/clients",
+          "api/admin/galleries",
+          "api/admin/metrics"
+        ]
+      }
+    ]
   },
-  "anchors": [
-    {
-      "name": "GitHub",
-      "icon": "github",
-      "url": "https://github.com/ylxai/hafispace"
+  "footer": {
+    "socials": {
+      "github": "https://github.com/ylxai/hafispace"
     }
-  ],
-  "navigation": [
-    {
-      "group": "Memulai",
-      "pages": [
-        "introduction",
-        "quickstart",
-        "architecture"
-      ]
-    },
-    {
-      "group": "Panduan",
-      "pages": [
-        "guides/database",
-        "guides/authentication",
-        "guides/cloudinary",
-        "guides/deployment"
-      ]
-    },
-    {
-      "group": "API Reference",
-      "pages": [
-        "api/overview",
-        "api/health",
-        "api/public/gallery",
-        "api/public/booking",
-        "api/public/invoice",
-        "api/admin/bookings",
-        "api/admin/clients",
-        "api/admin/galleries",
-        "api/admin/metrics"
-      ]
-    }
-  ],
-  "footerSocials": {
-    "github": "https://github.com/ylxai/hafispace"
   },
   "seo": {
     "indexing": "all"
