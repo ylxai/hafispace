@@ -6,7 +6,15 @@ import { deletePhotoFromCloudinary } from "@/lib/cloudinary/core";
 
 /**
  * DELETE /api/admin/galleries/[id]/photos/[photoId]
- * Hapus satu foto dari gallery + Cloudinary
+ * 
+ * Delete a single photo from gallery and Cloudinary.
+ * Verifies gallery ownership before deletion.
+ * 
+ * @param _request - HTTP request object
+ * @param params - Route parameters containing galleryId and photoId
+ * @returns NextResponse with deletion status or error
+ * 
+ * Security: Vendor isolation enforced via gallery.vendorId check
  */
 export async function DELETE(
   _request: Request,

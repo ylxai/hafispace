@@ -6,7 +6,22 @@ import { deletePhotosFromCloudinary } from "@/lib/cloudinary/core";
 
 /**
  * POST /api/admin/galleries/[id]/photos/bulk
- * Bulk delete photos dengan Cloudinary cleanup
+ * 
+ * Bulk delete multiple photos from gallery and Cloudinary.
+ * Uses batch API for efficient Cloudinary deletion.
+ * 
+ * Request body:
+ * {
+ *   photoIds: string[],    // Array of photo IDs to delete
+ *   action: "delete"       // Must be "delete"
+ * }
+ * 
+ * @param request - HTTP request with JSON body
+ * @param params - Route parameters containing galleryId
+ * @returns NextResponse with deletion summary (deleted count, failures)
+ * 
+ * Security: Vendor isolation enforced via gallery.vendorId check
+ * Note: Database cleanup happens regardless of Cloudinary success
  */
 export async function POST(
   request: Request,
