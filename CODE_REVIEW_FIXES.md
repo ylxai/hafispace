@@ -35,15 +35,15 @@ Total: **22 issues** — 6 Critical, 7 High, 6 Medium, 3 Low.
   - Fix: Retry loop dengan unique check atau gunakan UUID
   - Impact: Concurrent request bisa dapat kode booking duplikat
 
-- [ ] **#5** `src/middleware.ts` dead code — x-request-id tidak pernah diset
-  - File: `src/middleware.ts` (tidak pernah di-execute Next.js)
-  - Fix: Pindahkan logic x-request-id ke root `middleware.ts`
-  - Impact: Request ID tracking tidak berfungsi
+- [x] ~~**#5** `src/middleware.ts` dead code — x-request-id tidak pernah diset~~ **INVALID**
+  - `x-request-id` sudah diset dengan benar di `middleware.ts` via `res.headers.set("x-request-id", requestId)`
+  - Middleware berjalan normal — tidak ada masalah
 
 - [ ] **#6** R2 credentials disimpan plaintext di database
   - File: `prisma/schema.prisma:26-27`
   - Fix: Encrypt `r2AccessKeyId` dan `r2SecretAccessKey` dengan AES-256-GCM
   - Impact: Jika DB bocor, R2 storage account compromised
+  - Note: Field sudah ada di schema tapi R2 belum diimplementasi — wajib encrypt saat implementasi R2
 
 ---
 
@@ -81,8 +81,8 @@ Total: **22 issues** — 6 Critical, 7 High, 6 Medium, 3 Low.
 
 - [ ] **#13** `selection-counter.ts` fungsi increment/decrement misleading
   - File: `src/lib/selection-counter.ts:23-30`
-  - Fix: Rename atau implementasi actual increment/decrement
-  - Impact: Developer confusion, potential bug
+  - Fix: Rename ke `getCountAfterAdd` / `getCountAfterRemove` untuk kejelasan
+  - Impact: Developer confusion — bukan bug aktif, by design (DB-only, no Redis), tapi nama fungsi menyesatkan
 
 ---
 

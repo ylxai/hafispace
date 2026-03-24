@@ -155,10 +155,16 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // Generate kode booking unik
-  let kodeBooking = generateKodeBooking();
-  const existing = await prisma.booking.findFirst({ where: { kodeBooking } });
-  if (existing) kodeBooking = generateKodeBooking();
+  // Generate kode booking unik dengan retry loop
+  let kodeBooking = '';
+  for (let i = 0; i < 5; i++) {
+    const candidate = generateKodeBooking();
+    const existing = await prisma.booking.findFirst({ where: { kodeBooking: candidate } });
+    if (!existing) { kodeBooking = candidate; break; }
+  }
+  if (!kodeBooking) {
+    return NextResponse.json({ code: 'INTERNAL_ERROR', message: 'Gagal generate kode booking' }, { status: 500 });
+  }
 
   // Hitung harga DP
   const hargaPaket = Number(paket.harga);

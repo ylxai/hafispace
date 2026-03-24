@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { unauthorizedResponse, notFoundResponse, parseAndValidate } from "@/lib/api/response";
-import { deletePhotoFromCloudinary } from "@/lib/cloudinary";
 import { verifyGalleryOwnershipWithSelect } from "@/lib/api/gallery-auth";
 import { verifySelectionOwnership } from "@/lib/api/resource-auth";
 import { z } from "zod";
@@ -167,12 +166,6 @@ export async function DELETE(request: Request) {
     await prisma.photoSelection.delete({
       where: { id: selectionId },
     });
-
-    try {
-      await deletePhotoFromCloudinary(session.user.id, selection.fileId);
-    } catch (cloudinaryError) {
-      logger.error({ err: cloudinaryError }, "Gagal menghapus foto dari Cloudinary");
-    }
 
     await prisma.activityLog.create({
       data: {
