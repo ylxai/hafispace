@@ -69,18 +69,13 @@ export async function getCloudinaryAccount(vendorId: string, accountId?: string)
   };
 }
 
-// Get per-request config object dari account (tidak mutasi global state)
+// Get per-request config object from account (does not mutate global state)
 export function getCloudinaryConfig(account: CloudinaryAccountConfig) {
   return {
     cloud_name: account.cloudName,
     api_key: account.apiKey,
     api_secret: account.apiSecret,
   };
-}
-
-// @deprecated — gunakan getCloudinaryConfig() untuk avoid race condition
-export function configureCloudinary(account: CloudinaryAccountConfig) {
-  cloudinary.config(getCloudinaryConfig(account));
 }
 
 // Initialize Cloudinary client for a specific vendor (legacy - uses default account)
@@ -653,6 +648,11 @@ export async function applyViesusEnhancement(
 export async function generateUploadSignature(vendorId: string, paramsToSign: Record<string, string | number | boolean>): Promise<string> {
   // Fetch vendor-specific credentials
   const vendorConfig = await getVendorCloudinaryClient(vendorId);
+  
+  if (!vendorConfig.apiSecret) {
+    throw new Error(`Vendor ${vendorId} has no Cloudinary API secret configured`);
+  }
+  
   const signature = cloudinary.utils.api_sign_request(paramsToSign, vendorConfig.apiSecret);
   return signature;
 }
