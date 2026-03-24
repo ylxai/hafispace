@@ -1,6 +1,6 @@
 /**
- * Environment variable validation saat startup.
- * Throw error lebih awal jika variable kritis tidak dikonfigurasi.
+ * Environment variable validation at startup.
+ * Throw error early if critical variables are not configured.
  */
 
 function requireEnv(key: string): string {
@@ -27,6 +27,7 @@ export const env = {
   CLOUDINARY_CLOUD_NAME: optionalEnv("CLOUDINARY_CLOUD_NAME"),
   CLOUDINARY_API_KEY: optionalEnv("CLOUDINARY_API_KEY"),
   CLOUDINARY_API_SECRET: optionalEnv("CLOUDINARY_API_SECRET"),
+  CLOUDINARY_MASTER_KEY: requireEnv("CLOUDINARY_MASTER_KEY"), // ✅ Critical for credentials encryption
 
   // Ably
   ABLY_API_KEY: optionalEnv("ABLY_API_KEY"),
