@@ -46,9 +46,6 @@ export async function GET(
         select: {
           namaStudio: true,
           logoUrl: true,
-          phone: true,
-          email: true,
-          rekeningPembayaran: true,
           themeColor: true,
           dpPercentage: true,
         },

@@ -3,8 +3,21 @@ import { formatRupiah } from './format';
 import { env } from '@/lib/env';
 import logger from '@/lib/logger';
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/[\r\n]/g, '') // prevent email header injection
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+let resend: Resend | null = null;
+
 function getResend() {
-  return new Resend(env.RESEND_API_KEY);
+  resend ??= new Resend(env.RESEND_API_KEY);
+  return resend;
 }
 
 export async function sendBookingConfirmationEmail({
@@ -39,23 +52,28 @@ export async function sendBookingConfirmationEmail({
 
   try {
     const formatDate = (s: string) => new Date(s).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const safeClient = escapeHtml(namaClient);
+    const safeStudio = escapeHtml(namaStudio);
+    const safePaket = escapeHtml(namaPaket);
+    const safeKode = escapeHtml(kodeBooking);
+    const safeRekening = rekeningPembayaran ? escapeHtml(rekeningPembayaran) : null;
 
     await getResend().emails.send({
-      from: `${namaStudio} <onboarding@resend.dev>`,
+      from: `${safeStudio} <onboarding@resend.dev>`,
       to,
-      subject: `Konfirmasi Booking ${kodeBooking} - ${namaStudio}`,
+      subject: `Konfirmasi Booking ${safeKode} - ${safeStudio}`,
       html: `
         <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
-          <h2 style="color: #0f172a;">Terima kasih, ${namaClient}! 🎉</h2>
-          <p>Booking Anda telah diterima oleh <strong>${namaStudio}</strong>.</p>
+          <h2 style="color: #0f172a;">Terima kasih, ${safeClient}! 🎉</h2>
+          <p>Booking Anda telah diterima oleh <strong>${safeStudio}</strong>.</p>
           <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin: 16px 0;">
-            <p><strong>Kode Booking:</strong> ${kodeBooking}</p>
-            <p><strong>Paket:</strong> ${namaPaket}</p>
+            <p><strong>Kode Booking:</strong> ${safeKode}</p>
+            <p><strong>Paket:</strong> ${safePaket}</p>
             <p><strong>Tanggal Sesi:</strong> ${formatDate(tanggalSesi)}</p>
             <p><strong>Total:</strong> ${formatRupiah(hargaPaket)}</p>
             <p><strong>DP (${dpPercentage}%):</strong> ${formatRupiah(dpAmount)}</p>
           </div>
-          ${rekeningPembayaran ? `<div style="background: #fefce8; border-radius: 12px; padding: 16px; margin: 16px 0;"><p><strong>Rekening Pembayaran:</strong></p><pre style="font-family: monospace;">${rekeningPembayaran}</pre></div>` : ''}
+          ${safeRekening ? `<div style="background: #fefce8; border-radius: 12px; padding: 16px; margin: 16px 0;"><p><strong>Rekening Pembayaran:</strong></p><pre style="font-family: monospace;">${safeRekening}</pre></div>` : ''}
           <a href="${invoiceUrl}" style="display: inline-block; background: #0f172a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin: 16px 0;">Lihat Invoice</a>
           <p style="color: #94a3b8; font-size: 12px;">Powered by Hafispace</p>
         </div>
