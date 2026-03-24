@@ -42,8 +42,8 @@ const nextConfig: NextConfig = {
 export { allowedOrigins };
 
 export default withSentryConfig(nextConfig, {
-  org: "ylxai",
-  project: "hafispace",
+  org: "pridayfn",
+  project: "javascript-nextjs",
   authToken: process.env.SENTRY_AUTH_TOKEN,
   widenClientFileUpload: true,
   tunnelRoute: "/monitoring",
