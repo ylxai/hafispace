@@ -1,6 +1,6 @@
 "use client";
 
-import { Component, type ReactNode } from "react";
+import { Component, type ReactNode, type ErrorInfo } from "react";
 
 interface Props {
   children: ReactNode;
@@ -20,6 +20,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): State {
     return { hasError: true, message: error.message };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // TODO: Once a logging library is chosen, integrate it here.
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 
   render() {
