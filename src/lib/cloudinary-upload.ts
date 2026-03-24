@@ -1,39 +1,12 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { uploadPhotoToCloudinary, getCloudinaryAccount } from './cloudinary';
 import type { CloudinaryResource } from '@/types/cloudinary';
+import { TRANSFORMATION_PRESETS } from '@/lib/cloudinary/constants';
 
 // Tidak ada global config mutation di module level.
 // Setiap fungsi yang butuh credentials harus pass config per-request.
 
-// Cloudinary upload folder structure
-export const CLOUDINARY_FOLDERS = {
-  GALLERIES: 'hafispace/galleries',
-  PROFILES: 'hafispace/profiles',
-  LOGOS: 'hafispace/logos',
-};
-
-// Image transformation presets
-export const TRANSFORMATION_PRESETS = {
-  THUMBNAIL: {
-    width: 400,
-    height: 400,
-    crop: 'fill' as const,
-    gravity: 'auto',
-    quality: 'auto:good',
-    format: 'auto',
-  },
-  GALLERY_PREVIEW: {
-    width: 800,
-    height: 600,
-    crop: 'fit' as const,
-    quality: 'auto:best',
-    format: 'auto',
-  },
-  FULL_SIZE: {
-    quality: 'auto:best',
-    format: 'auto',
-  },
-};
+// ✅ CONSTANTS CONSOLIDATED: Import from src/lib/cloudinary/constants.ts
 
 /**
  * Upload single image to Cloudinary with best practices

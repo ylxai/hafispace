@@ -3,8 +3,8 @@ import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import {
   uploadMultipleImages,
-  CLOUDINARY_FOLDERS,
 } from "@/lib/cloudinary-upload";
+import { CLOUDINARY_FOLDERS } from "@/lib/cloudinary/constants";
 import { getCloudinaryAccount, deletePhotoFromCloudinary } from "@/lib/cloudinary";
 import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 
