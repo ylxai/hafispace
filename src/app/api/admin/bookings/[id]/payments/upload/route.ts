@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { unauthorizedResponse, notFoundResponse, validationErrorResponse } from "@/lib/api/response";
 import { uploadImageToCloudinary } from "@/lib/cloudinary-upload";
+import { CLOUDINARY_FOLDERS } from "@/lib/cloudinary/constants";
 
 export async function POST(
   request: NextRequest,
@@ -38,7 +39,7 @@ export async function POST(
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const result = await uploadImageToCloudinary(session.user.id, buffer, {
-    folder: `hafispace/bukti-bayar/${booking.kodeBooking}`,
+    folder: `${CLOUDINARY_FOLDERS.BUKTI_BAYAR}/${booking.kodeBooking}`, // ✅ Using constant for consistency
     tags: ["bukti-bayar", booking.kodeBooking],
   });
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { uploadPhotoToCloudinary, listPhotosFromCloudinary } from "@/lib/cloudinary";
-import { CLOUDINARY_FOLDERS } from "@/lib/cloudinary-upload";
+import { CLOUDINARY_FOLDERS } from "@/lib/cloudinary/constants";
 import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 
 export async function POST(

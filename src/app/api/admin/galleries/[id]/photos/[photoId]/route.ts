@@ -48,10 +48,10 @@ export async function DELETE(
       );
     }
 
-    // Delete dari Cloudinary
+    // Delete dari Cloudinary menggunakan gallery vendorId (verified ownership)
     let cloudinaryError: string | null = null;
     try {
-      await deletePhotoFromCloudinary(session.user.id, photo.storageKey);
+      await deletePhotoFromCloudinary(gallery.vendorId, photo.storageKey);
     } catch (error) {
       console.error(`Failed to delete ${photo.storageKey} from Cloudinary:`, error);
       cloudinaryError = error instanceof Error ? error.message : "Unknown error";
