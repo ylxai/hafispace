@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import cloudinaryLoader from '@/lib/image-loader';
 import { extractCloudName, extractPublicId, generateThumbnailUrl, generateDownloadUrl } from '@/lib/cloudinary/utils';
@@ -145,6 +145,7 @@ export default function ViewspacePage() {
   const [copied, setCopied] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null); // ✅ For displaying errors instead of alert
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery<GalleryData>({
@@ -172,10 +173,10 @@ export default function ViewspacePage() {
   });
 
   // Jika gallery sudah locked, bersihkan localStorage
-  const lockClearedRef = useState(false);
-  if (isLocked && !lockClearedRef[0]) {
+  const lockClearedRef = useRef(false); // ✅ Use useRef instead of useState for non-render effect
+  if (isLocked && !lockClearedRef.current) {
     clearLocalSelections(token);
-    lockClearedRef[1](true);
+    lockClearedRef.current = true;
   }
 
   // Server-side selected photos (untuk locked gallery — backward compat storageKey)
@@ -217,7 +218,7 @@ export default function ViewspacePage() {
       });
       if (!res.ok) {
         const err = await res.json();
-        alert(err.message ?? err.error ?? "Gagal mengirim seleksi. Coba lagi.");
+        setSubmitError(err.message ?? err.error ?? "Gagal mengirim seleksi. Coba lagi."); // ✅ Use state instead of alert
         return;
       }
       clearLocalSelections(token);
@@ -225,7 +226,7 @@ export default function ViewspacePage() {
       // Refetch untuk dapatkan state locked terbaru
       void queryClient.invalidateQueries({ queryKey: ["gallery", token] });
     } catch {
-      alert("Terjadi kesalahan. Periksa koneksi internet Anda.");
+      setSubmitError("Terjadi kesalahan. Periksa koneksi internet Anda."); // ✅ Use state instead of alert
     } finally {
       setIsSubmitting(false);
     }
