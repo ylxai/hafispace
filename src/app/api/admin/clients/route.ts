@@ -90,6 +90,7 @@ export async function DELETE(request: Request) {
   }
 
   // Support both query param (legacy) and body (new) for consistency
+  // ✅ Precedence: query param > body (for backward compatibility with legacy code)
   const { searchParams } = new URL(request.url);
   let clientId = searchParams.get("id");
 

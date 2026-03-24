@@ -115,7 +115,7 @@ export async function uploadPhotoToCloudinary(
     overwrite?: boolean;  // Whether to overwrite if asset exists
     resourceType?: 'image' | 'video' | 'raw' | 'auto';
   } = {
-    folder: getVendorGalleryFolder(vendorId),
+    folder: getVendorGalleryFolder(vendorId), // ✅ Standard folder - do not override unless necessary
     resourceType: 'image',
     overwrite: false
   }

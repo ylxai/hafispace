@@ -135,6 +135,7 @@ export default function ViewspacePage() {
     // filter match keduanya untuk backward compatibility
     return data.gallery.photos.filter((photo: { id: string; storageKey?: string }) =>
       data.gallery.selections.includes(photo.id) || 
+      // ✅ Also match with storageKey for backward compatibility with legacy data
       (photo.storageKey && data.gallery.selections.includes(photo.storageKey))
     );
   }, [data?.gallery?.photos, data?.gallery?.selections]);
