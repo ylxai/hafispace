@@ -228,8 +228,8 @@ export default function ViewspacePage() {
       });
       if (!res.ok) {
         const err = await res.json();
+        setIsSubmitting(false); // ✅ Reset state BEFORE alert (allows UI to update immediately)
         alert(err.message ?? err.error ?? "Gagal mengirim seleksi. Coba lagi.");
-        setIsSubmitting(false); // ✅ Fix: Reset state on error before return
         return;
       }
       clearLocalSelections(token);
@@ -237,8 +237,8 @@ export default function ViewspacePage() {
       // Refetch untuk dapatkan state locked terbaru
       void queryClient.invalidateQueries({ queryKey: ["gallery", token] });
     } catch {
+      setIsSubmitting(false); // ✅ Reset state BEFORE alert (allows UI to update immediately)
       alert("Terjadi kesalahan. Periksa koneksi internet Anda.");
-      setIsSubmitting(false);
     }
   }, [localSelectionCount, isSubmitting, token, selectedIds, queryClient]);
 
