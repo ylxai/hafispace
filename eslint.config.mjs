@@ -62,6 +62,7 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "node_modules/**",
+    ".adal/worktrees/**", // ✅ Exclude git worktrees from linting
   ]),
 ]);
 
