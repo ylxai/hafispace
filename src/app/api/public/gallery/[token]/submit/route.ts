@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { DEFAULT_MAX_SELECTION } from "@/lib/constants";
+import { DEFAULT_MAX_SELECTION, MAX_GLOBAL_SELECTION_LIMIT } from "@/lib/constants";
 import { getAblyRest, ABLY_CHANNEL_SELECTION } from "@/lib/ably";
 import { z } from "zod";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
@@ -11,7 +11,7 @@ const submitSchema = z.object({
   photoIds: z
     .array(z.string().uuid())
     .min(1, "Pilih minimal 1 foto")
-    .max(500, "Maksimal 500 foto per pengiriman"),
+    .max(MAX_GLOBAL_SELECTION_LIMIT, `Maksimal ${MAX_GLOBAL_SELECTION_LIMIT} foto per pengiriman`),
 });
 
 export async function POST(

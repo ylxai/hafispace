@@ -7,7 +7,8 @@
 
 export const DEFAULT_MAX_SELECTION = 40;
 export const MAX_SELECTION_LIMIT = 200;
-export const CLOUDINARY_MAX_RESULTS = 500;
+export const CLOUDINARY_MAX_RESULTS = 500; // Hard limit for Cloudinary API results
+export const MAX_GLOBAL_SELECTION_LIMIT = CLOUDINARY_MAX_RESULTS; // ✅ Synced with Cloudinary max (maintains consistency)
 
 // ─── UI Feedback Delays (ms) ─────────────────────────────────────────────────
 
