@@ -60,7 +60,7 @@ export const env = {
   RATE_LIMIT_SUBMIT_PER_MINUTE: optionalEnvInt("RATE_LIMIT_SUBMIT_PER_MINUTE", 10),
 
   // Security
-  BCRYPT_COST_FACTOR: optionalEnvInt("BCRYPT_COST_FACTOR", 12),
+  BCRYPT_COST_FACTOR: optionalEnvInt("BCRYPT_COST_FACTOR", process.env.NODE_ENV === "production" ? 12 : 8),
 
   // Performance
   GALLERY_MAX_PHOTOS: optionalEnvInt("GALLERY_MAX_PHOTOS", 1000),
