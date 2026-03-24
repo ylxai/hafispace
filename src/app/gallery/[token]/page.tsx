@@ -145,7 +145,6 @@ export default function ViewspacePage() {
   const [copied, setCopied] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null); // ✅ For displaying errors instead of alert
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery<GalleryData>({
@@ -218,7 +217,7 @@ export default function ViewspacePage() {
       });
       if (!res.ok) {
         const err = await res.json();
-        setSubmitError(err.message ?? err.error ?? "Gagal mengirim seleksi. Coba lagi."); // ✅ Use state instead of alert
+        alert(err.message ?? err.error ?? "Gagal mengirim seleksi. Coba lagi.");
         return;
       }
       clearLocalSelections(token);
@@ -226,8 +225,8 @@ export default function ViewspacePage() {
       // Refetch untuk dapatkan state locked terbaru
       void queryClient.invalidateQueries({ queryKey: ["gallery", token] });
     } catch {
-      setSubmitError("Terjadi kesalahan. Periksa koneksi internet Anda."); // ✅ Use state instead of alert
-    } finally {
+      alert("Terjadi kesalahan. Periksa koneksi internet Anda."); // ✅ Use state instead of alert
+      alert("Terjadi kesalahan. Periksa koneksi internet Anda.");
       setIsSubmitting(false);
     }
   }, [localSelectionCount, isSubmitting, token, selectedIds, queryClient]);
