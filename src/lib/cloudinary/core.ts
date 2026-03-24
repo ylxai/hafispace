@@ -305,7 +305,18 @@ export async function getPhotoFromCloudinary(
   }
 }
 
-// Delete photo from Cloudinary
+/**
+ * Delete a single photo from Cloudinary.
+ * 
+ * @param vendorId - Vendor/studio ID for accessing vendor-specific credentials
+ * @param publicId - Cloudinary public ID (stored as Photo.storageKey in database)
+ * @param options - Optional resource type configuration
+ * @returns CloudinaryDeletionResult with success status and error details if any
+ * 
+ * NOTE: Photo.storageKey field stores the Cloudinary publicId.
+ * This naming convention is historical. Future refactoring should rename
+ * Photo.storageKey → Photo.cloudinaryPublicId for better clarity.
+ */
 export async function deletePhotoFromCloudinary(
   vendorId: string,
   publicId: string,
