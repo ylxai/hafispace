@@ -19,13 +19,3 @@ export async function getTotalSelectionCount(galleryId: string): Promise<number>
   });
 }
 
-/** Kembalikan count terkini setelah aksi add */
-export async function getCountAfterAdd(galleryId: string): Promise<number> {
-  return getSelectionCount(galleryId);
-}
-
-/** Kembalikan count terkini setelah aksi remove */
-export async function getCountAfterRemove(galleryId: string): Promise<number> {
-  return getSelectionCount(galleryId);
-}
-
