@@ -3,6 +3,7 @@ import type { UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
 import { prisma } from '../db';
 import { decrypt } from '../encryption';
 import type { CloudinaryResource, CloudinaryResourceResult, CloudinaryDeletionResult, CloudinaryPingResult } from '@/types/cloudinary';
+import { getVendorGalleryFolder } from './constants';
 
 // Configure Cloudinary with environment variables
 cloudinary.config({
@@ -114,7 +115,7 @@ export async function uploadPhotoToCloudinary(
     overwrite?: boolean;  // Whether to overwrite if asset exists
     resourceType?: 'image' | 'video' | 'raw' | 'auto';
   } = {
-    folder: `hafispace/galleries/${vendorId}`,
+    folder: getVendorGalleryFolder(vendorId), // ✅ Standard folder - do not override unless necessary
     resourceType: 'image',
     overwrite: false
   }
@@ -209,7 +210,7 @@ export async function uploadPhotosToCloudinary(
     folder?: string;
     resourceType?: 'image' | 'video' | 'raw' | 'auto';
   } = {
-    folder: `hafispace/galleries/${vendorId}`,
+    folder: getVendorGalleryFolder(vendorId),
     resourceType: 'image'
   }
 ): Promise<Array<{
@@ -429,7 +430,7 @@ export async function listPhotosFromCloudinary(
     maxResults?: number;
     nextCursor?: string;
   } = {
-    folder: `hafispace/galleries/${vendorId}`,
+    folder: getVendorGalleryFolder(vendorId),
     resourceType: 'image',
     maxResults: 500,
   }
@@ -656,7 +657,7 @@ export async function uploadPhotoToCloudinaryWithViesus(
     resourceType?: 'image' | 'video' | 'raw' | 'auto';
     applyViesus?: boolean; // Whether to apply VIESUS enhancement
   } = {
-    folder: `hafispace/galleries/${vendorId}`,
+    folder: getVendorGalleryFolder(vendorId),
     resourceType: 'image',
     overwrite: false,
     applyViesus: true, // Default to true

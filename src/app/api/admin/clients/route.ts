@@ -89,8 +89,16 @@ export async function DELETE(request: Request) {
     return unauthorizedResponse();
   }
 
+  // Support both query param (legacy) and body (new) for consistency
+  // ✅ Precedence: query param > body (for backward compatibility with legacy code)
   const { searchParams } = new URL(request.url);
-  const clientId = searchParams.get("id");
+  let clientId = searchParams.get("id");
+
+  if (!clientId) {
+    const result = await parseAndValidate(request, z.object({ id: z.string().uuid() }));
+    if (!result.ok) return validationErrorResponse("Client ID is required");
+    clientId = result.data.id;
+  }
 
   if (!clientId) {
     return validationErrorResponse("Client ID is required");

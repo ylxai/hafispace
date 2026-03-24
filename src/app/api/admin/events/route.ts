@@ -161,8 +161,14 @@ export async function DELETE(request: Request) {
   }
 
   try {
+    // Support both query param (legacy) and body (new) for consistency
     const { searchParams } = new URL(request.url);
-    const bookingId = searchParams.get("id");
+    let bookingId = searchParams.get("id");
+
+    if (!bookingId) {
+      const body = await request.json();
+      bookingId = body.id;
+    }
 
     if (!bookingId) {
       return validationErrorResponse("Booking ID is required");

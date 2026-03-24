@@ -26,9 +26,8 @@ model Vendor {
   r2SecretAccessKey       String?            @map("r2_secret_access_key")
   r2BucketName            String?            @map("r2_bucket_name")
   r2Endpoint              String?            @map("r2_endpoint")
-  cloudinaryCloudName     String?            @map("cloudinary_cloud_name")
-  cloudinaryApiKey        String?            @map("cloudinary_api_key")
-  cloudinaryApiSecret     String?            @map("cloudinary_api_secret")
+  // ✅ DEPRECATED & REMOVED: cloudinaryCloudName, cloudinaryApiKey, cloudinaryApiSecret
+  // Use VendorCloudinary table instead for multi-account support
   enableViesusEnhancement Boolean            @default(false) @map("enable_viesus_enhancement")
   dpPercentage            Int                @default(30) @map("dp_percentage")
   rekeningPembayaran      String?            @map("rekening_pembayaran")
@@ -157,16 +156,17 @@ model Booking {
 }
 
 model Payment {
-  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  bookingId  String      @map("booking_id") @db.Uuid
-  vendorId   String      @map("vendor_id") @db.Uuid
-  jumlah     Decimal     @db.Decimal(15, 0)
-  tipe       PaymentType @default(DP)
-  keterangan String?
-  buktiBayar String?     @map("bukti_bayar")
-  createdAt  DateTime    @default(now()) @map("created_at")
-  booking    Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  vendor     Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookingId     String         @map("booking_id") @db.Uuid
+  vendorId      String         @map("vendor_id") @db.Uuid
+  jumlah        Decimal        @db.Decimal(15, 0)
+  tipe          PaymentType    @default(DP)
+  method        PaymentMethod? @default(CASH) // ✅ NEW: Payment method (CASH, TRANSFER, QRIS, OTHER)
+  keterangan    String?
+  buktiBayar    String?        @map("bukti_bayar")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  booking       Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  vendor        Vendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([bookingId])
   @@index([vendorId])
@@ -266,18 +266,16 @@ model PhotoSelection {
 }
 
 model CustomField {
-  id         String    @id @default(uuid()) @db.Uuid
-  vendorId   String    @map("vendor_id") @db.Uuid
-  namaField  String    @map("nama_field")
-  tipe       FieldType @default(TEXT)
-  options    Json?
-  wajib      Boolean   @default(false)
-  urutan     Int       @default(0)
-  createdAt  DateTime  @default(now()) @map("created_at")
-  label      String    @default("")
-  isRequired Boolean   @default(false) @map("is_required")
-  isActive   Boolean   @default(true) @map("is_active")
-  vendor     Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  id        String    @id @default(uuid()) @db.Uuid
+  vendorId  String    @map("vendor_id") @db.Uuid
+  namaField String    @map("nama_field") // ✅ KEPT: Field name (was duplicated with 'label')
+  tipe      FieldType @default(TEXT)
+  options   Json?
+  wajib     Boolean   @default(false) // ✅ KEPT: Is required (was duplicated with 'isRequired')
+  urutan    Int       @default(0)
+  createdAt DateTime  @default(now()) @map("created_at")
+  isActive  Boolean   @default(true) @map("is_active")
+  vendor    Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   @@index([vendorId])
   @@map("custom_fields")
@@ -357,6 +355,13 @@ enum PaymentType {
   DP
   PELUNASAN
   LAINNYA
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  QRIS
+  OTHER
 }
 
 enum GalleryStatus {
