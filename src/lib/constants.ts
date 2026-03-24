@@ -7,6 +7,7 @@
 
 export const DEFAULT_MAX_SELECTION = 40;
 export const MAX_SELECTION_LIMIT = 200;
+export const MAX_GLOBAL_SELECTION_LIMIT = 500; // ✅ Hard limit for API submission
 export const CLOUDINARY_MAX_RESULTS = 500;
 
 // ─── UI Feedback Delays (ms) ─────────────────────────────────────────────────
