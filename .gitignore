@@ -72,3 +72,6 @@ testsprite_tests/auth_helper.py
 /tmp/
 *.lock
 *.log
+
+# Sentry
+.env.sentry-build-plugin
