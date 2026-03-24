@@ -167,6 +167,7 @@ export async function PUT(
           mimeType: `image/${p.format}`,
           urutan: nextUrutan++,
         })),
+        skipDuplicates: true,
       });
     }
 
