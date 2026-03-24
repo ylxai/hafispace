@@ -15,6 +15,12 @@ function optionalEnv(key: string, fallback = ""): string {
   return process.env[key] ?? fallback;
 }
 
+function optionalEnvInt(key: string, fallback: number): number {
+  const val = process.env[key];
+  const parsed = val ? parseInt(val, 10) : NaN;
+  return isNaN(parsed) ? fallback : parsed;
+}
+
 export const env = {
   // Database
   DATABASE_URL: requireEnv("DATABASE_URL"),
@@ -46,4 +52,17 @@ export const env = {
   // App
   NEXT_PUBLIC_APP_URL: optionalEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000"),
   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: optionalEnv("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME"),
+
+  // Rate Limits
+  RATE_LIMIT_SELECT_PER_MINUTE: optionalEnvInt("RATE_LIMIT_SELECT_PER_MINUTE", 300),
+  RATE_LIMIT_NOTIFY_PER_HOUR: optionalEnvInt("RATE_LIMIT_NOTIFY_PER_HOUR", 20),
+  RATE_LIMIT_BOOKING_PER_HOUR: optionalEnvInt("RATE_LIMIT_BOOKING_PER_HOUR", 20),
+  RATE_LIMIT_SUBMIT_PER_MINUTE: optionalEnvInt("RATE_LIMIT_SUBMIT_PER_MINUTE", 10),
+
+  // Security
+  BCRYPT_COST_FACTOR: optionalEnvInt("BCRYPT_COST_FACTOR", 12),
+
+  // Performance
+  GALLERY_MAX_PHOTOS: optionalEnvInt("GALLERY_MAX_PHOTOS", 1000),
+  METRICS_CACHE_TTL_SECONDS: optionalEnvInt("METRICS_CACHE_TTL_SECONDS", 300),
 } as const;

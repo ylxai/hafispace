@@ -4,6 +4,7 @@ import { z } from "zod";
 import { sendBookingConfirmationEmail } from "@/lib/email";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { randomInt } from "node:crypto";
+import { RATE_LIMIT_BOOKING_PER_HOUR } from "@/lib/constants";
 
 const bookingSchema = z.object({
   namaClient: z.string().min(1, "Nama wajib diisi"),
@@ -88,7 +89,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   // Rate limit: maks 5 booking per jam per IP (cegah spam)
   const ip = getClientIp(request);
-  const rl = await checkRateLimit(`booking:${ip}`, { limit: 5, windowMs: 60 * 60_000 });
+  const rl = await checkRateLimit(`booking:${ip}`, { limit: RATE_LIMIT_BOOKING_PER_HOUR, windowMs: 60 * 60_000 });
   if (!rl.success) {
     return NextResponse.json(
       { code: "RATE_LIMITED", message: "Terlalu banyak booking. Coba lagi nanti." },

@@ -4,6 +4,7 @@ import { DEFAULT_MAX_SELECTION } from "@/lib/constants";
 import { getAblyRest, ABLY_CHANNEL_SELECTION } from "@/lib/ably";
 import { z } from "zod";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { RATE_LIMIT_SELECT_PER_MINUTE } from "@/lib/constants";
 
 const selectSchema = z.object({
   fileId: z.string().min(1, "fileId is required"),
@@ -20,7 +21,7 @@ export async function POST(
 
   // Rate limit: maks 120 seleksi per menit per IP+token
   const ip = getClientIp(request);
-  const rl = await checkRateLimit(`select:${ip}:${token}`, { limit: 120, windowMs: 60_000 });
+  const rl = await checkRateLimit(`select:${ip}:${token}`, { limit: RATE_LIMIT_SELECT_PER_MINUTE, windowMs: 60_000 });
   if (!rl.success) {
     return NextResponse.json(
       { code: "RATE_LIMITED", message: "Terlalu banyak request. Coba lagi dalam 1 menit." },

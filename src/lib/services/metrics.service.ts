@@ -6,9 +6,7 @@
 import { unstable_cache } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-
-// Cache TTL 5 menit — dibuat sekali di module level, bukan per-request
-const METRICS_CACHE_TTL_SECONDS = 300;
+import { METRICS_CACHE_TTL_SECONDS } from "@/lib/constants";
 
 /**
  * Cached wrapper untuk fetchVendorMetrics.
