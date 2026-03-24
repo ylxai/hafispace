@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
+import { notFoundResponse } from "@/lib/api/response";
 
 export async function GET(
   _request: NextRequest,
@@ -53,7 +54,7 @@ export async function GET(
     },
   });
 
-  if (!booking) return NextResponse.json({ error: "Invoice tidak ditemukan" }, { status: 404 });
+  if (!booking) return notFoundResponse("Invoice tidak ditemukan");
 
   const totalBayar = booking.payments.reduce((sum, p) => sum + Number(p.jumlah), 0);
   const hargaPaket = Number(booking.hargaPaket ?? 0);

@@ -180,18 +180,18 @@ export async function DELETE(request: Request) {
       return notFoundResponse("Booking not found");
     }
 
-    const galleryCount = await prisma.gallery.count({
-      where: { bookingId },
-    });
+    await prisma.$transaction(async (tx) => {
+      const galleryCount = await tx.gallery.count({
+        where: { bookingId },
+      });
 
-    if (galleryCount > 0) {
-      return validationErrorResponse(
-        `Cannot delete booking with ${galleryCount} gallery(ies). Delete galleries first.`
-      );
-    }
+      if (galleryCount > 0) {
+        throw Object.assign(new Error(`Cannot delete booking with ${galleryCount} gallery(ies). Delete galleries first.`), { code: 'HAS_GALLERIES' });
+      }
 
-    await prisma.booking.delete({
-      where: { id: bookingId, vendorId: session.user.id },
+      await tx.booking.delete({
+        where: { id: bookingId, vendorId: session.user.id },
+      });
     });
 
     return NextResponse.json({
@@ -199,6 +199,9 @@ export async function DELETE(request: Request) {
       message: "Booking deleted successfully",
     });
   } catch (error) {
+    if (error instanceof Error && 'code' in error && (error as { code?: string }).code === 'HAS_GALLERIES') {
+      return validationErrorResponse(error.message);
+    }
     logger.error({ err: error }, "Error deleting booking");
     return internalErrorResponse("Failed to delete booking");
   }

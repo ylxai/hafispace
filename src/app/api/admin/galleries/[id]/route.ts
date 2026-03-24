@@ -136,39 +136,39 @@ export async function PUT(
     );
 
     // Sync photos to database
-    for (const cloudinaryPhoto of cloudinaryResult.items) {
-      // Check if photo already exists in database
-      const existingPhoto = await prisma.photo.findFirst({
-        where: {
-          galleryId: gallery.id,
-          storageKey: cloudinaryPhoto.publicId,
-        },
+    const existingKeys = new Set(
+      (await prisma.photo.findMany({
+        where: { galleryId: gallery.id },
+        select: { storageKey: true },
+      })).map((p) => p.storageKey)
+    );
+
+    const newPhotos = cloudinaryResult.items.filter(
+      (p) => !existingKeys.has(p.publicId)
+    );
+
+    if (newPhotos.length > 0) {
+      const maxUrutan = await prisma.photo.aggregate({
+        where: { galleryId: gallery.id },
+        _max: { urutan: true },
       });
+      let nextUrutan = (maxUrutan._max.urutan ?? -1) + 1;
 
-      if (!existingPhoto) {
-        // Calculate proper ordering for synced photo
-        const maxUrutan = await prisma.photo.aggregate({
-          where: { galleryId: gallery.id },
-          _max: { urutan: true },
-        });
-        const nextUrutan = (maxUrutan._max.urutan ?? -1) + 1;
-
-        // Create new photo record
-        await prisma.photo.create({
-          data: {
-            galleryId: gallery.id,
-            storageKey: cloudinaryPhoto.publicId,
-            filename: cloudinaryPhoto.originalFilename,
-            url: cloudinaryPhoto.secureUrl,
-            thumbnailUrl: cloudinaryPhoto.secureUrl,
-            width: cloudinaryPhoto.width,
-            height: cloudinaryPhoto.height,
-            size: cloudinaryPhoto.size,
-            mimeType: `image/${cloudinaryPhoto.format}`,
-            urutan: nextUrutan, // ✅ Proper ordering for synced photos
-          },
-        });
-      }
+      await prisma.photo.createMany({
+        data: newPhotos.map((p) => ({
+          galleryId: gallery.id,
+          storageKey: p.publicId,
+          filename: p.originalFilename,
+          url: p.secureUrl,
+          thumbnailUrl: p.secureUrl,
+          width: p.width,
+          height: p.height,
+          size: p.size,
+          mimeType: `image/${p.format}`,
+          urutan: nextUrutan++,
+        })),
+        skipDuplicates: true,
+      });
     }
 
     // Get updated photo count
