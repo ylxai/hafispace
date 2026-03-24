@@ -29,7 +29,7 @@ async function getCriticalData(vendorId: string) {
   ] = await Promise.all([
     prisma.booking.count({ where: { vendorId } }),
     prisma.booking.count({ where: { vendorId, createdAt: { gte: startOfMonth } } }),
-    prisma.client.count({ where: { bookings: { some: { vendorId } } } }),
+    prisma.booking.groupBy({ by: ["clientId"], where: { vendorId } }).then((r) => r.length),
     prisma.payment.aggregate({ where: { booking: { vendorId } }, _sum: { jumlah: true } }),
     prisma.payment.aggregate({
       where: { booking: { vendorId }, createdAt: { gte: startOfMonth } },
