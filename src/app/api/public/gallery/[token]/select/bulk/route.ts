@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getAblyRest, ABLY_CHANNEL_SELECTION } from "@/lib/ably";
 import { DEFAULT_MAX_SELECTION } from "@/lib/constants";
 import { z } from "zod";
+import logger from "@/lib/logger";
 
 const BulkSelectSchema = z.object({
   action: z.enum(["add-all", "remove-all"]),
@@ -128,7 +129,7 @@ export async function POST(
       selectionCount: finalCount,
     });
   } catch (error) {
-    console.error("Error bulk select:", error);
+    logger.error({ err: error }, "Error bulk select");
     return NextResponse.json({ error: "Failed to update selections" }, { status: 500 });
   }
 }

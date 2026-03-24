@@ -6,6 +6,7 @@ import { deletePhotoFromCloudinary } from "@/lib/cloudinary";
 import { verifyGalleryOwnershipWithSelect } from "@/lib/api/gallery-auth";
 import { verifySelectionOwnership } from "@/lib/api/resource-auth";
 import { z } from "zod";
+import logger from "@/lib/logger";
 
 const toggleLockSchema = z.object({
   selectionId: z.string().uuid(),
@@ -80,7 +81,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Error fetching selections:", error);
+    logger.error({ err: error }, "Error fetching selections");
     return NextResponse.json(
       { code: "INTERNAL_ERROR", message: "Failed to fetch selections" },
       { status: 500 }
@@ -135,7 +136,7 @@ export async function PATCH(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Error updating selection:", error);
+    logger.error({ err: error }, "Error updating selection");
     return NextResponse.json(
       { code: "INTERNAL_ERROR", message: "Failed to update selection" },
       { status: 500 }
@@ -170,7 +171,7 @@ export async function DELETE(request: Request) {
     try {
       await deletePhotoFromCloudinary(session.user.id, selection.fileId);
     } catch (cloudinaryError) {
-      console.error("Gagal menghapus foto dari Cloudinary:", cloudinaryError);
+      logger.error({ err: cloudinaryError }, "Gagal menghapus foto dari Cloudinary");
     }
 
     await prisma.activityLog.create({
@@ -184,7 +185,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting selection:", error);
+    logger.error({ err: error }, "Error deleting selection");
     return NextResponse.json(
       { code: "INTERNAL_ERROR", message: "Failed to delete selection" },
       { status: 500 }

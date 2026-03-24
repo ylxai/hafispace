@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { randomBytes } from "node:crypto";
+import logger from "@/lib/logger";
 
 export async function GET(request: Request) {
   // Get gallery token from query params (required for both admin and client)
@@ -83,7 +84,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(tokenRequest);
   } catch (ablyError) {
-    console.error("[Ably] Token creation failed:", ablyError);
+    logger.error({ err: ablyError }, "[Ably] Token creation failed");
     return NextResponse.json(
       { error: "Realtime service temporarily unavailable" },
       { status: 503 }

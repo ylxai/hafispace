@@ -5,6 +5,7 @@ import { getAblyRest, ABLY_CHANNEL_SELECTION } from "@/lib/ably";
 import { z } from "zod";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { RATE_LIMIT_SELECT_PER_MINUTE } from "@/lib/constants";
+import logger from "@/lib/logger";
 
 const selectSchema = z.object({
   fileId: z.string().min(1, "fileId is required"),
@@ -166,7 +167,7 @@ export async function POST(
       const safeMessage = SAFE_ERROR_MESSAGES[error.code] ?? "Terjadi kesalahan. Silakan coba lagi.";
       // Log internal message ke server untuk debugging
       if (error.message && !SAFE_ERROR_MESSAGES[error.code]) {
-        console.error(`[select/route] Unwhitelisted error: code=${error.code}`, error.message);
+        logger.error({ code: error.code, message: error.message }, "[select/route] Unwhitelisted error");
       }
       return NextResponse.json(
         { code: error.code, message: safeMessage },
@@ -187,14 +188,7 @@ export async function POST(
         action,
       });
   } catch (ablyError) {
-    // Non-critical — jangan gagalkan request jika Ably publish gagal
-    // Log untuk monitoring supaya tim tahu jika Ably bermasalah
-    console.warn("[Ably] Gagal publish count-updated:", {
-      galleryId: gallery.id,
-      fileId,
-      action,
-      error: ablyError instanceof Error ? ablyError.message : String(ablyError),
-    });
+    logger.warn({ galleryId: gallery.id, fileId, action, err: ablyError instanceof Error ? ablyError.message : String(ablyError) }, "[Ably] Gagal publish count-updated");
   }
 
   return NextResponse.json({

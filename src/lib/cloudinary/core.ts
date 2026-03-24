@@ -5,6 +5,7 @@ import { decrypt } from '../encryption';
 import { env } from '../env';
 import type { CloudinaryResource, CloudinaryResourceResult, CloudinaryDeletionResult, CloudinaryPingResult } from '@/types/cloudinary';
 import { getVendorGalleryFolder } from './constants';
+import logger from '@/lib/logger';
 
 // Configure Cloudinary with environment variables
 cloudinary.config({
@@ -27,7 +28,7 @@ export async function isViesusEnhancementEnabled(vendorId: string): Promise<bool
     });
     return vendor?.enableViesusEnhancement ?? false;
   } catch (error) {
-    console.error('Error checking VIESUS enhancement setting:', error);
+    logger.error({ err: error }, 'Error checking VIESUS enhancement setting');
     return false;
   }
 }
@@ -162,7 +163,7 @@ export async function uploadPhotoToCloudinary(
         result: UploadApiResponse | undefined
       ) => {
         if (error) {
-          console.error("Error uploading to Cloudinary:", error);
+          logger.error({ err: error }, "Error uploading to Cloudinary");
           reject(new Error(`Failed to upload photo to Cloudinary: ${error.message ?? 'Unknown error'}`));
         } else if (result) {
           resolve(result);
@@ -198,7 +199,7 @@ export async function uploadPhotoToCloudinary(
       accountId: account.id,
     };
   } catch (error) {
-    console.error("Error in uploadPhotoToCloudinary:", error);
+    logger.error({ err: error }, "Error in uploadPhotoToCloudinary");
     throw new Error("Failed to upload photo to Cloudinary");
   }
 }
@@ -242,7 +243,7 @@ export async function uploadPhotosToCloudinary(
       const result = await uploadPhotoToCloudinary(vendorId, file, filename, options);
       results.push(result);
     } catch (error) {
-      console.error(`Failed to upload file ${filename} to Cloudinary:`, error);
+      logger.error({ err: error, filename }, `Failed to upload file ${filename} to Cloudinary`);
       // Continue with other files even if one fails
     }
   }
@@ -301,7 +302,7 @@ export async function getPhotoFromCloudinary(
       tags: result.tags ?? [],
     };
   } catch (error) {
-    console.error("Error getting photo from Cloudinary:", error);
+    logger.error({ err: error }, "Error getting photo from Cloudinary");
     throw new Error("Failed to get photo from Cloudinary");
   }
 }
@@ -354,7 +355,7 @@ export async function deletePhotoFromCloudinary(
       throw new Error(`Failed to delete photo from Cloudinary: ${result.result}`);
     }
   } catch (error) {
-    console.error("Error deleting photo from Cloudinary:", error);
+    logger.error({ err: error }, "Error deleting photo from Cloudinary");
     return {
       result: 'error',
       public_id: publicId,
@@ -531,7 +532,7 @@ export async function listPhotosFromCloudinary(
       updated: Date.now(),
     };
   } catch (error) {
-    console.error("Error listing photos from Cloudinary:", error);
+    logger.error({ err: error }, "Error listing photos from Cloudinary");
     throw new Error("Failed to list photos from Cloudinary");
   }
 }
@@ -557,7 +558,7 @@ export async function testCloudinaryConnection(vendorId: string): Promise<Cloudi
       success: result.status === 'ok',
     };
   } catch (error: unknown) {
-    console.error("Error testing Cloudinary connection:", error);
+    logger.error({ err: error }, "Error testing Cloudinary connection");
     let httpCode = 0;
     if (error && typeof error === 'object' && 'http_code' in error) {
       httpCode = (error as { http_code?: number }).http_code ?? 0;
@@ -590,11 +591,7 @@ export async function testCloudinaryConnectionWithCredentials(
     return result.status === 'ok';
   } catch (error) {
     const err = error as { message?: string; error?: string; http_code?: number };
-    console.error("Error testing Cloudinary connection with credentials:", {
-      message: err.message,
-      error: err.error,
-      http_code: err.http_code
-    });
+    logger.error({ message: err.message, error: err.error, http_code: err.http_code }, "Error testing Cloudinary connection with credentials");
     return false;
   }
 }
@@ -656,7 +653,7 @@ export async function applyViesusEnhancement(
     // Generate URL dengan cloudName eksplisit — tidak pakai cloudinary.url() global
     return getViesusEnhancedUrl(publicId, { ...options, cloudName: vendorConfig.cloudName });
   } catch (error) {
-    console.error("Error applying VIESUS enhancement:", error);
+    logger.error({ err: error }, "Error applying VIESUS enhancement");
     throw new Error("Failed to apply VIESUS enhancement to image");
   }
 }
@@ -724,7 +721,7 @@ export async function uploadPhotoToCloudinaryWithViesus(
         result: UploadApiResponse | undefined
       ) => {
         if (error) {
-          console.error("Error uploading to Cloudinary:", error);
+          logger.error({ err: error }, "Error uploading to Cloudinary");
           reject(new Error(`Failed to upload photo to Cloudinary: ${error.message ?? 'Unknown error'}`));
         } else if (result) {
           resolve(result);
@@ -771,7 +768,7 @@ export async function uploadPhotoToCloudinaryWithViesus(
       viesusEnhancedUrl,
     };
   } catch (error) {
-    console.error("Error in uploadPhotoToCloudinaryWithViesus:", error);
+    logger.error({ err: error }, "Error in uploadPhotoToCloudinaryWithViesus");
     throw new Error("Failed to upload photo to Cloudinary with VIESUS enhancement");
   }
 }

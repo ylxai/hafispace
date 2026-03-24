@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { uploadPhotoToCloudinary, listPhotosFromCloudinary } from "@/lib/cloudinary";
 import { CLOUDINARY_FOLDERS } from "@/lib/cloudinary/constants";
 import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
+import logger from "@/lib/logger";
 
 export async function POST(
   request: Request,
@@ -95,7 +96,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error("Error uploading photo to Cloudinary:", error);
+    logger.error({ err: error }, "Error uploading photo to Cloudinary");
     return internalErrorResponse("Failed to upload photo to Cloudinary");
   }
 }
@@ -180,7 +181,7 @@ export async function PUT(
       photoCount,
     });
   } catch (error) {
-    console.error("Error syncing photos from Cloudinary:", error);
+    logger.error({ err: error }, "Error syncing photos from Cloudinary");
     return internalErrorResponse("Failed to sync photos from Cloudinary");
   }
 }

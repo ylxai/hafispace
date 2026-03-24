@@ -7,6 +7,7 @@
  */
 
 import { redis } from "@/lib/redis";
+import logger from "@/lib/logger";
 
 type RateLimitOptions = {
   /** Jumlah maksimum request dalam window */
@@ -65,7 +66,7 @@ export async function checkRateLimit(key: string, options: RateLimitOptions): Pr
       }
       return { success: true, remaining: options.limit - count, resetAt: actualResetAt };
     } catch (err) {
-      console.error("[RateLimit] Redis error, falling back to in-memory:", err);
+      logger.error({ err }, "[RateLimit] Redis error, falling back to in-memory");
       // Fallthrough ke in-memory jika Redis error
     }
   }

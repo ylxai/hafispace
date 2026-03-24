@@ -7,6 +7,7 @@ import {
 import { CLOUDINARY_FOLDERS } from "@/lib/cloudinary/constants";
 import { getCloudinaryAccount, deletePhotoFromCloudinary } from "@/lib/cloudinary";
 import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
+import logger from "@/lib/logger";
 
 // Upload validation constants
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB per file (increased for high-res)
@@ -284,7 +285,7 @@ export async function POST(
         });
       } catch (dbError) {
         // DB gagal — rollback dengan hapus semua file dari Cloudinary (cegah orphan files)
-        console.error("DB write failed after Cloudinary upload — rolling back:", dbError);
+        logger.error({ err: dbError }, "DB write failed after Cloudinary upload — rolling back");
         const rollbackResults = await Promise.allSettled(
           successfulUploads
             .filter(r => r.data?.publicId)
@@ -292,7 +293,7 @@ export async function POST(
         );
         rollbackResults.forEach((r, i) => {
           if (r.status === "rejected") {
-            console.error(`Rollback failed for upload[${i}]:`, r.reason);
+            logger.error({ err: r.reason, index: i }, `Rollback failed for upload[${i}]`);
           }
         });
         return internalErrorResponse("Failed to save photos to database. Uploaded files have been cleaned up.");
@@ -316,7 +317,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error("Error uploading photos:", error);
+    logger.error({ err: error }, "Error uploading photos");
     return internalErrorResponse("Failed to upload photos");
   }
 }
@@ -351,7 +352,7 @@ export async function PUT(
       message: "Sync feature available",
     });
   } catch (error) {
-    console.error("Error syncing photos:", error);
+    logger.error({ err: error }, "Error syncing photos");
     return internalErrorResponse("Failed to sync photos");
   }
 }

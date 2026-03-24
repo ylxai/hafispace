@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getAblyRest, ABLY_CHANNEL_SELECTION } from "@/lib/ably";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { RATE_LIMIT_SUBMIT_PER_MINUTE } from "@/lib/constants";
+import logger from "@/lib/logger";
 
 export async function POST(
   request: Request,
@@ -101,7 +102,7 @@ export async function POST(
         : "Semua seleksi sudah dikunci sebelumnya",
     });
   } catch (error) {
-    console.error("Error submitting selection:", error);
+    logger.error({ err: error }, "Error submitting selection");
     return NextResponse.json({ error: "Failed to submit selection" }, { status: 500 });
   }
 }

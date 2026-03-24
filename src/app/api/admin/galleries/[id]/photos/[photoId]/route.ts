@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { deletePhotoFromCloudinary } from "@/lib/cloudinary/core";
+import logger from "@/lib/logger";
 
 /**
  * DELETE /api/admin/galleries/[id]/photos/[photoId]
@@ -61,7 +62,7 @@ export async function DELETE(
     try {
       await deletePhotoFromCloudinary(gallery.vendorId, photo.storageKey);
     } catch (error) {
-      console.error(`Failed to delete ${photo.storageKey} from Cloudinary:`, error);
+      logger.error({ err: error, storageKey: photo.storageKey }, `Failed to delete ${photo.storageKey} from Cloudinary`);
       cloudinaryError = error instanceof Error ? error.message : "Unknown error";
     }
 
@@ -89,7 +90,7 @@ export async function DELETE(
 
     return NextResponse.json(response, { status: 200 });
   } catch (error) {
-    console.error("DELETE /api/admin/galleries/[id]/photos/[photoId]:", error);
+    logger.error({ err: error }, "DELETE /api/admin/galleries/[id]/photos/[photoId]");
     return NextResponse.json(
       {
         code: "ERROR",

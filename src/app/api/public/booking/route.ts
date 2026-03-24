@@ -5,6 +5,7 @@ import { sendBookingConfirmationEmail } from "@/lib/email";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { randomInt } from "node:crypto";
 import { RATE_LIMIT_BOOKING_PER_HOUR } from "@/lib/constants";
+import logger from "@/lib/logger";
 
 const bookingSchema = z.object({
   namaClient: z.string().min(1, "Nama wajib diisi"),
@@ -211,7 +212,7 @@ export async function POST(request: NextRequest) {
       });
     } catch (emailError) {
       // Email gagal tidak boleh batalkan booking yang sudah berhasil dibuat
-      console.error("Gagal mengirim email konfirmasi booking:", emailError);
+      logger.error({ err: emailError }, "Gagal mengirim email konfirmasi booking");
     }
   }
 

@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { getAllowedOrigins } from "./src/lib/cors";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -40,4 +41,11 @@ const nextConfig: NextConfig = {
 
 export { allowedOrigins };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: "ylxai",
+  project: "hafispace",
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  widenClientFileUpload: true,
+  tunnelRoute: "/monitoring",
+  silent: !process.env.CI,
+});

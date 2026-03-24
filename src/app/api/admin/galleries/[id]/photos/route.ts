@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { unauthorizedResponse } from "@/lib/api/response";
+import logger from "@/lib/logger";
 
 // GET all photos from gallery
 export async function GET(
@@ -49,7 +50,7 @@ export async function GET(
       photos
     }, { status: 200 });
   } catch (error) {
-    console.error("GET /api/admin/galleries/[id]/photos:", error);
+    logger.error({ err: error }, "GET /api/admin/galleries/[id]/photos");
     return NextResponse.json(
       { code: "ERROR", message: "Failed to fetch photos" },
       { status: 500 }
