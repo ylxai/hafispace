@@ -1,13 +1,14 @@
 /**
  * Credential Encryption Utility
- * 
- * Menggunakan AES-256-GCM untuk enkripsi credentials sensitif (Cloudinary API keys, dll).
- * Master key disimpan di environment variable CLOUDINARY_MASTER_KEY.
- * 
- * Format encrypted: iv:authTag:ciphertext (hex encoded)
+ *
+ * Uses AES-256-GCM to encrypt sensitive credentials (Cloudinary API keys, etc).
+ * Master key is sourced from the centralized env object (CLOUDINARY_MASTER_KEY).
+ *
+ * Encrypted format: iv:authTag:ciphertext (hex encoded)
  */
 
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { env } from '@/lib/env';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
@@ -15,26 +16,19 @@ const AUTH_TAG_LENGTH = 16;
 const KEY_LENGTH = 32;
 
 /**
- * Get master key from environment variable
- * Key harus 32 bytes (64 hex characters)
+ * Get master key from centralized env object.
+ * Key must be 32 bytes (64 hex characters).
  */
 function getMasterKey(): Buffer {
-  const keyHex = process.env.CLOUDINARY_MASTER_KEY;
-  
-  if (!keyHex) {
-    throw new Error(
-      'CLOUDINARY_MASTER_KEY environment variable is not set. ' +
-      'Generate a key with: openssl rand -hex 32'
-    );
-  }
-  
+  const keyHex = env.CLOUDINARY_MASTER_KEY;
+
   if (keyHex.length !== 64) {
     throw new Error(
       `CLOUDINARY_MASTER_KEY must be 64 hex characters (32 bytes), got ${keyHex.length}. ` +
       'Generate a new key with: openssl rand -hex 32'
     );
   }
-  
+
   return Buffer.from(keyHex, 'hex');
 }
 
