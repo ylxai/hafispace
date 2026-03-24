@@ -11,11 +11,14 @@ Platform manajemen galeri foto pernikahan dan event berbasis Next.js 15. Diranca
 | Framework | Next.js 15 (App Router) |
 | Language | TypeScript 5 (strict mode) |
 | UI | React 19, Tailwind CSS 4 |
-| Database | PostgreSQL via Prisma ORM 5 |
+| Database | PostgreSQL via Prisma ORM 5 (Neon) |
 | Auth | NextAuth.js 4 (JWT, Credentials) |
-| Storage | Cloudinary |
+| Storage | Cloudinary (preview/thumbnail) + Cloudflare R2 (original, planned) |
 | Realtime | Ably |
+| Cache | Upstash Redis |
 | Forms | React Hook Form + Zod |
+| Logging | pino + pino-pretty |
+| Monitoring | Sentry (`@sentry/nextjs`) |
 
 ---
 
@@ -25,9 +28,11 @@ Platform manajemen galeri foto pernikahan dan event berbasis Next.js 15. Diranca
 - **Manajemen Klien** — Database klien terintegrasi dengan riwayat booking
 - **Galeri Foto** — Upload foto ke Cloudinary, generate token akses unik untuk klien
 - **Seleksi Foto** — Klien memilih foto via token, dengan batas maksimal dan real-time counter
-- **Dashboard Metrics** — Statistik aktif booking, total galeri, dan klien
+- **Dashboard Metrics** — Statistik aktif booking, total galeri, dan klien (cached Redis)
 - **Multi Cloudinary Account** — Dukung beberapa akun Cloudinary per vendor
 - **VIESUS Enhancement** — Integrasi AI enhancement per galeri
+- **Health Check** — `/api/health` endpoint untuk monitoring DB connectivity
+- **Error Monitoring** — Sentry full setup (server, edge, client)
 
 ---
 
@@ -39,8 +44,10 @@ src/
 │   ├── admin/              # Halaman admin (dashboard, events, galleries, clients, settings)
 │   ├── api/
 │   │   ├── admin/          # API routes terproteksi (auth required)
-│   │   └── public/         # API routes publik (akses via token)
+│   │   ├── public/         # API routes publik (akses via token)
+│   │   └── health/         # Health check endpoint
 │   ├── gallery/[token]/    # Halaman galeri klien (akses via token)
+│   ├── global-error.tsx    # Sentry root error boundary
 │   └── login/              # Halaman login
 ├── components/
 │   ├── admin/              # Komponen panel admin
@@ -50,12 +57,25 @@ src/
 ├── lib/
 │   ├── api/                # Response helpers & Zod validation schemas
 │   ├── auth/               # NextAuth config & password utilities
-│   ├── cloudinary.ts       # Cloudinary SDK wrapper
+│   ├── cloudinary/         # Cloudinary SDK wrapper (multi-tenant)
+│   ├── constants.ts        # Client-safe constants (hardcoded values)
+│   ├── constants.server.ts # Server-only constants (env-based: rate limits, bcrypt, dll)
 │   ├── db.ts               # Prisma client singleton
-│   ├── env.ts              # Environment variable validation
-│   └── redis.ts            # Selection count DB utilities
-└── types/                  # TypeScript type definitions
+│   ├── email.ts            # Email utilities
+│   ├── env.ts              # Environment variable validation (Zod)
+│   ├── logger.ts           # Pino logger (server-side only)
+│   ├── rate-limit.ts       # Rate limiting via Upstash Redis
+│   └── redis.ts            # Redis client & selection count utilities
+├── middleware.ts            # Auth guard + x-request-id injection
+└── types/
+    └── api.ts              # Shared API response types
 ```
+
+Root-level Sentry files:
+- `instrumentation.ts` — register hook + `onRequestError`
+- `instrumentation-client.ts` — browser Sentry init
+- `sentry.server.config.ts` — Node.js server config
+- `sentry.edge.config.ts` — Edge runtime config
 
 ---
 
@@ -71,7 +91,13 @@ npm install
 
 ### 2. Environment Variables
 
-Buat file `.env.local` di root project:
+Salin `.env.example` ke `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Isi minimal yang required:
 
 ```env
 # Database (required)
@@ -81,18 +107,11 @@ DATABASE_URL="postgresql://user:password@host:5432/dbname"
 NEXTAUTH_SECRET="your-secret-key-min-32-chars"
 NEXTAUTH_URL="http://localhost:3000"
 
-# Cloudinary (opsional — bisa dikonfigurasi via Settings UI)
-CLOUDINARY_CLOUD_NAME=""
-CLOUDINARY_API_KEY=""
-CLOUDINARY_API_SECRET=""
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=""
-
-# Ably Realtime (opsional — untuk real-time selection counter)
-ABLY_API_KEY=""
-
 # App URL
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
+
+Lihat `.env.example` untuk daftar lengkap semua env vars beserta default-nya.
 
 ### 3. Database Migration
 
@@ -120,11 +139,10 @@ Buka [http://localhost:3000](http://localhost:3000)
 ## Scripts
 
 ```bash
-npm run dev        # Development server (port 3000, semua interface)
+npm run dev        # Development server (port 3000)
 npm run build      # Production build
 npm run start      # Jalankan production build
-npm run lint       # ESLint check
-npm run test:e2e   # Playwright e2e tests
+npm run lint       # ESLint check (harus 0 error sebelum merge)
 ```
 
 ---
@@ -138,7 +156,7 @@ Model utama:
 - **Booking** — Sesi foto (paket, harga, tanggal, lokasi)
 - **Gallery** — Galeri foto dengan token akses unik
 - **GallerySetting** — Konfigurasi per galeri (download, print, pesan)
-- **Photo** — Foto individual dalam galeri (disimpan di Cloudinary)
+- **Photo** — Foto individual (`url` = Cloudinary preview, `originalUrl` = R2 planned)
 - **PhotoSelection** — Seleksi foto oleh klien
 - **VendorCloudinary** — Multi-akun Cloudinary per vendor
 - **Notification** — Notifikasi in-app
@@ -171,6 +189,12 @@ Model utama:
 | POST | `/api/public/gallery/[token]/select` | Tambah/hapus seleksi foto |
 | POST | `/api/public/gallery/[token]/notify` | Kirim notifikasi selesai seleksi |
 
+### System
+
+| Method | Route | Deskripsi |
+|---|---|---|
+| GET | `/api/health` | Health check — DB connectivity |
+
 ---
 
 ## Deployment
@@ -182,6 +206,8 @@ Model utama:
 3. Set semua environment variables di dashboard Vercel
 4. Deploy
 
+> Sentry source maps di-upload otomatis saat `next build` via `withSentryConfig`.
+
 ### Self-hosted (Node.js)
 
 ```bash
@@ -189,18 +215,18 @@ npm run build
 npm start
 ```
 
-Pastikan semua environment variables sudah dikonfigurasi di server.
-
 ---
 
 ## Security
 
 - Semua route `/admin/*` dan `/api/admin/*` diproteksi middleware NextAuth
 - JWT strategy dengan session token
+- `x-request-id` header di-inject setiap request untuk tracing
 - Input validation menggunakan Zod di semua API routes
 - Security headers: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`
-- View count dilindungi cookie deduplication (TTL 24 jam)
-- bcrypt cost factor 12 untuk password hashing
+- bcrypt cost factor: 12 (production) / 8 (development)
+- Rate limiting via Upstash Redis di semua public endpoints
+- Server-only env vars tidak bocor ke client bundle (`constants.server.ts`)
 
 ---
 
