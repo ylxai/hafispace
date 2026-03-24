@@ -75,3 +75,4 @@ testsprite_tests/auth_helper.py
 
 # Sentry
 .env.sentry-build-plugin
+.adal/
