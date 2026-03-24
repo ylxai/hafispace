@@ -5,6 +5,7 @@ import logger from '@/lib/logger';
 
 function escapeHtml(str: string): string {
   return str
+    .replace(/[\r\n]/g, '') // prevent email header injection
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
