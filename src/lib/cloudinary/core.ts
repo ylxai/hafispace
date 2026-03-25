@@ -646,14 +646,14 @@ export async function applyViesusEnhancement(
 
 // Generate an upload signature for client-side uploads (if needed)
 export async function generateUploadSignature(vendorId: string, paramsToSign: Record<string, string | number | boolean>): Promise<string> {
-  // Fetch vendor-specific credentials
-  const vendorConfig = await getVendorCloudinaryClient(vendorId);
-  
-  if (!vendorConfig.apiSecret) {
-    throw new Error(`Vendor ${vendorId} has no Cloudinary API secret configured`);
+  // Fetch vendor-specific credentials for the default account
+  const account = await getCloudinaryAccount(vendorId);
+
+  if (!account.apiSecret) {
+    throw new Error(`Default Cloudinary account for vendor ${vendorId} has no API secret configured`);
   }
-  
-  const signature = cloudinary.utils.api_sign_request(paramsToSign, vendorConfig.apiSecret);
+
+  const signature = cloudinary.utils.api_sign_request(paramsToSign, account.apiSecret);
   return signature;
 }
 
