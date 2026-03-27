@@ -7,6 +7,7 @@ import { unauthorizedResponse, validationErrorResponse, internalErrorResponse, p
 import { parsePaginationParams, createPaginationResponse } from "@/lib/api/pagination";
 import { verifyBookingOwnership } from "@/lib/api/resource-auth";
 import logger from "@/lib/logger";
+import { generateKodeBooking } from "@/lib/booking-utils";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -103,7 +104,7 @@ export async function POST(request: Request) {
       notes,
     } = result.data;
 
-    const kodeBooking = `BK-${Date.now().toString(36).toUpperCase()}`;
+    const kodeBooking = generateKodeBooking();
 
     const sessionDate = new Date(tanggalSesi);
     const year = sessionDate.getUTCFullYear();

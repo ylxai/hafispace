@@ -4,10 +4,10 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { sendBookingConfirmationEmail } from "@/lib/email";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { randomInt } from "node:crypto";
 import { RATE_LIMIT_BOOKING_PER_HOUR } from "@/lib/constants.server";
 import logger from "@/lib/logger";
 import { forbiddenResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
+import { generateKodeBooking } from "@/lib/booking-utils";
 
 const bookingSchema = z.object({
   namaClient: z.string().min(1, "Nama wajib diisi"),
@@ -19,17 +19,6 @@ const bookingSchema = z.object({
   catatan: z.string().optional().nullable(),
   customFields: z.record(z.string(), z.string()).optional(),
 });
-
-function generateKodeBooking(): string {
-  const now = new Date();
-  const year = now.getFullYear().toString().slice(-2);
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  // Use a cryptographically secure random number generator (CSPRNG)
-  // to generate a 4-character base-36 string.
-  // 36^4 = 1,679,616 possible combinations.
-  const random = randomInt(0, 1679616).toString(36).padStart(4, "0").toUpperCase();
-  return `BK${year}${month}-${random}`;
-}
 
 // GET — ambil info vendor + paket aktif untuk public form
 export async function GET(request: NextRequest) {
