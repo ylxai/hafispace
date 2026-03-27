@@ -26,6 +26,11 @@ const nextConfig: NextConfig = {
     // ✅ Configure quality levels for Next.js 16 compatibility
     qualities: [75, 80, 90, 95],
   },
+  // Limit request body size for JSON payloads (not file uploads)
+  // File uploads use multipart/form-data and are handled separately
+  serverActions: {
+    bodySizeLimit: '5mb', // Reasonable limit for booking/gallery JSON data
+  },
   async headers() {
     return [
       {
