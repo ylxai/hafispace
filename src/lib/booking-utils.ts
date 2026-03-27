@@ -42,16 +42,13 @@ export async function generateUniqueKodeBooking<T>(
     } catch (error) {
       lastError = error;
       
-      // Only retry on Prisma unique constraint violation (P2002)
-      const isCollision = 
+      // Retry only on unique constraint violation (P2002) if attempts remain
+      const shouldRetry = 
         error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2002";
+        error.code === "P2002" &&
+        attempt < maxAttempts;
       
-      if (isCollision && attempt < maxAttempts) {
-        continue; // Retry with new code
-      }
-      
-      throw error; // Re-throw immediately if not a collision or max attempts reached
+      if (!shouldRetry) throw error;
     }
   }
   
