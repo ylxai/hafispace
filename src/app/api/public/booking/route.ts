@@ -5,7 +5,7 @@ import { sendBookingConfirmationEmail } from "@/lib/email";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { RATE_LIMIT_BOOKING_PER_HOUR } from "@/lib/constants.server";
 import logger from "@/lib/logger";
-import { forbiddenResponse, notFoundResponse, validationErrorResponse } from "@/lib/api/response";
+import { forbiddenResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 import { generateUniqueKodeBooking } from "@/lib/booking-utils";
 
 const bookingSchema = z.object({
@@ -214,9 +214,6 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Error creating booking");
-    return NextResponse.json(
-      { code: "INTERNAL_ERROR", message: "Failed to create booking" },
-      { status: 500 }
-    );
+    return internalErrorResponse("Failed to create booking");
   }
 }
