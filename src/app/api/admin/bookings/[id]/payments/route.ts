@@ -129,7 +129,10 @@ export async function POST(
     data: { dpStatus, dpAmount: totalBayar },
   });
 
-  return NextResponse.json(payment, { status: 201 });
+  return NextResponse.json({
+    ...payment,
+    jumlah: payment.jumlah.toNumber(),
+  }, { status: 201 });
 }
 
 // DELETE — hapus payment

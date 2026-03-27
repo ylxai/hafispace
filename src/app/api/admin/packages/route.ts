@@ -30,7 +30,13 @@ export async function GET() {
     },
   });
 
-  return NextResponse.json({ packages });
+  // Convert Decimal to number for JSON serialization
+  const packagesWithNumbers = packages.map(pkg => ({
+    ...pkg,
+    harga: pkg.harga.toNumber(),
+  }));
+
+  return NextResponse.json({ packages: packagesWithNumbers });
 }
 
 // POST — buat paket baru
@@ -58,7 +64,10 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return NextResponse.json(newPackage, { status: 201 });
+  return NextResponse.json({
+    ...newPackage,
+    harga: newPackage.harga.toNumber(),
+  }, { status: 201 });
 }
 
 // PUT — update paket
@@ -81,7 +90,10 @@ export async function PUT(request: NextRequest) {
     data: { namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak: includeCetak ?? undefined, urutan, status },
   });
 
-  return NextResponse.json(updated);
+  return NextResponse.json({
+    ...updated,
+    harga: updated.harga.toNumber(),
+  });
 }
 
 // DELETE — hapus paket

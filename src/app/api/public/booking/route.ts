@@ -73,7 +73,16 @@ export async function GET(request: NextRequest) {
     return forbiddenResponse("Booking form is not active");
   }
 
-  return NextResponse.json({ vendor });
+  // Convert Decimal to number for JSON serialization
+  const vendorWithNumbers = {
+    ...vendor,
+    packages: vendor.packages.map(pkg => ({
+      ...pkg,
+      harga: pkg.harga.toNumber(),
+    })),
+  };
+
+  return NextResponse.json({ vendor: vendorWithNumbers });
 }
 
 // POST — submit booking baru dari klien
