@@ -1,8 +1,8 @@
 # Code Review Fixes — Progress Checklist
 
 Tanggal: 2026-03-24
-Update: 2026-03-24
-Status: **IN PROGRESS** — Phase 7 (Critical #1-4, #16) MERGED ✅, Phase 8 (High #9, #11, #12, #13) MERGED ✅, Phase 9 (High #8, #10) MERGED ✅
+Update: 2026-03-27
+Status: **IN PROGRESS** — Phase 7-9 MERGED ✅, Phase 10 (Medium #14, #17) MERGED ✅
 
 ---
 
@@ -80,20 +80,23 @@ Total: **22 issues** — 6 Critical, 7 High, 6 Medium, 3 Low.
 
 ## MEDIUM
 
-- [ ] **#14** `getResponsiveImageUrls` dan `listImagesInFolder` pakai global config
-  - File: `src/lib/cloudinary-upload.ts:180-215`, `332-340`
-  - Fix: Pakai per-request config dengan vendorId
+- [x] **#14** `getResponsiveImageUrls` dan `listImagesInFolder` pakai global config ✅ MERGED
+  - File: `src/lib/cloudinary-upload.ts:180-215`, `332-340` (DELETED)
+  - Fix: Hapus fungsi deprecated yang pakai global config
+  - PR: #54
 
 - [ ] **#15** View count race condition — concurrent requests bisa increment 2x
   - File: `src/app/api/public/gallery/[token]/route.ts:156-163`
   - Fix: Gunakan Redis atomic SETNX + INCR
+  - Note: Low impact, skip untuk sekarang (butuh Redis refactor)
 
 - [x] **#16** Email: `new Resend()` dibuat setiap call ✅ MERGED
   - Fix: Lazy-init singleton (`resend ??= new Resend(...)`)
 
-- [ ] **#17** `kodeBooking` format tidak konsisten antara admin dan public
+- [x] **#17** `kodeBooking` format tidak konsisten antara admin dan public ✅ MERGED
   - File: `admin/events/route.ts:106` vs `public/booking/route.ts:21-29`
-  - Fix: Satu fungsi generator untuk semua
+  - Fix: Extract ke `src/lib/booking-utils.ts` dengan `generateUniqueKodeBooking` (retry on collision)
+  - PR: #54
 
 - [ ] **#18** Tidak ada request body size limit pada JSON routes
   - File: `next.config.ts`
