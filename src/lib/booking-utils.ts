@@ -34,14 +34,10 @@ export async function generateUniqueKodeBooking<T>(
   checkUnique: (kodeBooking: string) => Promise<T>,
   maxAttempts = 3
 ): Promise<T> {
-  let lastError: unknown;
-  
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await checkUnique(generateKodeBooking());
     } catch (error) {
-      lastError = error;
-      
       // Retry only on unique constraint violation (P2002) if attempts remain
       const shouldRetry = 
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -49,9 +45,11 @@ export async function generateUniqueKodeBooking<T>(
         attempt < maxAttempts;
       
       if (!shouldRetry) throw error;
+      // Continue to next attempt if shouldRetry is true
     }
   }
   
-  // Unreachable in practice, but preserve last error if somehow reached
-  throw lastError ?? new Error(`Failed to generate unique booking code after ${maxAttempts} attempts`);
+  // TypeScript requires this, but it's unreachable:
+  // Loop either returns on success or throws on non-retryable error
+  throw new Error("Unreachable: retry loop exhausted");
 }
