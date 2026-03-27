@@ -34,10 +34,14 @@ export async function generateUniqueKodeBooking<T>(
   checkUnique: (kodeBooking: string) => Promise<T>,
   maxAttempts = 3
 ): Promise<T> {
+  let lastError: unknown;
+  
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await checkUnique(generateKodeBooking());
     } catch (error) {
+      lastError = error;
+      
       // Only retry on Prisma unique constraint violation (P2002)
       const isCollision = 
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -51,6 +55,6 @@ export async function generateUniqueKodeBooking<T>(
     }
   }
   
-  // Unreachable: loop always returns or throws
-  throw new Error(`Failed to generate unique booking code after ${maxAttempts} attempts`);
+  // Unreachable in practice, but preserve last error if somehow reached
+  throw lastError ?? new Error(`Failed to generate unique booking code after ${maxAttempts} attempts`);
 }
