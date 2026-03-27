@@ -128,8 +128,8 @@ export async function POST(request: Request) {
       resolvedMaxSelection = paket.maxSelection;
     }
 
-    const booking = await generateUniqueKodeBooking(async (kodeBooking) => {
-      return await prisma.booking.create({
+    const booking = await generateUniqueKodeBooking((kodeBooking) => {
+      return prisma.booking.create({
         data: {
           vendorId: session.user.id,
           kodeBooking,

@@ -78,15 +78,16 @@ export async function GET(request: NextRequest) {
 
 // POST — submit booking baru dari klien
 export async function POST(request: NextRequest) {
-  // Rate limit: maks 5 booking per jam per IP (cegah spam)
-  const ip = getClientIp(request);
-  const rl = await checkRateLimit(`booking:${ip}`, { limit: RATE_LIMIT_BOOKING_PER_HOUR, windowMs: 60 * 60_000 });
-  if (!rl.success) {
-    return NextResponse.json(
-      { code: "RATE_LIMITED", message: "Terlalu banyak booking. Coba lagi nanti." },
-      { status: 429 }
-    );
-  }
+  try {
+    // Rate limit: maks 5 booking per jam per IP (cegah spam)
+    const ip = getClientIp(request);
+    const rl = await checkRateLimit(`booking:${ip}`, { limit: RATE_LIMIT_BOOKING_PER_HOUR, windowMs: 60 * 60_000 });
+    if (!rl.success) {
+      return NextResponse.json(
+        { code: "RATE_LIMITED", message: "Terlalu banyak booking. Coba lagi nanti." },
+        { status: 429 }
+      );
+    }
 
   const body = await request.json() as { vendorId?: string } & Record<string, unknown>;
   const { vendorId } = body;
@@ -150,8 +151,8 @@ export async function POST(request: NextRequest) {
   const dpAmount = Math.ceil((hargaPaket * vendor.dpPercentage) / 100);
 
   // Buat booking dengan retry on unique constraint violation
-  const booking = await generateUniqueKodeBooking(async (kodeBooking) => {
-    return await prisma.booking.create({
+  const booking = await generateUniqueKodeBooking((kodeBooking) => {
+    return prisma.booking.create({
       data: {
         vendorId,
         clientId: client.id,
@@ -203,12 +204,19 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({
-    success: true,
-    booking: {
-      ...booking,
-      dpAmount,
-      dpPercentage: vendor.dpPercentage,
-    },
-  }, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      booking: {
+        ...booking,
+        dpAmount,
+        dpPercentage: vendor.dpPercentage,
+      },
+    }, { status: 201 });
+  } catch (error) {
+    logger.error({ err: error }, "Error creating booking");
+    return NextResponse.json(
+      { code: "INTERNAL_ERROR", message: "Failed to create booking" },
+      { status: 500 }
+    );
+  }
 }
