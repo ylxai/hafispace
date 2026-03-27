@@ -15,7 +15,6 @@ export {
   isViesusEnhancementEnabled,
   getCloudinaryAccount,
   getCloudinaryConfig,
-  configureCloudinary,
   getVendorCloudinaryClient,
   uploadPhotoToCloudinary,
   uploadPhotosToCloudinary,

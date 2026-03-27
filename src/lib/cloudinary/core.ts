@@ -2,22 +2,13 @@ import { v2 as cloudinary } from 'cloudinary';
 import type { UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
 import { prisma } from '../db';
 import { decrypt } from '../encryption';
-import { env } from '../env';
 import type { CloudinaryResource, CloudinaryResourceResult, CloudinaryDeletionResult, CloudinaryPingResult } from '@/types/cloudinary';
 import { getVendorGalleryFolder } from './constants';
 import logger from '@/lib/logger';
 
-// Configure Cloudinary with environment variables
-cloudinary.config({
-  cloud_name: env.CLOUDINARY_CLOUD_NAME,
-  api_key: env.CLOUDINARY_API_KEY,
-  api_secret: env.CLOUDINARY_API_SECRET,
-});
-
-// Alternative configuration using CLOUDINARY_URL
-if (env.CLOUDINARY_URL) {
-  cloudinary.config(true); // Use environment variable CLOUDINARY_URL
-}
+// NO GLOBAL CONFIG — all operations use per-request credentials via getCloudinaryConfig()
+// This prevents race conditions in multi-tenant environments where concurrent requests
+// from different vendors could cross-contaminate the global cloudinary.config() state.
 
 // Function to check if VIESUS enhancement is enabled for a vendor
 export async function isViesusEnhancementEnabled(vendorId: string): Promise<boolean> {
@@ -78,18 +69,13 @@ export async function getCloudinaryAccount(vendorId: string, accountId?: string)
   };
 }
 
-// Get per-request config object dari account (tidak mutasi global state)
+// Get per-request config object from account (does not mutate global state)
 export function getCloudinaryConfig(account: CloudinaryAccountConfig) {
   return {
     cloud_name: account.cloudName,
     api_key: account.apiKey,
     api_secret: account.apiSecret,
   };
-}
-
-// @deprecated — gunakan getCloudinaryConfig() untuk avoid race condition
-export function configureCloudinary(account: CloudinaryAccountConfig) {
-  cloudinary.config(getCloudinaryConfig(account));
 }
 
 // Initialize Cloudinary client for a specific vendor (legacy - uses default account)
@@ -659,10 +645,25 @@ export async function applyViesusEnhancement(
 }
 
 // Generate an upload signature for client-side uploads (if needed)
-export function generateUploadSignature(_vendorId: string, paramsToSign: Record<string, string | number | boolean>): string {
-  const secret = env.CLOUDINARY_API_SECRET;
-  const signature = cloudinary.utils.api_sign_request(paramsToSign, secret);
-  return signature;
+export async function generateUploadSignature(
+  vendorId: string,
+  paramsToSign: Record<string, string | number | boolean>,
+  accountId?: string
+): Promise<string> {
+  try {
+    // Fetch vendor-specific credentials for a specific or default account
+    const account = await getCloudinaryAccount(vendorId, accountId);
+
+    if (!account.apiSecret) {
+      throw new Error(`Cloudinary account for vendor ${vendorId} (ID: ${account.id}) has no API secret configured`);
+    }
+
+    const signature = cloudinary.utils.api_sign_request(paramsToSign, account.apiSecret);
+    return signature;
+  } catch (error) {
+    logger.error({ err: error, vendorId, accountId }, "Error generating Cloudinary upload signature");
+    throw new Error("Failed to generate upload signature");
+  }
 }
 
 // Upload a photo to Cloudinary with VIESUS Enhancement
