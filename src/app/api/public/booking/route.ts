@@ -1,13 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { sendBookingConfirmationEmail } from "@/lib/email";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { RATE_LIMIT_BOOKING_PER_HOUR } from "@/lib/constants.server";
 import logger from "@/lib/logger";
-import { forbiddenResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
-import { generateKodeBooking } from "@/lib/booking-utils";
+import { forbiddenResponse, notFoundResponse, validationErrorResponse } from "@/lib/api/response";
+import { generateUniqueKodeBooking } from "@/lib/booking-utils";
 
 const bookingSchema = z.object({
   namaClient: z.string().min(1, "Nama wajib diisi"),
@@ -150,44 +149,34 @@ export async function POST(request: NextRequest) {
   const hargaPaket = Number(paket.harga);
   const dpAmount = Math.ceil((hargaPaket * vendor.dpPercentage) / 100);
 
-  // Buat booking dengan retry on unique constraint violation (P2002)
-  let booking: { id: string; kodeBooking: string; namaClient: string; tanggalSesi: Date | null; status: string; hargaPaket: unknown } | null = null;
-  for (let i = 0; i < 5; i++) {
-    try {
-      booking = await prisma.booking.create({
-        data: {
-          vendorId,
-          clientId: client.id,
-          paketId,
-          kodeBooking: generateKodeBooking(),
-          namaClient,
-          hpClient,
-          emailClient,
-          tanggalSesi: new Date(tanggalSesi),
-          lokasiSesi,
-          notes: catatan,
-          hargaPaket,
-          dpStatus: "UNPAID",
-          status: "PENDING",
-        },
-        select: {
-          id: true,
-          kodeBooking: true,
-          namaClient: true,
-          tanggalSesi: true,
-          status: true,
-          hargaPaket: true,
-        },
-      });
-      break;
-    } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') continue;
-      throw e;
-    }
-  }
-  if (!booking) {
-    return internalErrorResponse('Gagal generate kode booking');
-  }
+  // Buat booking dengan retry on unique constraint violation
+  const booking = await generateUniqueKodeBooking(async (kodeBooking) => {
+    return await prisma.booking.create({
+      data: {
+        vendorId,
+        clientId: client.id,
+        paketId,
+        kodeBooking,
+        namaClient,
+        hpClient,
+        emailClient,
+        tanggalSesi: new Date(tanggalSesi),
+        lokasiSesi,
+        notes: catatan,
+        hargaPaket,
+        dpStatus: "UNPAID",
+        status: "PENDING",
+      },
+      select: {
+        id: true,
+        kodeBooking: true,
+        namaClient: true,
+        tanggalSesi: true,
+        status: true,
+        hargaPaket: true,
+      },
+    });
+  });
 
   // Kirim email konfirmasi jika emailClient ada
   // Gunakan await agar email pasti terkirim sebelum serverless function selesai

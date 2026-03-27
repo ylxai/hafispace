@@ -34,12 +34,16 @@ export async function generateUniqueKodeBooking<T>(
   checkUnique: (kodeBooking: string) => Promise<T>,
   maxAttempts = 3
 ): Promise<T> {
+  let lastError: unknown;
+  
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const kodeBooking = generateKodeBooking();
     
     try {
       return await checkUnique(kodeBooking);
     } catch (error) {
+      lastError = error;
+      
       // Check if error is Prisma unique constraint violation (P2002)
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -50,10 +54,11 @@ export async function generateUniqueKodeBooking<T>(
         continue;
       }
       
-      // Re-throw if not a collision or max attempts reached
+      // Re-throw immediately if not a collision or max attempts reached
       throw error;
     }
   }
   
-  throw new Error(`Failed to generate unique booking code after ${maxAttempts} attempts`);
+  // This line is technically unreachable but TypeScript requires it
+  throw lastError ?? new Error(`Failed to generate unique booking code after ${maxAttempts} attempts`);
 }
