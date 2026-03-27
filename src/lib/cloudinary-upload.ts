@@ -1,7 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { uploadPhotoToCloudinary, getCloudinaryAccount } from './cloudinary';
-import type { CloudinaryResource } from '@/types/cloudinary';
-import { TRANSFORMATION_PRESETS } from '@/lib/cloudinary/constants';
 import logger from '@/lib/logger';
 
 // Tidak ada global config mutation di module level.
@@ -160,69 +158,6 @@ export async function uploadMultipleImages(
 }
 
 /**
- * Generate responsive image URLs for different screen sizes
- * Follows Cloudinary best practices for responsive images
- */
-export function getResponsiveImageUrls(publicId: string, options?: {
-  widths?: number[];
-  formats?: string[];
-}): {
-  src: string;
-  srcSet: string;
-  sizes: string;
-  thumbnails: { width: number; url: string }[];
-} {
-  const widths = options?.widths ?? [400, 800, 1200, 1600];
-  const format = options?.formats?.[0] ?? 'auto';
-
-  // Generate srcset for different widths
-  const srcSet = widths
-    .map((width) => {
-      const url = cloudinary.url(publicId, {
-        width,
-        crop: 'limit',
-        quality: 'auto:best',
-        format,
-        secure: true,
-      });
-      return `${url} ${width}w`;
-    })
-    .join(', ');
-
-  // Default image URL
-  const src = cloudinary.url(publicId, {
-    width: 800,
-    crop: 'limit',
-    quality: 'auto:best',
-    format: 'auto',
-    secure: true,
-  });
-
-  // Sizes attribute for responsive loading
-  const sizes = '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw';
-
-  // Generate thumbnails for different sizes
-  const thumbnails = widths.map((width) => ({
-    width,
-    url: cloudinary.url(publicId, {
-      width,
-      height: Math.round(width * 0.75), // 4:3 aspect ratio
-      crop: 'fill',
-      quality: 'auto:good',
-      format: 'auto',
-      secure: true,
-    }),
-  }));
-
-  return {
-    src,
-    srcSet,
-    sizes,
-    thumbnails,
-  };
-}
-
-/**
  * @deprecated Gunakan `deletePhotoFromCloudinary` dari `@/lib/cloudinary` untuk multi-tenant.
  * Fungsi ini hanya untuk backward compat dengan single-account setup (tanpa vendorId).
  */
@@ -303,64 +238,6 @@ export async function getImageMetadata(publicId: string): Promise<{
   } catch (error) {
     logger.error({ err: error }, 'Error getting image metadata');
     throw new Error('Failed to get image metadata from Cloudinary');
-  }
-}
-
-/**
- * @deprecated Gunakan `listPhotosFromCloudinary` dari `@/lib/cloudinary` untuk multi-tenant.
- */
-export async function listImagesInFolder(options: {
-  folder: string;
-  maxResults?: number;
-  nextCursor?: string;
-  tags?: boolean;
-}): Promise<{
-  items: Array<{
-    publicId: string;
-    url: string;
-    thumbnailUrl: string;
-    width?: number;
-    height?: number;
-    size: number;
-    format: string;
-    createdAt: string;
-    tags?: string[];
-  }>;
-  nextCursor?: string;
-  total: number;
-}> {
-  try {
-    const result = await cloudinary.api.resources({
-      type: 'upload',
-      prefix: options.folder,
-      max_results: options.maxResults ?? 500,
-      next_cursor: options.nextCursor,
-      tags: options.tags ?? true,
-    });
-
-    const items = result.resources.map((resource: CloudinaryResource) => ({
-      publicId: resource.public_id,
-      url: cloudinary.url(resource.public_id, { secure: true }),
-      thumbnailUrl: cloudinary.url(resource.public_id, {
-        ...TRANSFORMATION_PRESETS.THUMBNAIL,
-        secure: true,
-      }),
-      width: resource.width,
-      height: resource.height,
-      size: resource.bytes,
-      format: resource.format,
-      createdAt: resource.created_at,
-      tags: resource.tags,
-    }));
-
-    return {
-      items,
-      nextCursor: result.next_cursor,
-      total: items.length,
-    };
-  } catch (error) {
-    logger.error({ err: error }, 'Error listing images');
-    throw new Error('Failed to list images from Cloudinary');
   }
 }
 

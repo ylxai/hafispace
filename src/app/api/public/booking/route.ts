@@ -1,13 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { sendBookingConfirmationEmail } from "@/lib/email";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { randomInt } from "node:crypto";
 import { RATE_LIMIT_BOOKING_PER_HOUR } from "@/lib/constants.server";
 import logger from "@/lib/logger";
 import { forbiddenResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
+import { generateUniqueKodeBooking } from "@/lib/booking-utils";
 
 const bookingSchema = z.object({
   namaClient: z.string().min(1, "Nama wajib diisi"),
@@ -19,17 +18,6 @@ const bookingSchema = z.object({
   catatan: z.string().optional().nullable(),
   customFields: z.record(z.string(), z.string()).optional(),
 });
-
-function generateKodeBooking(): string {
-  const now = new Date();
-  const year = now.getFullYear().toString().slice(-2);
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  // Use a cryptographically secure random number generator (CSPRNG)
-  // to generate a 4-character base-36 string.
-  // 36^4 = 1,679,616 possible combinations.
-  const random = randomInt(0, 1679616).toString(36).padStart(4, "0").toUpperCase();
-  return `BK${year}${month}-${random}`;
-}
 
 // GET — ambil info vendor + paket aktif untuk public form
 export async function GET(request: NextRequest) {
@@ -90,15 +78,16 @@ export async function GET(request: NextRequest) {
 
 // POST — submit booking baru dari klien
 export async function POST(request: NextRequest) {
-  // Rate limit: maks 5 booking per jam per IP (cegah spam)
-  const ip = getClientIp(request);
-  const rl = await checkRateLimit(`booking:${ip}`, { limit: RATE_LIMIT_BOOKING_PER_HOUR, windowMs: 60 * 60_000 });
-  if (!rl.success) {
-    return NextResponse.json(
-      { code: "RATE_LIMITED", message: "Terlalu banyak booking. Coba lagi nanti." },
-      { status: 429 }
-    );
-  }
+  try {
+    // Rate limit: maks 5 booking per jam per IP (cegah spam)
+    const ip = getClientIp(request);
+    const rl = await checkRateLimit(`booking:${ip}`, { limit: RATE_LIMIT_BOOKING_PER_HOUR, windowMs: 60 * 60_000 });
+    if (!rl.success) {
+      return NextResponse.json(
+        { code: "RATE_LIMITED", message: "Terlalu banyak booking. Coba lagi nanti." },
+        { status: 429 }
+      );
+    }
 
   const body = await request.json() as { vendorId?: string } & Record<string, unknown>;
   const { vendorId } = body;
@@ -161,44 +150,34 @@ export async function POST(request: NextRequest) {
   const hargaPaket = Number(paket.harga);
   const dpAmount = Math.ceil((hargaPaket * vendor.dpPercentage) / 100);
 
-  // Buat booking dengan retry on unique constraint violation (P2002)
-  let booking: { id: string; kodeBooking: string; namaClient: string; tanggalSesi: Date | null; status: string; hargaPaket: unknown } | null = null;
-  for (let i = 0; i < 5; i++) {
-    try {
-      booking = await prisma.booking.create({
-        data: {
-          vendorId,
-          clientId: client.id,
-          paketId,
-          kodeBooking: generateKodeBooking(),
-          namaClient,
-          hpClient,
-          emailClient,
-          tanggalSesi: new Date(tanggalSesi),
-          lokasiSesi,
-          notes: catatan,
-          hargaPaket,
-          dpStatus: "UNPAID",
-          status: "PENDING",
-        },
-        select: {
-          id: true,
-          kodeBooking: true,
-          namaClient: true,
-          tanggalSesi: true,
-          status: true,
-          hargaPaket: true,
-        },
-      });
-      break;
-    } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') continue;
-      throw e;
-    }
-  }
-  if (!booking) {
-    return internalErrorResponse('Gagal generate kode booking');
-  }
+  // Buat booking dengan retry on unique constraint violation
+  const booking = await generateUniqueKodeBooking((kodeBooking) => {
+    return prisma.booking.create({
+      data: {
+        vendorId,
+        clientId: client.id,
+        paketId,
+        kodeBooking,
+        namaClient,
+        hpClient,
+        emailClient,
+        tanggalSesi: new Date(tanggalSesi),
+        lokasiSesi,
+        notes: catatan,
+        hargaPaket,
+        dpStatus: "UNPAID",
+        status: "PENDING",
+      },
+      select: {
+        id: true,
+        kodeBooking: true,
+        namaClient: true,
+        tanggalSesi: true,
+        status: true,
+        hargaPaket: true,
+      },
+    });
+  });
 
   // Kirim email konfirmasi jika emailClient ada
   // Gunakan await agar email pasti terkirim sebelum serverless function selesai
@@ -225,12 +204,16 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({
-    success: true,
-    booking: {
-      ...booking,
-      dpAmount,
-      dpPercentage: vendor.dpPercentage,
-    },
-  }, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      booking: {
+        ...booking,
+        dpAmount,
+        dpPercentage: vendor.dpPercentage,
+      },
+    }, { status: 201 });
+  } catch (error) {
+    logger.error({ err: error }, "Error creating booking");
+    return internalErrorResponse("Failed to create booking");
+  }
 }

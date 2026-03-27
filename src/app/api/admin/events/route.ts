@@ -7,6 +7,7 @@ import { unauthorizedResponse, validationErrorResponse, internalErrorResponse, p
 import { parsePaginationParams, createPaginationResponse } from "@/lib/api/pagination";
 import { verifyBookingOwnership } from "@/lib/api/resource-auth";
 import logger from "@/lib/logger";
+import { generateUniqueKodeBooking } from "@/lib/booking-utils";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -103,8 +104,6 @@ export async function POST(request: Request) {
       notes,
     } = result.data;
 
-    const kodeBooking = `BK-${Date.now().toString(36).toUpperCase()}`;
-
     const sessionDate = new Date(tanggalSesi);
     const year = sessionDate.getUTCFullYear();
     const month = sessionDate.getUTCMonth();
@@ -129,22 +128,24 @@ export async function POST(request: Request) {
       resolvedMaxSelection = paket.maxSelection;
     }
 
-    const booking = await prisma.booking.create({
-      data: {
-        vendorId: session.user.id,
-        kodeBooking,
-        namaClient,
-        hpClient,
-        emailClient,
-        paketId,
-        paketCustom,
-        hargaPaket,
-        tanggalSesi: normalizedDate,
-        lokasiSesi,
-        maxSelection: resolvedMaxSelection,
-        notes,
-        status: "PENDING",
-      },
+    const booking = await generateUniqueKodeBooking((kodeBooking) => {
+      return prisma.booking.create({
+        data: {
+          vendorId: session.user.id,
+          kodeBooking,
+          namaClient,
+          hpClient,
+          emailClient,
+          paketId,
+          paketCustom,
+          hargaPaket,
+          tanggalSesi: normalizedDate,
+          lokasiSesi,
+          maxSelection: resolvedMaxSelection,
+          notes,
+          status: "PENDING",
+        },
+      });
     });
 
     return NextResponse.json(booking, { status: 201 });
