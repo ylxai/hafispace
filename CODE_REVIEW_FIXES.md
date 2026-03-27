@@ -2,7 +2,7 @@
 
 Tanggal: 2026-03-24
 Update: 2026-03-24
-Status: **IN PROGRESS** — Phase 7 (Critical #1-4, #16) MERGED ✅, Phase 8 (High #9, #11, #12, #13) MERGED ✅
+Status: **IN PROGRESS** — Phase 7 (Critical #1-4, #16) MERGED ✅, Phase 8 (High #9, #11, #12, #13) MERGED ✅, Phase 9 (High #8, #10) MERGED ✅
 
 ---
 
@@ -46,20 +46,20 @@ Total: **22 issues** — 6 Critical, 7 High, 6 Medium, 3 Low.
   - Fix: Tambah rate limiting pada login route
   - Impact: Brute force attack
 
-- [ ] **#8** Cloudinary global config race condition (multi-tenant)
+- [x] **#8** Cloudinary global config race condition (multi-tenant) ✅ MERGED
   - File: `src/lib/cloudinary/core.ts:11-15`
-  - Fix: Hapus module-level config, pastikan semua operasi pakai per-request credentials
-  - Impact: Concurrent requests dari vendor berbeda bisa cross-contaminate config
+  - Fix: Hapus module-level config, semua operasi pakai per-request credentials via `getCloudinaryConfig()`
+  - Impact: Concurrent requests dari vendor berbeda tidak akan cross-contaminate config
 
 - [x] **#9** N+1 query pada gallery PUT sync ✅ MERGED
   - File: `src/app/api/admin/galleries/[id]/route.ts:139-171`
   - Fix: Batch select existing keys + single `createMany` + `skipDuplicates: true`
   - Impact: 100 foto = 300 DB queries → 3 queries
 
-- [ ] **#10** `generateUploadSignature` pakai global env bukan vendor secret
+- [x] **#10** `generateUploadSignature` pakai global env bukan vendor secret ✅ MERGED
   - File: `src/lib/cloudinary/core.ts:662-665`
-  - Fix: Fetch vendor-specific credentials untuk signing
-  - Impact: Signature salah di multi-tenant → upload gagal
+  - Fix: Fetch vendor-specific credentials, sekarang async dengan optional `accountId` parameter
+  - Impact: Signature generation pakai vendor-specific `apiSecret`, bukan global env
 
 - [x] **#11** Booking DELETE tanpa transaction — TOCTOU race ✅ MERGED
   - File: `src/app/api/admin/events/route.ts:183-194`
