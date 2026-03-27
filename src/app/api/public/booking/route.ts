@@ -7,6 +7,7 @@ import { RATE_LIMIT_BOOKING_PER_HOUR } from "@/lib/constants.server";
 import logger from "@/lib/logger";
 import { forbiddenResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 import { generateUniqueKodeBooking } from "@/lib/booking-utils";
+import { convertDecimalToNumber } from "@/lib/decimal";
 
 const bookingSchema = z.object({
   namaClient: z.string().min(1, "Nama wajib diisi"),
@@ -73,16 +74,7 @@ export async function GET(request: NextRequest) {
     return forbiddenResponse("Booking form is not active");
   }
 
-  // Convert Decimal to number for JSON serialization
-  const vendorWithNumbers = {
-    ...vendor,
-    packages: vendor.packages.map(pkg => ({
-      ...pkg,
-      harga: pkg.harga.toNumber(),
-    })),
-  };
-
-  return NextResponse.json({ vendor: vendorWithNumbers });
+  return NextResponse.json({ vendor: convertDecimalToNumber(vendor) });
 }
 
 // POST — submit booking baru dari klien

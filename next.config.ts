@@ -3,6 +3,7 @@ import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { getAllowedOrigins } from "./src/lib/cors";
 import { withSentryConfig } from "@sentry/nextjs";
+import { env } from "./src/lib/env";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -28,8 +29,9 @@ const nextConfig: NextConfig = {
   },
   // Limit request body size for JSON payloads (not file uploads)
   // File uploads use multipart/form-data and are handled separately
+  // Configurable via BODY_SIZE_LIMIT_MB env var (default: 5MB)
   serverActions: {
-    bodySizeLimit: '5mb', // Reasonable limit for booking/gallery JSON data
+    bodySizeLimit: `${env.BODY_SIZE_LIMIT_MB}mb`,
   },
   async headers() {
     return [

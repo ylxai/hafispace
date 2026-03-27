@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { unauthorizedResponse, validationErrorResponse, notFoundResponse , parseRequestBody } from "@/lib/api/response";
+import { convertDecimalToNumber } from "@/lib/decimal";
 import { z } from "zod";
 
 const paymentSchema = z.object({
@@ -129,10 +130,7 @@ export async function POST(
     data: { dpStatus, dpAmount: totalBayar },
   });
 
-  return NextResponse.json({
-    ...payment,
-    jumlah: payment.jumlah.toNumber(),
-  }, { status: 201 });
+  return NextResponse.json(convertDecimalToNumber(payment), { status: 201 });
 }
 
 // DELETE — hapus payment
