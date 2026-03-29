@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   if (!galleryToken) {
     return NextResponse.json(
-      { error: "Gallery token required" },
+      { code: "BAD_REQUEST", message: "Gallery token required" },
       { status: 400 }
     );
   }
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
   if (!gallery) {
     return NextResponse.json(
-      { error: "Gallery not found" },
+      { code: "NOT_FOUND", message: "Gallery not found" },
       { status: 404 }
     );
   }
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
   // Check if gallery is published (not DRAFT)
   if (gallery.status === "DRAFT") {
     return NextResponse.json(
-      { error: "Gallery is not published" },
+      { code: "FORBIDDEN", message: "Gallery is not published" },
       { status: 403 }
     );
   }
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
     } else {
       // Admin trying to access another vendor's gallery
       return NextResponse.json(
-        { error: "Access denied - not authorized for this gallery" },
+        { code: "FORBIDDEN", message: "Access denied - not authorized for this gallery" },
         { status: 403 }
       );
     }
@@ -69,7 +69,7 @@ export async function GET(request: Request) {
   // Create Ably token with the appropriate client ID
   const ablyKey = env.ABLY_API_KEY;
   if (!ablyKey) {
-    return NextResponse.json({ error: "Ably not configured" }, { status: 503 });
+    return NextResponse.json({ code: "SERVICE_UNAVAILABLE", message: "Ably not configured" }, { status: 503 });
   }
   
   try {
@@ -86,7 +86,7 @@ export async function GET(request: Request) {
   } catch (ablyError) {
     logger.error({ err: ablyError }, "[Ably] Token creation failed");
     return NextResponse.json(
-      { error: "Realtime service temporarily unavailable" },
+      { code: "SERVICE_UNAVAILABLE", message: "Realtime service temporarily unavailable" },
       { status: 503 }
     );
   }

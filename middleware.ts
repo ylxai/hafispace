@@ -48,6 +48,10 @@ export async function middleware(request: NextRequest) {
 
   const response = NextResponse.next();
 
+  // Inject request ID untuk tracing (Edge-compatible UUID)
+  const requestId = crypto.randomUUID();
+  response.headers.set("x-request-id", requestId);
+
   // Set CORS headers untuk semua API responses jika origin diizinkan
   if (pathname.startsWith("/api/") && isAllowedOrigin) {
     setCorsHeaders(response, origin);

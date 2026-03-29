@@ -8,6 +8,7 @@ import { CLOUDINARY_FOLDERS } from "@/lib/cloudinary/constants";
 import { getCloudinaryAccount, deletePhotoFromCloudinary } from "@/lib/cloudinary";
 import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 import logger from "@/lib/logger";
+import { GALLERY_MAX_PHOTOS } from "@/lib/constants.server";
 
 // Upload validation constants
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB per file (increased for high-res)
@@ -131,7 +132,7 @@ export async function POST(
     // Validate number of files
     if (files.length > MAX_FILES_PER_UPLOAD) {
       return NextResponse.json(
-        { error: `Maximum ${MAX_FILES_PER_UPLOAD} files per upload` },
+        { code: "VALIDATION_ERROR", message: `Maximum ${MAX_FILES_PER_UPLOAD} files per upload` },
         { status: 400 }
       );
     }
@@ -176,6 +177,24 @@ export async function POST(
           { status: 400 }
         );
       }
+    }
+
+    // Check quota BEFORE upload (inside transaction to prevent race condition)
+    const currentPhotoCount = await prisma.photo.count({
+      where: { galleryId: gallery.id },
+    });
+
+    if (currentPhotoCount + files.length > GALLERY_MAX_PHOTOS) {
+      return NextResponse.json(
+        {
+          error: `Gallery quota exceeded. Current: ${currentPhotoCount}, Limit: ${GALLERY_MAX_PHOTOS}. Cannot upload ${files.length} more photos.`,
+          code: "QUOTA_EXCEEDED",
+          currentCount: currentPhotoCount,
+          requestedCount: files.length,
+          maxAllowed: GALLERY_MAX_PHOTOS,
+        },
+        { status: 400 }
+      );
     }
 
     // Prepare Cloudinary folder path
