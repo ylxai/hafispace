@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 
 /**
  * Recursively convert Prisma Decimal fields to numbers for JSON serialization.
- * Handles objects, arrays, and nested structures.
+ * Handles objects, arrays, and nested structures while preserving special types.
  */
 export function convertDecimalToNumber<T>(data: T): T {
   if (data === null || data === undefined) {
@@ -19,13 +19,30 @@ export function convertDecimalToNumber<T>(data: T): T {
     return data.map(item => convertDecimalToNumber(item)) as T;
   }
 
-  // Handle objects
+  // ✅ FIX #3: Preserve special objects (Date, Map, Set, etc)
   if (typeof data === "object") {
-    const result: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(data)) {
-      result[key] = convertDecimalToNumber(value);
+    // Don't convert special objects that have their own serialization
+    if (
+      data instanceof Date ||
+      data instanceof Map ||
+      data instanceof Set ||
+      data instanceof RegExp ||
+      data instanceof Error
+    ) {
+      return data;
     }
-    return result as T;
+
+    // Only convert plain objects
+    if (Object.getPrototypeOf(data) === Object.prototype || Object.getPrototypeOf(data) === null) {
+      const result: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(data)) {
+        result[key] = convertDecimalToNumber(value);
+      }
+      return result as T;
+    }
+
+    // Return other objects as-is
+    return data;
   }
 
   // Primitive values
