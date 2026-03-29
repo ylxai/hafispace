@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { unauthorizedResponse, validationErrorResponse, notFoundResponse , parseRequestBody } from "@/lib/api/response";
+import { convertDecimalToNumber } from "@/lib/decimal";
 import { z } from "zod";
 
 const paymentSchema = z.object({
@@ -59,20 +60,23 @@ export async function GET(
   const hargaPaket = Number(booking.hargaPaket ?? 0);
   const sisaTagihan = Math.max(0, hargaPaket - totalBayar);
 
-  return NextResponse.json({
-    booking: {
-      id: booking.id,
-      namaClient: booking.namaClient,
-      kodeBooking: booking.kodeBooking,
-      hargaPaket,
-    },
-    payments,
-    summary: {
-      totalBayar,
-      sisaTagihan,
-      lunas: sisaTagihan === 0 && hargaPaket > 0,
-    },
-  });
+  // ✅ FIX #4: Wrap response in convertDecimalToNumber to handle Decimal fields
+  return NextResponse.json(
+    convertDecimalToNumber({
+      booking: {
+        id: booking.id,
+        namaClient: booking.namaClient,
+        kodeBooking: booking.kodeBooking,
+        hargaPaket,
+      },
+      payments,
+      summary: {
+        totalBayar,
+        sisaTagihan,
+        lunas: sisaTagihan === 0 && hargaPaket > 0,
+      },
+    })
+  );
 }
 
 // POST — catat pembayaran baru
@@ -129,7 +133,7 @@ export async function POST(
     data: { dpStatus, dpAmount: totalBayar },
   });
 
-  return NextResponse.json(payment, { status: 201 });
+  return NextResponse.json(convertDecimalToNumber(payment), { status: 201 });
 }
 
 // DELETE — hapus payment

@@ -65,4 +65,5 @@ export const env = {
   // Performance
   GALLERY_MAX_PHOTOS: optionalEnvInt("GALLERY_MAX_PHOTOS", 1000),
   METRICS_CACHE_TTL_SECONDS: optionalEnvInt("METRICS_CACHE_TTL_SECONDS", 300),
+  BODY_SIZE_LIMIT_MB: optionalEnvInt("BODY_SIZE_LIMIT_MB", 5),
 } as const;

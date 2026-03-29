@@ -75,3 +75,7 @@ testsprite_tests/auth_helper.py
 # Sentry
 .env.sentry-build-plugin
 .adal/
+
+# ─── Agent Configuration ────────────────────────────────────────────────────
+AGENTS.md           # Local AI agent instructions (not shared)
+AGENTS.local.md     # Local overrides

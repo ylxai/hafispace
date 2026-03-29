@@ -7,6 +7,7 @@ import { RATE_LIMIT_BOOKING_PER_HOUR } from "@/lib/constants.server";
 import logger from "@/lib/logger";
 import { forbiddenResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 import { generateUniqueKodeBooking } from "@/lib/booking-utils";
+import { convertDecimalToNumber } from "@/lib/decimal";
 
 const bookingSchema = z.object({
   namaClient: z.string().min(1, "Nama wajib diisi"),
@@ -73,7 +74,7 @@ export async function GET(request: NextRequest) {
     return forbiddenResponse("Booking form is not active");
   }
 
-  return NextResponse.json({ vendor });
+  return NextResponse.json({ vendor: convertDecimalToNumber(vendor) });
 }
 
 // POST — submit booking baru dari klien
@@ -204,14 +205,18 @@ export async function POST(request: NextRequest) {
     }
   }
 
-    return NextResponse.json({
-      success: true,
-      booking: {
-        ...booking,
-        dpAmount,
-        dpPercentage: vendor.dpPercentage,
-      },
-    }, { status: 201 });
+    // ✅ FIX #5: Wrap response in convertDecimalToNumber to handle hargaPaket Decimal
+    return NextResponse.json(
+      convertDecimalToNumber({
+        success: true,
+        booking: {
+          ...booking,
+          dpAmount,
+          dpPercentage: vendor.dpPercentage,
+        },
+      }),
+      { status: 201 }
+    );
   } catch (error) {
     logger.error({ err: error }, "Error creating booking");
     return internalErrorResponse("Failed to create booking");

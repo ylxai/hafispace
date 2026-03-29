@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { unauthorizedResponse, validationErrorResponse, notFoundResponse, parseAndValidate } from "@/lib/api/response";
 import { verifyPackageOwnership } from "@/lib/api/resource-auth";
 import { packageSchema } from "@/lib/api/validation";
+import { convertDecimalToNumber } from "@/lib/decimal";
 import { z } from "zod";
 
 // GET — list semua paket milik vendor
@@ -30,7 +31,7 @@ export async function GET() {
     },
   });
 
-  return NextResponse.json({ packages });
+  return NextResponse.json({ packages: convertDecimalToNumber(packages) });
 }
 
 // POST — buat paket baru
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return NextResponse.json(newPackage, { status: 201 });
+  return NextResponse.json(convertDecimalToNumber(newPackage), { status: 201 });
 }
 
 // PUT — update paket
@@ -81,7 +82,7 @@ export async function PUT(request: NextRequest) {
     data: { namaPaket, kategori, harga, deskripsi, kuotaEdit, maxSelection, includeCetak: includeCetak ?? undefined, urutan, status },
   });
 
-  return NextResponse.json(updated);
+  return NextResponse.json(convertDecimalToNumber(updated));
 }
 
 // DELETE — hapus paket
