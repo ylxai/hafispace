@@ -205,14 +205,18 @@ export async function POST(request: NextRequest) {
     }
   }
 
-    return NextResponse.json({
-      success: true,
-      booking: {
-        ...booking,
-        dpAmount,
-        dpPercentage: vendor.dpPercentage,
-      },
-    }, { status: 201 });
+    // ✅ FIX #5: Wrap response in convertDecimalToNumber to handle hargaPaket Decimal
+    return NextResponse.json(
+      convertDecimalToNumber({
+        success: true,
+        booking: {
+          ...booking,
+          dpAmount,
+          dpPercentage: vendor.dpPercentage,
+        },
+      }),
+      { status: 201 }
+    );
   } catch (error) {
     logger.error({ err: error }, "Error creating booking");
     return internalErrorResponse("Failed to create booking");
