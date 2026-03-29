@@ -2,24 +2,58 @@ import { Prisma } from "@prisma/client";
 
 /**
  * A recursive mapped type that converts Prisma.Decimal fields to number.
- * Preserves special object types (Date, Map, Set, RegExp, Error).
+ * Inspired by TypeScript's `Jsonified` type for deep object serialization.
  * 
- * ✅ Type-safe transformation: TypeScript now correctly infers that
- * Decimal fields have become number fields.
+ * @see https://github.com/microsoft/TypeScript/blob/v5.9.3/tests/baselines/reference/inferTypes1.errors.txt
  * 
- * Example:
- *   type BookingResult = Serializable<Booking>;
- *   // Decimal fields → number fields
- *   // Date fields → preserved as Date
+ * Type transformation rules:
+ * - `Prisma.Decimal` → `number`
+ * - `Date`, `Map`, `Set`, `RegExp`, `Error` → preserved as-is
+ * - Arrays → recursively transform elements
+ * - Plain objects → recursively transform properties
+ * - Primitives → preserved as-is
+ * 
+ * ⚠️ **Known Limitation - Class Instances:**
+ * 
+ * TypeScript cannot distinguish plain objects from class instances at the type level.
+ * The type will recursively map ALL objects, but the runtime implementation
+ * skips class instances (returns them as-is).
+ * 
+ * **Consequence:** If you pass a class instance with `Decimal` fields to this function:
+ * - Runtime: Class instance returned unchanged (Decimal fields NOT converted)
+ * - Type: Type system thinks Decimal fields are converted to number
+ * - Result: Type lie! JSON.stringify will still fail on Decimal fields
+ * 
+ * **Recommendation:** Only use this function with:
+ * - ✅ Prisma query results (plain objects from database)
+ * - ✅ Plain JavaScript objects (object literals, `Object.create(null)`)
+ * - ❌ NOT with class instances that contain Decimal fields
+ * 
+ * **Example (Safe Usage):**
+ * ```typescript
+ * const booking = await prisma.booking.findUnique(...); // Plain object ✅
+ * const safe = convertDecimalToNumber(booking);
+ * // Type: Serializable<Booking> (Decimal → number)
+ * // Runtime: Actually converted ✅
+ * ```
+ * 
+ * **Example (Unsafe - Type Lie):**
+ * ```typescript
+ * class MyBooking { price: Prisma.Decimal = new Prisma.Decimal(100); }
+ * const instance = new MyBooking(); // Class instance ❌
+ * const unsafe = convertDecimalToNumber(instance);
+ * // Type: Serializable<MyBooking> (thinks price is number)
+ * // Runtime: price is STILL Decimal (not converted!)
+ * // JSON.stringify(unsafe) → ERROR! ❌
+ * ```
  */
-type Serializable<T> = T extends Prisma.Decimal
-  ? number
-  : T extends Date | Map<unknown, unknown> | Set<unknown> | RegExp | Error
-  ? T
-  : T extends (infer E)[]
-  ? Serializable<E>[]
-  : T extends object
-  ? { [P in keyof T]: Serializable<T[P]> }
+type Serializable<T> = 
+  T extends Prisma.Decimal ? number
+  : T extends null | undefined ? T
+  : T extends string | number | boolean ? T
+  : T extends Date | Map<unknown, unknown> | Set<unknown> | RegExp | Error ? T
+  : T extends (infer E)[] ? Serializable<E>[]
+  : T extends object ? { [P in keyof T]: Serializable<T[P]> }
   : T;
 
 /**
