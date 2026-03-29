@@ -52,10 +52,19 @@ export async function POST(
       );
     }
 
-    // Parse and validate request body
-    const body = await request.json();
-    const parsed = bulkPhotoDeleteSchema.safeParse(body);
+    // Parse request body with error handling
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { code: "BAD_REQUEST", message: "Invalid JSON in request body" },
+        { status: 400 }
+      );
+    }
 
+    // Validate request body with Zod
+    const parsed = bulkPhotoDeleteSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
         { code: "VALIDATION_ERROR", message: "Invalid request", details: parsed.error.format() },

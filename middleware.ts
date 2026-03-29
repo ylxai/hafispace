@@ -46,10 +46,19 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  const response = NextResponse.next();
-
   // Inject request ID untuk tracing (Edge-compatible UUID)
+  // Set di request headers agar API routes bisa akses via createApiLogger
   const requestId = crypto.randomUUID();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-request-id", requestId);
+
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+
+  // Also set di response headers untuk client-side tracing
   response.headers.set("x-request-id", requestId);
 
   // Set CORS headers untuk semua API responses jika origin diizinkan
