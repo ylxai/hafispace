@@ -57,7 +57,6 @@ screenshots/
 
 # AI tool config files (opencode, cursor, etc)
 opencode.json
-AGENTS.md
 .opencode/
 
 # TestSprite E2E test files (auto-generated, tidak perlu di version control)
