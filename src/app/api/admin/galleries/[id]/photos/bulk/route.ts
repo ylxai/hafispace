@@ -1,9 +1,9 @@
-import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-import { authOptions } from "@/lib/auth/options";
+import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { deletePhotosFromCloudinary } from "@/lib/cloudinary/core";
 import logger from "@/lib/logger";
+import { bulkPhotoDeleteSchema } from "@/lib/api/validation";
 
 /**
  * POST /api/admin/galleries/[id]/photos/bulk
@@ -31,7 +31,7 @@ export async function POST(
   const { id: galleryId } = await params;
 
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
         { code: "UNAUTHORIZED", message: "Unauthorized" },
@@ -52,27 +52,18 @@ export async function POST(
       );
     }
 
-    // Parse request body
-    interface BulkDeleteRequest {
-      photoIds: string[];
-      action: string;
-    }
-    const body = await request.json() as BulkDeleteRequest;
-    const { photoIds, action } = body;
+    // Parse and validate request body
+    const body = await request.json();
+    const parsed = bulkPhotoDeleteSchema.safeParse(body);
 
-    if (!Array.isArray(photoIds) || photoIds.length === 0) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { code: "BAD_REQUEST", message: "photoIds must be a non-empty array" },
+        { code: "VALIDATION_ERROR", message: "Invalid request", details: parsed.error.format() },
         { status: 400 }
       );
     }
 
-    if (action !== "delete") {
-      return NextResponse.json(
-        { code: "BAD_REQUEST", message: "Invalid action" },
-        { status: 400 }
-      );
-    }
+    const { photoIds } = parsed.data;
 
     // Get photos to delete (verify they belong to this gallery)
     const photosToDelete = await prisma.photo.findMany({

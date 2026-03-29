@@ -8,6 +8,7 @@ import logger from "@/lib/logger";
 import { forbiddenResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 import { generateUniqueKodeBooking } from "@/lib/booking-utils";
 import { convertDecimalToNumber } from "@/lib/decimal";
+import { env } from "@/lib/env";
 
 const bookingSchema = z.object({
   namaClient: z.string().min(1, "Nama wajib diisi"),
@@ -184,7 +185,7 @@ export async function POST(request: NextRequest) {
   // Gunakan await agar email pasti terkirim sebelum serverless function selesai
   // (fire-and-forget tidak aman di serverless — function bisa terminate sebelum email terkirim)
   if (emailClient) {
-    const invoiceUrl = `${process.env.NEXTAUTH_URL ?? ''}/invoice/${booking.kodeBooking}`;
+    const invoiceUrl = `${env.NEXTAUTH_URL}/invoice/${booking.kodeBooking}`;
     try {
       await sendBookingConfirmationEmail({
         to: emailClient,
