@@ -8,6 +8,6 @@ export async function GET() {
     return NextResponse.json({ status: "ok", db: "ok" });
   } catch (error) {
     logger.error({ err: error }, "Health check failed: database is unreachable.");
-    return NextResponse.json({ status: "error", db: "unreachable" }, { status: 503 });
+    return NextResponse.json({ code: "SERVICE_UNAVAILABLE", message: "Database unreachable", status: "error", db: "unreachable" }, { status: 503 });
   }
 }

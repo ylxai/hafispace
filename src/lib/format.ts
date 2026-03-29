@@ -13,7 +13,10 @@ export function formatRupiah(amount: number): string {
 
 export function formatDate(dateString: string | null | undefined): string {
   if (!dateString) return "-";
-  return new Date(dateString).toLocaleDateString("id-ID", {
+  const date = new Date(dateString);
+  // Check for invalid date (NaN timestamp)
+  if (isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("id-ID", {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -21,7 +24,9 @@ export function formatDate(dateString: string | null | undefined): string {
 }
 
 export function formatDateTime(dateString: string): string {
-  return new Date(dateString).toLocaleDateString("id-ID", {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("id-ID", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -32,7 +37,9 @@ export function formatDateTime(dateString: string): string {
 
 export function formatShortDate(dateString: string | null | undefined): string {
   if (!dateString) return "-";
-  return new Date(dateString).toLocaleDateString("id-ID", {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("id-ID", {
     day: "2-digit",
     month: "short",
     year: "numeric",

@@ -55,11 +55,11 @@ export async function POST(
     });
 
     if (!gallery) {
-      return NextResponse.json({ error: "Gallery not found" }, { status: 404 });
+      return NextResponse.json({ code: "NOT_FOUND", message: "Gallery not found" }, { status: 404 });
     }
 
     if (gallery.status === "DRAFT") {
-      return NextResponse.json({ error: "Gallery is not published" }, { status: 403 });
+      return NextResponse.json({ code: "FORBIDDEN", message: "Gallery is not published" }, { status: 403 });
     }
 
     const maxSelection = gallery.booking?.maxSelection ?? DEFAULT_MAX_SELECTION;
@@ -191,6 +191,6 @@ export async function POST(
     }
 
     logger.error({ err }, "Error submitting selection");
-    return NextResponse.json({ error: "Failed to submit selection" }, { status: 500 });
+    return NextResponse.json({ code: "INTERNAL_ERROR", message: "Failed to submit selection" }, { status: 500 });
   }
 }

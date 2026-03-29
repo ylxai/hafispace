@@ -8,6 +8,7 @@ import { CLOUDINARY_FOLDERS } from "@/lib/cloudinary/constants";
 import { getCloudinaryAccount, deletePhotoFromCloudinary } from "@/lib/cloudinary";
 import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
 import logger from "@/lib/logger";
+import { GALLERY_MAX_PHOTOS } from "@/lib/constants.server";
 
 // Upload validation constants
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB per file (increased for high-res)
@@ -131,7 +132,7 @@ export async function POST(
     // Validate number of files
     if (files.length > MAX_FILES_PER_UPLOAD) {
       return NextResponse.json(
-        { error: `Maximum ${MAX_FILES_PER_UPLOAD} files per upload` },
+        { code: "VALIDATION_ERROR", message: `Maximum ${MAX_FILES_PER_UPLOAD} files per upload` },
         { status: 400 }
       );
     }
@@ -260,10 +261,24 @@ export async function POST(
           };
         });
 
-        // createMany — satu round-trip ke DB untuk semua foto
-        await prisma.photo.createMany({
-          data: photoDataList,
-          skipDuplicates: true,
+        // createMany dengan atomic quota check (prevent race condition)
+        await prisma.$transaction(async (tx) => {
+          // Check current count inside transaction
+          const currentCount = await tx.photo.count({
+            where: { galleryId: gallery.id },
+          });
+
+          if (currentCount + photoDataList.length > GALLERY_MAX_PHOTOS) {
+            throw new Error(
+              `QUOTA_EXCEEDED: Current ${currentCount} + ${photoDataList.length} exceeds limit ${GALLERY_MAX_PHOTOS}`
+            );
+          }
+
+          // Insert photos atomically
+          await tx.photo.createMany({
+            data: photoDataList,
+            skipDuplicates: true,
+          });
         });
 
         // Ambil data foto yang baru disimpan untuk response
@@ -284,6 +299,30 @@ export async function POST(
           },
         });
       } catch (dbError) {
+        // Check if quota exceeded (thrown from transaction)
+        if (dbError instanceof Error && dbError.message.startsWith("QUOTA_EXCEEDED")) {
+          const match = dbError.message.match(/Current (\d+) \+ (\d+) exceeds limit (\d+)/);
+          const [, current, requested, limit] = match ?? [];
+          
+          // Rollback Cloudinary uploads
+          await Promise.allSettled(
+            successfulUploads
+              .filter(r => r.data?.publicId)
+              .map(r => deletePhotoFromCloudinary(session.user.id, r.data?.publicId ?? ""))
+          );
+          
+          return NextResponse.json(
+            {
+              code: "QUOTA_EXCEEDED",
+              message: `Gallery quota exceeded. Current: ${current}, Limit: ${limit}. Cannot upload ${requested} more photos.`,
+              currentCount: parseInt(current ?? "0"),
+              requestedCount: parseInt(requested ?? "0"),
+              maxAllowed: parseInt(limit ?? "1000"),
+            },
+            { status: 400 }
+          );
+        }
+        
         // DB gagal — rollback dengan hapus semua file dari Cloudinary (cegah orphan files)
         logger.error({ err: dbError }, "DB write failed after Cloudinary upload — rolling back");
         const rollbackResults = await Promise.allSettled(
