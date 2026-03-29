@@ -1,6 +1,5 @@
-import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-import { authOptions } from "@/lib/auth/options";
+import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { deletePhotoFromCloudinary } from "@/lib/cloudinary/core";
 import logger from "@/lib/logger";
@@ -23,7 +22,7 @@ export async function DELETE(
 ) {
   const { id: galleryId, photoId } = await params;
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
         { code: "UNAUTHORIZED", message: "Unauthorized" },
