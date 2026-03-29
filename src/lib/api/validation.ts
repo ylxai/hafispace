@@ -90,3 +90,13 @@ export const deleteResourceSchema = z.object({
 export const bulkDeleteSchema = z.object({
   ids: z.array(z.string().uuid()).min(1, "At least one ID is required"),
 });
+
+export const bulkPhotoDeleteSchema = z.object({
+  photoIds: z.array(z.string().uuid()).min(1, "At least one photo ID is required"),
+  action: z.literal("delete"),
+});
+
+export const bulkSelectionDeleteSchema = z.object({
+  selectionIds: z.array(z.string().uuid()).min(1, "At least one selection ID is required"),
+  action: z.literal("delete"),
+});
