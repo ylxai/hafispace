@@ -68,14 +68,17 @@ export function ProgressivePhotoCard({
         )}
         aria-label={`${isSelected ? "Deselect" : "Select"} ${photo.filename}`}
       >
-        {/* Selection indicator */}
-        <div
+        {/* Selection indicator - button for keyboard accessibility */}
+        <button
+          type="button"
+          aria-label={isSelected ? `Batalkan pilihan ${photo.filename}` : `Pilih ${photo.filename}`}
           className={cn(
             "absolute top-2 right-2 z-10",
             "w-8 h-8 rounded-full border-2",
             "flex items-center justify-center",
             "transition-all duration-200",
             "shadow-lg",
+            "focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500",
             isSelected
               ? "bg-blue-500 border-white scale-110"
               : "bg-white/90 border-gray-300 backdrop-blur-sm group-hover:border-blue-500 group-hover:scale-110"
@@ -86,7 +89,7 @@ export function ProgressivePhotoCard({
           }}
         >
           {isSelected && <Check className="w-5 h-5 text-white" />}
-        </div>
+        </button>
 
         {/* Hover overlay */}
         <div

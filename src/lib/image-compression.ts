@@ -57,9 +57,8 @@ export async function optimizeForUpload(file: File): Promise<CompressionResult> 
       savings,
       compressionTime,
     };
-  } catch (error) {
-    // Fallback to original if compression fails
-    console.error('Image compression failed:', error);
+  } catch {
+    // Fallback to original if compression fails (silent - no console in production)
     return {
       file,
       originalSize,
@@ -127,7 +126,10 @@ export function getCompressionSummary(results: CompressionResult[]) {
   const totalSavings = totalOriginalSize > 0
     ? ((totalOriginalSize - totalCompressedSize) / totalOriginalSize) * 100
     : 0;
-  const avgCompressionTime = results.reduce((sum, r) => sum + r.compressionTime, 0) / results.length;
+  // Guard against division by zero for empty arrays
+  const avgCompressionTime = results.length > 0
+    ? results.reduce((sum, r) => sum + r.compressionTime, 0) / results.length
+    : 0;
 
   return {
     totalFiles: results.length,

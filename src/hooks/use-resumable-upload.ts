@@ -60,7 +60,7 @@ export function useResumableUpload(options: UseResumableUploadOptions = {}) {
         if (attempt < maxRetries) {
           // Exponential backoff: 1s, 2s, 4s, 8s...
           const delay = retryDelay * Math.pow(2, attempt);
-          console.log(`Retry attempt ${attempt + 1}/${maxRetries} for ${file.name} in ${delay}ms`);
+          // Silent retry - no console.log in production
 
           // Wait before retry
           await new Promise((resolve) => setTimeout(resolve, delay));
@@ -207,47 +207,63 @@ export function useResumableUpload(options: UseResumableUploadOptions = {}) {
 /**
  * Example upload function that can be passed to the hook
  */
-export async function createUploadFunction(
-  galleryId: string,
-  file: File,
-  onProgress: (progress: number) => void
-): Promise<void> {
-  const formData = new FormData();
-  formData.append('file', file);
+/**
+ * Higher-order function that creates an upload function for a specific gallery.
+ * Returns a function that matches the uploadFn signature expected by useResumableUpload.
+ * 
+ * @param galleryId - Gallery ID to upload to
+ * @returns Upload function (file, onProgress) => Promise<void>
+ * 
+ * @example
+ * ```typescript
+ * const uploadFn = createUploadFunction(galleryId);
+ * await uploadFiles(files, uploadFn);
+ * ```
+ */
+export function createUploadFunction(
+  galleryId: string
+): (file: File, onProgress: (progress: number) => void) => Promise<void> {
+  return function (
+    file: File,
+    onProgress: (progress: number) => void
+  ): Promise<void> {
+    const formData = new FormData();
+    formData.append('file', file);
 
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
 
-    // Track upload progress
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable) {
-        const percentComplete = (e.loaded / e.total) * 100;
-        onProgress(percentComplete);
-      }
+      // Track upload progress
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percentComplete = (e.loaded / e.total) * 100;
+          onProgress(percentComplete);
+        }
+      });
+
+      // Success
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      });
+
+      // Error
+      xhr.addEventListener('error', () => {
+        reject(new Error('Network error during upload'));
+      });
+
+      // Timeout
+      xhr.addEventListener('timeout', () => {
+        reject(new Error('Upload timeout'));
+      });
+
+      // Send request
+      xhr.open('POST', `/api/admin/galleries/${galleryId}/upload`);
+      xhr.timeout = 300000; // 5 minutes timeout
+      xhr.send(formData);
     });
-
-    // Success
-    xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve();
-      } else {
-        reject(new Error(`Upload failed with status ${xhr.status}`));
-      }
-    });
-
-    // Error
-    xhr.addEventListener('error', () => {
-      reject(new Error('Network error during upload'));
-    });
-
-    // Timeout
-    xhr.addEventListener('timeout', () => {
-      reject(new Error('Upload timeout'));
-    });
-
-    // Send request
-    xhr.open('POST', `/api/admin/galleries/${galleryId}/upload`);
-    xhr.timeout = 300000; // 5 minutes timeout
-    xhr.send(formData);
-  });
+  };
 }

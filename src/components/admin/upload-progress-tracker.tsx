@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback } from "react";
+import { useState, useCallback } from "react";
 import { CheckCircle2, XCircle, Loader2, Upload } from "lucide-react";
 
 export type UploadStatus = "pending" | "uploading" | "success" | "error";
 
 export interface FileUploadState {
+  id: string; // Unique ID to avoid filename conflicts
   file: File;
   status: UploadStatus;
   progress: number;
@@ -164,6 +165,7 @@ export function useUploadProgress() {
   const initializeFiles = useCallback((files: File[]) => {
     setFileStates(
       files.map((file) => ({
+        id: crypto.randomUUID(), // Unique ID - avoids filename conflicts
         file,
         status: "pending" as const,
         progress: 0,
@@ -171,30 +173,31 @@ export function useUploadProgress() {
     );
   }, []);
 
-  const updateFileProgress = useCallback((fileName: string, progress: number) => {
+  // Update by ID (not filename) to avoid conflicts with same-named files
+  const updateFileProgress = useCallback((id: string, progress: number) => {
     setFileStates((prev) =>
       prev.map((fs) =>
-        fs.file.name === fileName
+        fs.id === id
           ? { ...fs, status: "uploading" as const, progress }
           : fs
       )
     );
   }, []);
 
-  const markFileSuccess = useCallback((fileName: string) => {
+  const markFileSuccess = useCallback((id: string) => {
     setFileStates((prev) =>
       prev.map((fs) =>
-        fs.file.name === fileName
+        fs.id === id
           ? { ...fs, status: "success" as const, progress: 100 }
           : fs
       )
     );
   }, []);
 
-  const markFileError = useCallback((fileName: string, error: string) => {
+  const markFileError = useCallback((id: string, error: string) => {
     setFileStates((prev) =>
       prev.map((fs) =>
-        fs.file.name === fileName
+        fs.id === id
           ? { ...fs, status: "error" as const, error }
           : fs
       )
