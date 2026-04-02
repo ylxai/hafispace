@@ -224,16 +224,18 @@ export function useResumableUpload(options: UseResumableUploadOptions = {}) {
  * Returns a function that matches the uploadFn signature expected by useResumableUpload.
  * 
  * @param galleryId - Gallery ID to upload to
+ * @param accountId - Cloudinary account ID (required for multi-tenant support)
  * @returns Upload function (file, onProgress) => Promise<void>
  * 
  * @example
  * ```typescript
- * const uploadFn = createUploadFunction(galleryId);
+ * const uploadFn = createUploadFunction(galleryId, selectedAccountId);
  * await uploadFiles(files, uploadFn);
  * ```
  */
 export function createUploadFunction(
-  galleryId: string
+  galleryId: string,
+  accountId: string
 ): (file: File, onProgress: (progress: number) => void) => Promise<void> {
   return function (
     file: File,
@@ -241,6 +243,7 @@ export function createUploadFunction(
   ): Promise<void> {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('accountId', accountId); // Required for multi-tenant Cloudinary
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();

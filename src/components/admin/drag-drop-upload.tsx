@@ -51,13 +51,16 @@ export function DragDropUpload({ galleryId, onUploadComplete, onCancel, onEditFi
   } = useUploadProgress();
 
   // Sprint 1: Resumable upload with retry
-  const { retrySingle, hasFailures } = useResumableUpload({
+  const { uploadFiles, retrySingle, hasFailures, isUploading: isRetrying } = useResumableUpload({
     maxRetries: 3,
     retryDelay: 1000,
     onProgress: (id, progress) => updateFileProgress(id, progress),
     onSuccess: (id) => markFileSuccess(id),
     onError: (id, error) => markFileError(id, error),
   });
+
+  // Combined uploading state: local or hook retry
+  const isAnyUploading = isUploading || isRetrying;
 
   useEffect(() => {
     async function fetchAccounts() {
@@ -164,28 +167,15 @@ export function DragDropUpload({ galleryId, onUploadComplete, onCancel, onEditFi
       // Initialize tracker with pre-generated IDs (avoids React state closure issue)
       initializeFiles(compressedFiles, fileIds);
 
-      // ─── Step 3: Upload each file individually with retry ───────────────────
-      const uploadFn = createUploadFunction(galleryId);
-      let successful = 0;
-      let failed = 0;
+      // ─── Step 3: Upload via hook (includes auto-retry + exponential backoff) ──
+      // Pass selectedAccountId for multi-tenant Cloudinary support
+      const uploadFn = createUploadFunction(galleryId, selectedAccountId);
 
-      for (let i = 0; i < compressedFiles.length; i++) {
-        const file = compressedFiles[i];
-        const id = fileIds[i];
-        if (!file || !id) continue;
+      // Use uploadFiles() from hook so initial upload ALSO benefits from retry logic
+      const results = await uploadFiles(compressedFiles, uploadFn, fileIds);
 
-        try {
-          await uploadFn(file, (progress) => {
-            updateFileProgress(id, progress);
-          });
-          markFileSuccess(id);
-          successful++;
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : "Upload failed";
-          markFileError(id, errorMessage);
-          failed++;
-        }
-      }
+      const successful = results.filter((r) => r.success).length;
+      const failed = results.filter((r) => !r.success).length;
 
       setTotalProgress(100);
 
@@ -215,11 +205,12 @@ export function DragDropUpload({ galleryId, onUploadComplete, onCancel, onEditFi
     const fileState = fileStates.find((fs) => fs.file === file);
     if (!fileState) return;
 
-    const uploadFn = createUploadFunction(galleryId);
+    // Pass selectedAccountId for multi-tenant Cloudinary support
+    const uploadFn = createUploadFunction(galleryId, selectedAccountId);
 
     // Pass same fileId for consistent progress tracking
     await retrySingle(file, uploadFn, fileState.id);
-  }, [fileStates, retrySingle, galleryId]);
+  }, [fileStates, retrySingle, galleryId, selectedAccountId]);
 
   const completedCount = files.filter((f) => f.status === "completed").length;
   const errorCount = files.filter((f) => f.status === "error").length;
@@ -297,8 +288,8 @@ export function DragDropUpload({ galleryId, onUploadComplete, onCancel, onEditFi
         />
       )}
 
-      {/* Retry All Failed Button */}
-      {hasFailures && !isUploading && (
+      {/* Retry All Failed Button - disabled during any upload/retry */}
+      {hasFailures && !isAnyUploading && (
         <button
           type="button"
           onClick={async () => {
