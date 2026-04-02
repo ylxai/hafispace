@@ -80,7 +80,7 @@ export type BookingCreateResponse = ApiSuccessResponse<{ kodeBooking: string; id
 export type GalleryListResponse = ApiPaginatedResponse<AdminGallery>;
 export type ClientGalleryResponse = ApiSuccessResponse<{
   gallery: ClientGallery;
-  pagination: { page: number; pageSize: number; total: number; totalPages: number };
+  pagination: PaginationMeta; // Use named type for consistency
 }>;
 export type PhotoListResponse = ApiSuccessResponse<{ photos: AdminPhoto[] }>;
 

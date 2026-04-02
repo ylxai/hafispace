@@ -12,6 +12,9 @@
  * - PhotoSelectionItem (seleksi foto oleh client)
  */
 
+// Import for internal use in this file
+import type { GalleryStatus } from "@/types/admin";
+
 // Re-export gallery-related types dari admin untuk convenience
 export type { AdminGallery, GalleryStatus } from "@/types/admin";
 
@@ -72,7 +75,7 @@ export interface GallerySettings {
 export interface ClientGallery {
   id: string;
   namaProject: string;
-  status: "DRAFT" | "IN_REVIEW" | "DELIVERED";
+  status: GalleryStatus;  // from @/types/admin - single source of truth
   maxSelection: number;
   isLocked: boolean;
   photos: ApiPhoto[];

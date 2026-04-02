@@ -13,9 +13,12 @@
  * - Package (paket foto)
  */
 
+// Import for internal use in this file
+import type { BookingStatus, DpStatus } from "@/types/admin";
+
 // Re-export booking-related types dari admin untuk convenience
 export type { AdminBooking, BookingStatus, DpStatus } from "@/types/admin";
-export type { AdminClient,AdminPackage, PackageKategori, PackageStatus } from "@/types/admin";
+export type { AdminClient, AdminPackage, PackageKategori, PackageStatus } from "@/types/admin";
 
 // ─── Client ───────────────────────────────────────────────────────────────────
 
@@ -91,8 +94,8 @@ export interface BookingDetail {
   tanggalSesi: string;
   lokasiSesi: string | null;
   hargaPaket: number;      // Decimal → number
-  status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
-  dpStatus: "UNPAID" | "PARTIAL" | "PAID";
+  status: BookingStatus;   // from @/types/admin - single source of truth
+  dpStatus: DpStatus;      // from @/types/admin - single source of truth
   notes: string | null;
   createdAt: string;
   updatedAt?: string;
