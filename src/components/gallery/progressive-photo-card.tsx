@@ -11,7 +11,7 @@ type Photo = {
   id: string;
   url: string;
   filename: string;
-  createdAt: string;
+  createdAt?: string; // Optional untuk kompatibilitas dengan Lightbox Photo type
 };
 
 interface ProgressivePhotoCardProps {

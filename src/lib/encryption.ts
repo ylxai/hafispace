@@ -34,15 +34,16 @@ function getMasterKey(): Buffer {
 }
 
 /**
- * Check if encryption is configured
+ * Check if encryption is configured.
+ *
+ * Checks process.env directly (not cached env object) so that
+ * this function reflects runtime changes to environment variables.
+ * This is important for testability and dynamic configuration checks.
  */
 export function isEncryptionConfigured(): boolean {
-  try {
-    getMasterKey();
-    return true;
-  } catch {
-    return false;
-  }
+  const keyHex = process.env.CLOUDINARY_MASTER_KEY;
+  if (keyHex?.length !== 64) return false;
+  return true;
 }
 
 /**

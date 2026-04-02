@@ -24,7 +24,7 @@ export function useResumableUpload(options: UseResumableUploadOptions = {}) {
     onError,
   } = options;
 
-  const [uploadResults, setUploadResults] = useState<UploadResult[]>([]);
+  const [uploadResults, setUploadResults] = useState<FileUploadResult[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
   /**
@@ -125,7 +125,7 @@ export function useResumableUpload(options: UseResumableUploadOptions = {}) {
 
       setIsUploading(true);
 
-      const results: UploadResult[] = [];
+      const results: FileUploadResult[] = [];
 
       // Reuse same fileId from original result for tracking continuity
       for (const failedResult of uploadResults.filter((r) => !r.success)) {

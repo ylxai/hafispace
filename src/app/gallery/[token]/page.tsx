@@ -2,14 +2,16 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useParams } from "next/navigation";
-import { useCallback, useMemo, useRef,useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { ProgressivePhotoCard } from "@/components/gallery/progressive-photo-card";
 import { SelectionBottomBar } from "@/components/gallery/selection-bottom-bar";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import { clearLocalSelections,useLocalSelection } from "@/hooks/use-local-selection";
-import { generateDownloadUrl } from '@/lib/cloudinary/utils';
+import { extractCloudName, extractPublicId, generateDownloadUrl, generateThumbnailUrl } from '@/lib/cloudinary/utils';
+import cloudinaryLoader from '@/lib/image-loader';
 
 // Lazy-load Lightbox component to reduce initial bundle size
 const Lightbox = dynamic(
@@ -33,6 +35,7 @@ type Photo = {
   id: string;
   filename: string;
   url: string;
+  createdAt?: string; // Optional untuk kompatibilitas dengan Lightbox Photo type
   thumbnailUrl: string | null;
   width: number | null;
   height: number | null;
@@ -515,10 +518,11 @@ export default function ViewspacePage() {
                 </p>
                 <div className="space-y-2 px-2">
                   {activeSelectedPhotos.map((photo, idx) => {
+                    const originalIndex = gallery.photos.findIndex(p => p.id === photo.id);
+                    // Generate optimized thumbnail URL via Cloudinary transformations
                     const cloudName = extractCloudName(photo.url);
                     const publicId = extractPublicId(photo.url);
                     const thumbnailUrl = generateThumbnailUrl(cloudName, publicId);
-                    const originalIndex = gallery.photos.findIndex(p => p.id === photo.id);
                     
                     return (
                       <div
@@ -541,7 +545,7 @@ export default function ViewspacePage() {
                             quality={75}
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              target.src = photo.url;
+                              target.src = photo.url; // Fallback to original
                             }}
                           />
                         </button>

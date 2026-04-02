@@ -328,10 +328,51 @@ test: tambah test untuk endpoint X
 
 ### Quality Gate (Wajib Sebelum Merge)
 ```bash
-npm run lint    # 0 error, 0 warning ESLint
-npm run build   # Build sukses tanpa error TypeScript
-npm run typecheck # Faster type checking (~10s)
+npm run lint           # 0 error, 0 warning ESLint
+npm run typecheck      # TypeScript type checking (~10s)
+npm run build          # Production build (optional, slower)
+bash scripts/review.sh # Full local code review (recommended)
 ```
+
+### Local Code Review (Wajib Sebelum PR)
+
+Jalankan review script sebelum buat PR untuk catch issues lebih awal:
+
+```bash
+bash scripts/review.sh
+```
+
+**Script checks:**
+1. ESLint (0 errors, 0 warnings)
+2. TypeScript (0 type errors)
+3. Unit tests (all passed)
+4. No `console.*` di server-side code
+5. No `any` types
+6. Upload IDs pakai `createFileId()` bukan `randomUUID()` langsung
+7. No `file.name` sebagai upload identifier
+8. No nested `<button>` dalam `<button>`
+9. Auth pattern consistency (no `getServerSession` in admin routes)
+
+**Workflow baru (no Gemini dependency):**
+```
+Code changes
+    ↓
+git add -A
+    ↓
+git commit → Husky pre-commit (ESLint auto-fix staged files)
+    ↓
+bash scripts/review.sh → Full local review
+    ↓ (jika passed)
+git push → Husky pre-push (lint + typecheck + tests)
+    ↓
+Buat PR → Agent manual review → Merge
+```
+
+**Manfaat:**
+- ✅ Tidak perlu tunggu Gemini (5-15 menit)
+- ✅ Instant feedback lokal
+- ✅ Bisa merge kapan saja setelah review passed
+- ✅ Gemini tetap optional (tidak blocking)
 
 ### Husky Pre-commit Hooks (Auto-active)
 

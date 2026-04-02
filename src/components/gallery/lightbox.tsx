@@ -15,6 +15,7 @@ interface Photo {
   thumbnailUrl: string | null;
   width: number | null;
   height: number | null;
+  createdAt?: string; // Optional untuk backward compatibility
 }
 
 interface LightboxProps {
