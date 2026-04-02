@@ -4,15 +4,8 @@ import { useEffect,useState } from "react";
 
 import { GalleryPhotosList } from "@/components/admin/gallery-photos-list";
 import { useToast } from "@/components/ui/toast";
-
-type Photo = {
-  id: string;
-  filename: string;
-  url: string;
-  width?: number;
-  height?: number;
-  createdAt: string;
-};
+import type { ApiPhoto } from "@/types/gallery";
+type Photo = ApiPhoto; // Single source of truth
 
 type ManagePhotosModalProps = {
   galleryId: string;

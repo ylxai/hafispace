@@ -31,15 +31,8 @@ const Lightbox = dynamic(
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Photo = {
-  id: string;
-  filename: string;
-  url: string;
-  createdAt?: string; // Optional untuk kompatibilitas dengan Lightbox Photo type
-  thumbnailUrl: string | null;
-  width: number | null;
-  height: number | null;
-};
+import type { ApiPhoto } from "@/types/gallery";
+type Photo = ApiPhoto; // Single source of truth
 
 type GalleryData = {
   gallery: {

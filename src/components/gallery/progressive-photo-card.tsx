@@ -6,13 +6,10 @@ import { useState } from "react";
 import { useInView } from "react-intersection-observer";
 
 import { cn } from "@/lib/utils";
+import type { ApiPhoto } from "@/types/gallery";
 
-type Photo = {
-  id: string;
-  url: string;
-  filename: string;
-  createdAt?: string; // Optional untuk kompatibilitas dengan Lightbox Photo type
-};
+// ApiPhoto adalah single source of truth untuk Photo type
+type Photo = ApiPhoto;
 
 interface ProgressivePhotoCardProps {
   photo: Photo;
