@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { createFileId, type FileUploadId, type FileUploadResult, type UploadProgressCallbacks } from '@/lib/upload-types';
 
 // Re-export from upload-types for convenience
-export type { FileUploadId,FileUploadResult as UploadResult } from '@/lib/upload-types';
+export type { FileUploadId, FileUploadResult as UploadResult } from '@/lib/upload-types';
 
 interface UseResumableUploadOptions extends UploadProgressCallbacks {
   maxRetries?: number;
@@ -45,6 +45,7 @@ export function useResumableUpload(options: UseResumableUploadOptions = {}) {
         onSuccess?.(fileId); // Use fileId, not file.name
 
         return {
+          id: fileId, // Include id for tracking continuity in retryFailed()
           file,
           success: true,
           attempts: attempt + 1,
@@ -56,12 +57,11 @@ export function useResumableUpload(options: UseResumableUploadOptions = {}) {
         if (attempt < maxRetries) {
           // Exponential backoff: 1s, 2s, 4s, 8s...
           const delay = retryDelay * Math.pow(2, attempt);
-          // Silent retry - no console.log in production
 
-          // Wait before retry
+          // Wait before retry (non-blocking delay)
           await new Promise((resolve) => setTimeout(resolve, delay));
 
-          // Retry with same fileId
+          // Retry with same fileId for tracking continuity
           return uploadFileWithRetry(file, uploadFn, fileId, attempt + 1);
         }
 
@@ -69,6 +69,7 @@ export function useResumableUpload(options: UseResumableUploadOptions = {}) {
         onError?.(fileId, errorMessage); // Use fileId, not file.name
 
         return {
+          id: fileId, // Include id for tracking continuity in retryFailed()
           file,
           success: false,
           error: errorMessage,
@@ -126,8 +127,9 @@ export function useResumableUpload(options: UseResumableUploadOptions = {}) {
 
       const results: UploadResult[] = [];
 
-      for (const file of failedFiles) {
-        const result = await uploadFileWithRetry(file, uploadFn);
+      // Reuse same fileId from original result for tracking continuity
+      for (const failedResult of uploadResults.filter((r) => !r.success)) {
+        const result = await uploadFileWithRetry(failedResult.file, uploadFn, failedResult.id);
         results.push(result);
       }
 

@@ -119,8 +119,14 @@ export interface UploadProgressCallbacks {
 
 /**
  * Upload result for a single file.
+ *
+ * Includes `id: FileUploadId` to maintain tracking continuity across retries.
+ * This ensures retryFailed() can reuse the same ID for progress updates,
+ * preventing UI state from showing duplicate entries for the same file.
  */
 export interface FileUploadResult {
+  /** Unique identifier for tracking (same ID as used in progress callbacks) */
+  id: FileUploadId;
   /** The original File object (use for object identity comparison) */
   file: File;
   /** Whether the upload succeeded */
