@@ -211,13 +211,14 @@ export function DragDropUpload({ galleryId, onUploadComplete, onCancel, onEditFi
    * Retry a specific failed file using resumable upload hook
    */
   const handleRetryFile = useCallback(async (file: File) => {
-    const fileState = fileStates.find((fs) => fs.file.name === file.name);
+    // Use object identity (fs.file === file) for robustness with duplicate filenames
+    const fileState = fileStates.find((fs) => fs.file === file);
     if (!fileState) return;
 
-    await retrySingle(file, async (f, onProgress) => {
-      const uploadFn = createUploadFunction(galleryId);
-      await uploadFn(f, onProgress);
-    });
+    const uploadFn = createUploadFunction(galleryId);
+
+    // Pass same fileId for consistent progress tracking
+    await retrySingle(file, uploadFn, fileState.id);
   }, [fileStates, retrySingle, galleryId]);
 
   const completedCount = files.filter((f) => f.status === "completed").length;
@@ -300,9 +301,12 @@ export function DragDropUpload({ galleryId, onUploadComplete, onCancel, onEditFi
       {hasFailures && !isUploading && (
         <button
           type="button"
-          onClick={() => {
+          onClick={async () => {
+            // Sequential retry to avoid overwhelming server (not parallel forEach)
             const failedFiles = fileStates.filter(fs => fs.status === "error").map(fs => fs.file);
-            failedFiles.forEach(file => handleRetryFile(file));
+            for (const file of failedFiles) {
+              await handleRetryFile(file);
+            }
           }}
           className="w-full rounded-xl border border-red-200 bg-red-50 py-2 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
         >
