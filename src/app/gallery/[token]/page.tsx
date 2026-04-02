@@ -10,7 +10,8 @@ import { ProgressivePhotoCard } from "@/components/gallery/progressive-photo-car
 import { SelectionBottomBar } from "@/components/gallery/selection-bottom-bar";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import { clearLocalSelections,useLocalSelection } from "@/hooks/use-local-selection";
-import { generateDownloadUrl } from '@/lib/cloudinary/utils';
+import { extractCloudName, extractPublicId, generateDownloadUrl, generateThumbnailUrl } from '@/lib/cloudinary/utils';
+import cloudinaryLoader from '@/lib/image-loader';
 
 // Lazy-load Lightbox component to reduce initial bundle size
 const Lightbox = dynamic(
@@ -518,6 +519,10 @@ export default function ViewspacePage() {
                 <div className="space-y-2 px-2">
                   {activeSelectedPhotos.map((photo, idx) => {
                     const originalIndex = gallery.photos.findIndex(p => p.id === photo.id);
+                    // Generate optimized thumbnail URL via Cloudinary transformations
+                    const cloudName = extractCloudName(photo.url);
+                    const publicId = extractPublicId(photo.url);
+                    const thumbnailUrl = generateThumbnailUrl(cloudName, publicId);
                     
                     return (
                       <div
@@ -531,12 +536,17 @@ export default function ViewspacePage() {
                           className="shrink-0 overflow-hidden rounded-lg"
                         >
                           <Image
-                            src={photo.url}
+                            src={thumbnailUrl}
                             alt={`Foto pilihan ${idx + 1}`}
                             width={56}
                             height={56}
                             className="h-14 w-14 object-cover"
+                            loader={cloudinaryLoader}
                             quality={75}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = photo.url; // Fallback to original
+                            }}
                           />
                         </button>
                         <div className="flex-1 min-w-0">

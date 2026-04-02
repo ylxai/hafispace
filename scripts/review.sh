@@ -99,7 +99,7 @@ else
 fi
 
 # 4e. No nested <button> in <button>
-NESTED_BTN=$(grep -r "<button" src --include="*.tsx" -l 2>/dev/null | xargs grep -l "role=\"button\"" 2>/dev/null | wc -l | tr -d ' ')
+NESTED_BTN=$(grep -r "<button" src --include="*.tsx" -l 2>/dev/null | xargs grep -l "role=\"button\"" /dev/null 2>/dev/null | wc -l | tr -d ' ')
 if [ "$NESTED_BTN" -eq "0" ]; then
   pass "No potential nested interactive elements"
 else
