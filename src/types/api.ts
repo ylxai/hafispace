@@ -1,3 +1,9 @@
+// ─── External Imports ──────────────────────────────────────────────────────────
+// (imports must come before exports per TypeScript best practice)
+import type { AdminBooking, AdminClient, AdminGallery, AdminPackage } from "@/types/admin";
+import type { BookingSummary } from "@/types/booking";
+import type { AdminPhoto, ClientGallery } from "@/types/gallery";
+
 export type { ApiErrorResponse } from "@/lib/api/response";
 
 // ─── Base Response Types ───────────────────────────────────────────────────────
@@ -66,10 +72,6 @@ export type PaginatedResponse<T> = {
 };
 
 // ─── Domain Response Types ─────────────────────────────────────────────────────
-
-import type { AdminBooking, AdminClient, AdminGallery, AdminPackage } from "@/types/admin";
-import type { BookingSummary } from "@/types/booking";
-import type { AdminPhoto, ClientGallery } from "@/types/gallery";
 
 // Booking responses
 export type BookingListResponse = ApiPaginatedResponse<AdminBooking>;

@@ -15,6 +15,7 @@
 
 // Import for internal use in this file
 import type { BookingStatus, DpStatus } from "@/types/admin";
+import type { GalleryStatus } from "@/types/gallery";
 
 // Re-export booking-related types dari admin untuk convenience
 export type { AdminBooking, BookingStatus, DpStatus } from "@/types/admin";
@@ -49,7 +50,7 @@ export interface Package {
   deskripsi: string | null;
   kuotaEdit: number | null;
   maxSelection: number;       // default 40 (NOT nullable)
-  includeCetak: unknown | null; // JSON field di Prisma
+  includeCetak: Record<string, unknown> | null; // JSON field di Prisma (use Record not unknown)
   kategori: string;           // PackageCategory enum
 }
 
@@ -113,7 +114,7 @@ export interface BookingDetail {
 export interface BookingGallery {
   id: string;
   namaProject: string;
-  status: "DRAFT" | "IN_REVIEW" | "DELIVERED";
+  status: GalleryStatus;  // from @/types/gallery - single source of truth
   clientToken: string;
   photoCount: number;
   selectionCount: number;
