@@ -162,10 +162,10 @@ function StatusIcon({ status }: { status: UploadStatus }) {
 export function useUploadProgress() {
   const [fileStates, setFileStates] = useState<FileUploadState[]>([]);
 
-  const initializeFiles = useCallback((files: File[]) => {
+  const initializeFiles = useCallback((files: File[], preGeneratedIds?: string[]) => {
     setFileStates(
-      files.map((file) => ({
-        id: crypto.randomUUID(), // Unique ID - avoids filename conflicts
+      files.map((file, i) => ({
+        id: preGeneratedIds?.[i] ?? crypto.randomUUID(), // Support pre-generated IDs for state closure safety
         file,
         status: "pending" as const,
         progress: 0,

@@ -2,13 +2,13 @@
 
 import { useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useState, useMemo, useCallback, useRef } from "react";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
-import cloudinaryLoader from '@/lib/image-loader';
-import { extractCloudName, extractPublicId, generateThumbnailUrl, generateDownloadUrl } from '@/lib/cloudinary/utils';
+import { generateDownloadUrl } from '@/lib/cloudinary/utils';
 import { useLocalSelection, clearLocalSelections } from "@/hooks/use-local-selection";
+import { ProgressivePhotoCard } from "@/components/gallery/progressive-photo-card";
+import { SelectionBottomBar } from "@/components/gallery/selection-bottom-bar";
 
 // Lazy-load Lightbox component to reduce initial bundle size
 const Lightbox = dynamic(
@@ -25,6 +25,8 @@ const Lightbox = dynamic(
     )
   }
 );
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 type Photo = {
   id: string;
@@ -63,88 +65,9 @@ type GalleryData = {
   };
 };
 
-function PhotoCard({ 
-  photo, 
-  index, 
-  onClick, 
-  isSelected, 
-  canSelect, 
-  onToggleSelect,
-  priority = false 
-}: { 
-  photo: Photo; 
-  index: number; 
-  onClick: () => void; 
-  isSelected?: boolean;
-  canSelect?: boolean;
-  onToggleSelect?: () => void;
-  priority?: boolean;
-}) {
-  const cloudName = extractCloudName(photo.url);
-  const publicId = extractPublicId(photo.url);
-  const thumbnailUrl = generateThumbnailUrl(cloudName, publicId);
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={`Lihat foto ${index + 1}`}
-      className="group relative aspect-square overflow-hidden rounded-xl transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[var(--antique-gold)]/40 shadow-glass-md"
-    >
-      <Image
-        src={thumbnailUrl}
-        alt={`Foto ${index + 1}`}
-        fill
-        priority={priority} // ✅ Add priority prop for LCP images
-        className="object-cover transition-transform duration-300 group-hover:scale-105"
-        sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-        loading={priority ? "eager" : "lazy"} // ✅ Eager loading for priority images
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          target.src = photo.url;
-        }}
-      />
-      {/* Checkbox overlay — klik terpisah dari open lightbox */}
-      {canSelect && onToggleSelect && (
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleSelect();
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              e.stopPropagation();
-              onToggleSelect();
-            }
-          }}
-          aria-label={isSelected ? "Batalkan pilihan" : "Pilih foto"}
-          className={`absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full shadow-md transition-all duration-200 cursor-pointer ${
-            isSelected
-              ? "bg-rose-gold scale-110"
-              : "bg-white/70 backdrop-blur-sm hover:bg-white hover:scale-110"
-          }`}
-        >
-          {isSelected ? (
-            <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-          ) : (
-            <svg className="h-4 w-4 text-warm-gray" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          )}
-        </div>
-      )}
-      {/* Nomor foto — muncul saat hover */}
-      <div className="absolute bottom-1.5 left-1.5 rounded bg-white/80 px-1.5 py-0.5 text-[10px] font-medium backdrop-blur-sm opacity-0 transition-opacity duration-200 group-hover:opacity-100 text-charcoal">
-        {index + 1}
-      </div>
-    </button>
-  );
-}
+// PhotoCard is replaced by ProgressivePhotoCard from @/components/gallery/progressive-photo-card
+// which provides: intersection observer lazy loading, skeleton placeholders,
+// accessible button selection indicator, and progressive image loading.
 
 export default function ViewspacePage() {
   const params = useParams();
@@ -531,7 +454,7 @@ export default function ViewspacePage() {
             <p className="mt-4 text-warm-gray">Belum ada foto di galeri ini.</p>
           </div>
         ) : isAllTab ? (
-          /* All Photos - Grid */
+          /* All Photos - Grid with Progressive Loading */
           <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 sm:gap-1.5 lg:grid-cols-4">
             {gallery.photos.map((photo, index) => {
               // Di tab all: tanda selected dari local draft (jika tidak locked) atau server data (jika locked)
@@ -539,16 +462,18 @@ export default function ViewspacePage() {
                 ? gallery.selections.includes(photo.id)
                 : selectedIds.has(photo.id);
 
+              const canSelect = hasPickspace && !isLocked && (!isMaxed || isSelected);
+
               return (
-                <PhotoCard
+                <ProgressivePhotoCard
                   key={photo.id}
                   photo={photo}
                   index={index}
                   isSelected={isSelected}
-                  canSelect={hasPickspace && !isLocked}
+                  canSelect={canSelect}
                   onToggleSelect={() => toggle(photo.id)}
                   onClick={() => openLightbox(index)}
-                  priority={index === 0} // ✅ Priority for first image (LCP)
+                  priority={index < 4} // ✅ Priority loading for first 4 photos (LCP)
                 />
               );
             })}
@@ -744,6 +669,17 @@ export default function ViewspacePage() {
         isSelected={(photo) => selectedIds.has(photo.id)}
         onSelect={handleLightboxToggleSelect}
         onDeselect={handleLightboxToggleSelect}
+      />
+
+      {/* Sticky Selection Bottom Bar — only visible when user has selected photos */}
+      <SelectionBottomBar
+        selectedCount={localSelectionCount}
+        maxSelection={maxSelection}
+        isMaxed={isMaxed}
+        isLocked={isLocked}
+        onClearAll={clearAll}
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
       />
     </div>
   );
