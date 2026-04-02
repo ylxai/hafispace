@@ -2,7 +2,7 @@
 // (imports must come before exports per TypeScript best practice)
 import type { AdminBooking, AdminClient, AdminGallery, AdminPackage } from "@/types/admin";
 import type { BookingSummary } from "@/types/booking";
-import type { AdminPhoto, ApiPhoto, ClientGallery } from "@/types/gallery";
+import type { AdminPhoto, ClientGallery } from "@/types/gallery";
 
 export type { ApiErrorResponse } from "@/lib/api/response";
 
@@ -27,13 +27,27 @@ export type ApiSuccessResponse<T = unknown> = {
 };
 
 /**
- * Pagination metadata.
+ * Standard pagination metadata.
+ * Uses `pageSize` consistently (admin.ts uses `limit` - will be unified in feat/response-types).
+ *
+ * Note: Public gallery uses cursor-based pagination: { hasNextPage, nextCursor, totalPhotos? }
+ * This PaginationMeta is for offset-based pagination (admin list endpoints).
  */
 export type PaginationMeta = {
   page: number;
-  pageSize: number;
+  pageSize: number;   // Use pageSize (not limit) - unified across shared types
   total: number;
   totalPages: number;
+};
+
+/**
+ * Cursor-based pagination for photo lists (public gallery).
+ * Different from offset pagination used in admin lists.
+ */
+export type CursorPaginationMeta = {
+  hasNextPage: boolean;
+  nextCursor: string | null;
+  totalPhotos?: number;
 };
 
 /**
@@ -65,15 +79,21 @@ export type GalleryListResponse = ApiPaginatedResponse<AdminGallery>; // { items
 /**
  * Client gallery response - matches ACTUAL API response:
  * GET /api/public/gallery/[token] → {
- *   gallery: { id, namaProject, photos: [], pagination: {} }
+ *   gallery: {
+ *     id, namaProject, status, clientToken, viewCount,
+ *     vendor: { namaStudio, logoUrl },
+ *     settings: { maxSelection, enableDownload, ... },
+ *     photos: ApiPhoto[],
+ *     selectionCount: number,
+ *     selections: string[],    // Array of Photo.id (fileId)
+ *     isSelectionLocked: boolean,  // NOT isLocked!
+ *   },
+ *   pagination: { hasNextPage, nextCursor, totalPhotos? }  // Top-level, cursor-based!
  * }
- * Note: pagination is INSIDE gallery object (current behavior)
  */
 export type ClientGalleryResponse = {
-  gallery: ClientGallery & {
-    photos: ApiPhoto[];
-    pagination: PaginationMeta; // Nested inside gallery (current API behavior)
-  };
+  gallery: ClientGallery; // ClientGallery already includes all fields (see gallery.ts)
+  pagination: CursorPaginationMeta; // Top-level, cursor-based pagination
 };
 
 /**

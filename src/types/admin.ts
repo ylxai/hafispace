@@ -76,12 +76,11 @@ export type AdminPackage = {
 
 export type PaginationMeta = {
   page: number;
-  limit: number;
+  pageSize: number; // Unified with api.ts PaginationMeta (was: limit)
   total: number;
   totalPages: number;
 };
 
-export type PaginatedResponse<T> = {
-  items: T[];
-  pagination: PaginationMeta;
-};
+// Re-export from api.ts as single source of truth
+// PaginatedResponse<T> is now ApiPaginatedResponse<T> from @/types/api
+export type { ApiPaginatedResponse as PaginatedResponse } from "@/types/api";

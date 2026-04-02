@@ -69,20 +69,35 @@ export interface GallerySettings {
 /**
  * Gallery lengkap untuk client view (/gallery/[token]).
  *
- * `selections` berisi array of `Photo.id` (bukan storageKey!).
- * Client dapat mengakses galeri via token tanpa login.
+ * Fields verified against actual API response from:
+ * GET /api/public/gallery/[token]
+ *
+ * ⚠️ Key differences from admin view:
+ * - `isSelectionLocked` (NOT `isLocked`) - true if any selection is submitted
+ * - `vendor` object included for branding
+ * - `selectionCount` for display
+ * - Cursor-based pagination (not offset)
  */
 export interface ClientGallery {
   id: string;
   namaProject: string;
-  status: GalleryStatus;  // from @/types/admin - single source of truth
-  maxSelection: number;
-  isLocked: boolean;
-  photos: ApiPhoto[];
-  selections: string[]; // Array of Photo.id (= PhotoSelection.fileId)
+  status: GalleryStatus;  // from @/types/admin
+  clientToken: string;
+  viewCount: number;
+  // Vendor info for branding
+  vendor: {
+    namaStudio: string | null;
+    logoUrl: string | null;
+  };
+  // Gallery settings
   settings: GallerySettings | null;
-  viewCount?: number;
-  clientToken?: string;
+  // Photos (paginated via cursor)
+  photos: ApiPhoto[];
+  // Selection data
+  selectionCount: number;
+  selections: string[];     // Array of Photo.id (= PhotoSelection.fileId)
+  isSelectionLocked: boolean; // true if any selection is locked (submitted)
+                              // ⚠️ NOT 'isLocked' - field name verified from API code
 }
 
 // ─── Photo Selection ──────────────────────────────────────────────────────────
