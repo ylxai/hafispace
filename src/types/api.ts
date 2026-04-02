@@ -32,7 +32,7 @@ export type ApiSuccessResponse<T = unknown> = {
 
 /**
  * Standard pagination metadata.
- * Uses `pageSize` consistently (admin.ts uses `limit` - will be unified in feat/response-types).
+ * Uses `pageSize` consistently across all shared types (admin.ts, api.ts).
  *
  * Note: Public gallery uses cursor-based pagination: { hasNextPage, nextCursor, totalPhotos? }
  * This PaginationMeta is for offset-based pagination (admin list endpoints).

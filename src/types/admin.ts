@@ -91,5 +91,3 @@ export type PaginationMeta = {
   totalPages: number;
 };
 
-// Re-export from api.ts as single source of truth
-// PaginatedResponse<T> is now ApiPaginatedResponse<T> from @/types/api
