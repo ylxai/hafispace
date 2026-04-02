@@ -140,10 +140,10 @@ export function useResumableUpload(options: UseResumableUploadOptions = {}) {
         results.push(result);
       }
 
-      // Update upload results (replace failed with new attempts)
+      // Update upload results using object identity (not filename) for duplicate file safety
       setUploadResults((prev) =>
         prev.map((prevResult) => {
-          const newResult = results.find((r) => r.file.name === prevResult.file.name);
+          const newResult = results.find((r) => r.file === prevResult.file);
           return newResult ?? prevResult;
         })
       );

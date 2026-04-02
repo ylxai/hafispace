@@ -65,9 +65,9 @@ export function UploadProgressTracker({ files, onRetry }: UploadProgressTrackerP
 
       {/* Individual file progress */}
       <div className="bg-white rounded-lg border divide-y max-h-96 overflow-y-auto">
-        {files.map((fileState, index) => (
+        {files.map((fileState) => (
           <FileProgressItem
-            key={`${fileState.file.name}-${index}`}
+            key={fileState.id} // Use stable UUID instead of filename+index
             fileState={fileState}
             onRetry={onRetry}
           />
