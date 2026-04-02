@@ -1,22 +1,13 @@
-import { useCallback,useState } from 'react';
+import { useCallback, useState } from 'react';
 
-export interface UploadResult {
-  file: File;
-  success: boolean;
-  error?: string;
-  attempts: number;
-}
+import { createFileId, type FileUploadId, type FileUploadResult, type UploadProgressCallbacks } from '@/lib/upload-types';
 
-interface UseResumableUploadOptions {
+// Re-export from upload-types for convenience
+export type { FileUploadId,FileUploadResult as UploadResult } from '@/lib/upload-types';
+
+interface UseResumableUploadOptions extends UploadProgressCallbacks {
   maxRetries?: number;
   retryDelay?: number; // Base delay in ms (will use exponential backoff)
-  /**
-   * Called with a unique ID (not filename) to support duplicate filenames.
-   * The ID must be provided via the `fileId` parameter when calling uploadFileWithRetry.
-   */
-  onProgress?: (fileId: string, progress: number) => void;
-  onSuccess?: (fileId: string) => void;
-  onError?: (fileId: string, error: string) => void;
 }
 
 /**
@@ -43,9 +34,9 @@ export function useResumableUpload(options: UseResumableUploadOptions = {}) {
     async (
       file: File,
       uploadFn: (file: File, onProgress: (progress: number) => void) => Promise<void>,
-      fileId: string, // Unique ID for this file (not filename - supports duplicate names)
+      fileId: FileUploadId, // Branded type - must use createFileId(), never file.name
       attempt = 0
-    ): Promise<UploadResult> => {
+    ): Promise<FileUploadResult> => {
       try {
         await uploadFn(file, (progress) => {
           onProgress?.(fileId, progress); // Use fileId, not file.name
@@ -95,18 +86,18 @@ export function useResumableUpload(options: UseResumableUploadOptions = {}) {
     async (
       files: File[],
       uploadFn: (file: File, onProgress: (progress: number) => void) => Promise<void>,
-      fileIds?: string[] // Optional pre-generated IDs (for state closure safety)
+      fileIds?: FileUploadId[] // Optional pre-generated IDs (for state closure safety)
     ) => {
       setIsUploading(true);
       setUploadResults([]);
 
-      const results: UploadResult[] = [];
+      const results: FileUploadResult[] = [];
 
       // Upload sequentially to avoid overwhelming server
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (!file) continue;
-        const fileId = fileIds?.[i] ?? crypto.randomUUID();
+        const fileId = fileIds?.[i] ?? createFileId(); // Use createFileId() not randomUUID directly
         const result = await uploadFileWithRetry(file, uploadFn, fileId);
         results.push(result);
         setUploadResults([...results]); // Update state after each file
@@ -161,12 +152,12 @@ export function useResumableUpload(options: UseResumableUploadOptions = {}) {
     async (
       file: File,
       uploadFn: (file: File, onProgress: (progress: number) => void) => Promise<void>,
-      fileId?: string // Optional: provide same ID as original for consistent tracking
+      fileId?: FileUploadId // Optional: provide same ID as original for consistent tracking
     ) => {
       setIsUploading(true);
 
-      // Use provided ID or generate new one
-      const id = fileId ?? crypto.randomUUID();
+      // Use provided ID or generate new one (use createFileId() not randomUUID directly)
+      const id = fileId ?? createFileId();
       const result = await uploadFileWithRetry(file, uploadFn, id);
 
       // Update upload results using object identity (not filename) for robustness

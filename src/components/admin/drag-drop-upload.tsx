@@ -6,8 +6,9 @@ import { type FileRejection,useDropzone } from "react-dropzone";
 
 import { UploadProgressTracker, useUploadProgress } from "@/components/admin/upload-progress-tracker";
 import { useToast } from "@/components/ui/toast";
-import { createUploadFunction,useResumableUpload } from "@/hooks/use-resumable-upload";
-import { getCompressionSummary,optimizeMultipleImages } from "@/lib/image-compression";
+import { createUploadFunction, useResumableUpload } from "@/hooks/use-resumable-upload";
+import { getCompressionSummary, optimizeMultipleImages } from "@/lib/image-compression";
+import { createFileId } from "@/lib/upload-types";
 
 interface CloudinaryAccount {
   id: string;
@@ -163,7 +164,7 @@ export function DragDropUpload({ galleryId, onUploadComplete, onCancel, onEditFi
       // Generate unique IDs upfront to avoid React state closure issue
       // (fileStates from hook won't be updated until next render)
       const compressedFiles = compressionResults.map((r) => r.file);
-      const fileIds = compressedFiles.map(() => crypto.randomUUID());
+      const fileIds = compressedFiles.map(() => createFileId()); // Branded type - use createFileId() not randomUUID
 
       // Initialize tracker with pre-generated IDs (avoids React state closure issue)
       initializeFiles(compressedFiles, fileIds);

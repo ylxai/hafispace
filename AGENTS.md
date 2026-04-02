@@ -183,6 +183,65 @@ npm run test:watch     # Watch mode for active development
 npm run test:coverage  # Coverage report
 ```
 
+### Upload System Patterns (WAJIB DIIKUTI)
+
+**Type Contract:** Selalu gunakan `FileUploadId` dari `@/lib/upload-types.ts`
+
+```typescript
+import { createFileId, type FileUploadId } from '@/lib/upload-types';
+
+// ✅ BENAR - gunakan createFileId()
+const fileIds = files.map(() => createFileId());
+
+// ❌ SALAH - jangan pakai file.name sebagai ID
+const id = file.name; // Breaks dengan duplicate filenames!
+
+// ❌ SALAH - jangan pakai crypto.randomUUID() langsung
+const id = crypto.randomUUID(); // Harus typed sebagai FileUploadId
+```
+
+**Upload Flow (3 Steps):**
+```typescript
+// Step 1: Generate IDs SEBELUM initializeFiles (hindari React closure bug)
+const fileIds = files.map(() => createFileId());
+initializeFiles(files, fileIds);
+
+// Step 2: Pass selectedAccountId ke createUploadFunction (multi-tenant!)
+const uploadFn = createUploadFunction(galleryId, selectedAccountId);
+
+// Step 3: Upload via hook (auto-retry included)
+const results = await uploadFiles(files, uploadFn, fileIds);
+```
+
+**File Lookup:** Selalu gunakan object identity, BUKAN filename:
+```typescript
+// ✅ BENAR - object identity
+const fileState = fileStates.find((fs) => fs.file === file);
+
+// ❌ SALAH - filename comparison
+const fileState = fileStates.find((fs) => fs.file.name === file.name);
+```
+
+**Retry Pattern:**
+```typescript
+// Pass sama fileId untuk tracking continuity
+await retrySingle(file, uploadFn, fileState.id);
+
+// Sequential retry (BUKAN parallel forEach!)
+for (const file of failedFiles) {
+  await handleRetryFile(file); // ✅ Sequential
+}
+// failedFiles.forEach(f => handleRetryFile(f)); // ❌ Parallel
+```
+
+**isUploading State:** Selalu sync state dari hook + local:
+```typescript
+const isAnyUploading = isUploading || isRetrying; // Combined state
+// Gunakan isAnyUploading di UI, bukan hanya isUploading
+```
+
+---
+
 ### Constants
 - `src/lib/constants.ts` — nilai hardcoded, aman diimport di client/server
 - `src/lib/constants.server.ts` — nilai dari env vars, **server-only** (rate limits, bcrypt cost, gallery max, metrics TTL)
@@ -273,6 +332,30 @@ npm run lint    # 0 error, 0 warning ESLint
 npm run build   # Build sukses tanpa error TypeScript
 npm run typecheck # Faster type checking (~10s)
 ```
+
+### Husky Pre-commit Hooks (Auto-active)
+
+Husky + lint-staged sudah dikonfigurasi. **Setiap `git commit` akan otomatis:**
+1. Run `lint-staged` — ESLint `--fix` pada staged files saja
+2. Auto-fix: unused imports, import sorting
+3. Block commit jika ada ESLint errors
+
+```bash
+# Jika pre-commit hook gagal:
+npm run lint       # Cek error manual
+npm run lint -- --fix  # Auto-fix semua
+git add -A         # Stage fixes
+git commit -m "..." # Retry commit
+```
+
+**ESLint Plugins yang aktif:**
+- `@typescript-eslint` — TypeScript strict rules (no any, consistent types)
+- `eslint-plugin-unused-imports` — Auto-remove unused imports
+- `eslint-plugin-simple-import-sort` — Sort imports alphabetically
+- `@next/eslint-plugin-next` — Next.js best practices
+
+**Note:** `eslint-plugin-tailwindcss` TIDAK dipasang (tidak compatible Tailwind v4).
+Alternatif: `prettier-plugin-tailwindcss` (planned, belum disetup).
 
 ### Rebase Pattern
 ```bash

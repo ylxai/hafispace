@@ -1,12 +1,14 @@
 "use client";
 
-import { CheckCircle2, Loader2, Upload,XCircle } from "lucide-react";
-import { useCallback,useState } from "react";
+import { CheckCircle2, Loader2, Upload, XCircle } from "lucide-react";
+import { useCallback, useState } from "react";
+
+import { createFileId, type FileUploadId } from "@/lib/upload-types";
 
 export type UploadStatus = "pending" | "uploading" | "success" | "error";
 
 export interface FileUploadState {
-  id: string; // Unique ID to avoid filename conflicts
+  id: FileUploadId; // Branded UUID - use createFileId(), NEVER file.name
   file: File;
   status: UploadStatus;
   progress: number;
@@ -162,10 +164,10 @@ function StatusIcon({ status }: { status: UploadStatus }) {
 export function useUploadProgress() {
   const [fileStates, setFileStates] = useState<FileUploadState[]>([]);
 
-  const initializeFiles = useCallback((files: File[], preGeneratedIds?: string[]) => {
+  const initializeFiles = useCallback((files: File[], preGeneratedIds?: FileUploadId[]) => {
     setFileStates(
       files.map((file, i) => ({
-        id: preGeneratedIds?.[i] ?? crypto.randomUUID(), // Support pre-generated IDs for state closure safety
+        id: preGeneratedIds?.[i] ?? createFileId(), // Support pre-generated IDs for state closure safety
         file,
         status: "pending" as const,
         progress: 0,
@@ -174,7 +176,7 @@ export function useUploadProgress() {
   }, []);
 
   // Update by ID (not filename) to avoid conflicts with same-named files
-  const updateFileProgress = useCallback((id: string, progress: number) => {
+  const updateFileProgress = useCallback((id: FileUploadId, progress: number) => {
     setFileStates((prev) =>
       prev.map((fs) =>
         fs.id === id
@@ -184,7 +186,7 @@ export function useUploadProgress() {
     );
   }, []);
 
-  const markFileSuccess = useCallback((id: string) => {
+  const markFileSuccess = useCallback((id: FileUploadId) => {
     setFileStates((prev) =>
       prev.map((fs) =>
         fs.id === id
@@ -194,7 +196,7 @@ export function useUploadProgress() {
     );
   }, []);
 
-  const markFileError = useCallback((id: string, error: string) => {
+  const markFileError = useCallback((id: FileUploadId, error: string) => {
     setFileStates((prev) =>
       prev.map((fs) =>
         fs.id === id
