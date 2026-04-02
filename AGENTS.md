@@ -281,10 +281,36 @@ Optional:
 
 ### Worktrees Aktif
 ```
-/home/eouser/scrapper/my-platform                          [main]
-.adal/worktrees/compact-page                               [feat/single-gallery-page]
-.adal/worktrees/feat-storage-scalling                      [feat-storage-scalling]
+/home/eouser/scrapper/my-platform                          [main]            ← Rovo Dev (stable base)
+.adal/worktrees/shared-types                               [feat/shared-types] ← Rovo Dev
+.adal/worktrees/gallery-page                               [feat/single-gallery-page] ← Kiro CLI
+.adal/worktrees/feat-storage-scalling                      [feat-storage-scalling]    ← On hold
 ```
+
+### Multi-Agent Coordination
+Platform ini menggunakan **2 AI agents secara parallel:**
+- **Rovo Dev** (Atlassian) - Shared types, API layer, architecture
+- **Kiro CLI** (Amazon) - Gallery client experience, UI features
+
+**File koordinasi:** `.agents/status.md` - BACA DULU sebelum mulai kerja!
+
+### File Ownership
+```
+Rovo Dev owns:
+  src/types/**              ← Shared types
+  src/lib/api/**            ← API utilities
+  src/hooks/**              ← Shared hooks
+  docs/**                   ← Documentation
+  .agents/**                ← Agent coordination
+
+Kiro CLI owns:
+  src/app/gallery/**        ← Gallery client pages
+  src/components/gallery/** ← Gallery components
+
+SHARED (koordinasi dulu via .agents/status.md):
+  AGENTS.md, package.json, prisma/schema.prisma, src/middleware.ts
+```
+
 Kerja di worktree yang sesuai agar `main` tidak terganggu.
 
 ### Naming Convention Branch
