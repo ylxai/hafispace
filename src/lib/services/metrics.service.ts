@@ -3,10 +3,11 @@
  * Business logic untuk dashboard metrics — dipisahkan dari API route handler
  */
 
-import { unstable_cache } from "next/cache";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/db";
+import { unstable_cache } from "next/cache";
+
 import { METRICS_CACHE_TTL_SECONDS } from "@/lib/constants.server";
+import { prisma } from "@/lib/db";
 
 /**
  * Cached wrapper untuk fetchVendorMetrics.

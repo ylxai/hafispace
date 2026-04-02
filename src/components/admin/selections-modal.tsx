@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import { useCallback,useEffect, useState } from "react";
+
 import { useToast } from "@/components/ui/toast";
 import { generateThumbnailUrlFromUrl } from "@/lib/cloudinary/utils";
 

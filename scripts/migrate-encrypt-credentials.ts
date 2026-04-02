@@ -13,6 +13,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+
 import { encrypt, isEncrypted } from '../src/lib/encryption';
 
 const prisma = new PrismaClient();

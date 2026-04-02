@@ -1,9 +1,11 @@
-import { NextResponse } from "next/server";
+import { randomBytes } from "node:crypto";
+
 import Ably from "ably";
+import { NextResponse } from "next/server";
+
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
-import { randomBytes } from "node:crypto";
 import logger from "@/lib/logger";
 
 export async function GET(request: Request) {

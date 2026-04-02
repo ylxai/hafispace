@@ -1,7 +1,8 @@
-import { auth } from "@/lib/auth/options";
 import { redirect } from "next/navigation";
+
 import { DashboardContent } from "@/components/admin/dashboard/dashboard-content";
 import { PageHeader } from "@/components/admin/shared";
+import { auth } from "@/lib/auth/options";
 
 export default async function AdminHomePage() {
   const session = await auth();

@@ -1,6 +1,7 @@
 "use client";
 
 import { signOut, useSession } from "next-auth/react";
+
 import { Brand } from "@/components/ui/brand";
 
 export function AdminHeader() {

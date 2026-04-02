@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { CheckCircle2, XCircle, Loader2, Upload } from "lucide-react";
+import { CheckCircle2, Loader2, Upload,XCircle } from "lucide-react";
+import { useCallback,useState } from "react";
 
 export type UploadStatus = "pending" | "uploading" | "success" | "error";
 
@@ -65,9 +65,9 @@ export function UploadProgressTracker({ files, onRetry }: UploadProgressTrackerP
 
       {/* Individual file progress */}
       <div className="bg-white rounded-lg border divide-y max-h-96 overflow-y-auto">
-        {files.map((fileState, index) => (
+        {files.map((fileState) => (
           <FileProgressItem
-            key={`${fileState.file.name}-${index}`}
+            key={fileState.id} // Use stable UUID instead of filename+index
             fileState={fileState}
             onRetry={onRetry}
           />
@@ -162,10 +162,10 @@ function StatusIcon({ status }: { status: UploadStatus }) {
 export function useUploadProgress() {
   const [fileStates, setFileStates] = useState<FileUploadState[]>([]);
 
-  const initializeFiles = useCallback((files: File[]) => {
+  const initializeFiles = useCallback((files: File[], preGeneratedIds?: string[]) => {
     setFileStates(
-      files.map((file) => ({
-        id: crypto.randomUUID(), // Unique ID - avoids filename conflicts
+      files.map((file, i) => ({
+        id: preGeneratedIds?.[i] ?? crypto.randomUUID(), // Support pre-generated IDs for state closure safety
         file,
         status: "pending" as const,
         progress: 0,

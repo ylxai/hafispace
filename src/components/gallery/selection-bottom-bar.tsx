@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, X, Send } from "lucide-react";
+import { Check, Send,X } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 
 interface SelectionBottomBarProps {

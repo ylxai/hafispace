@@ -6,8 +6,8 @@
  * Pattern: INCR key → jika == 1, set EXPIRE → cek vs limit
  */
 
-import { redis } from "@/lib/redis";
 import logger from "@/lib/logger";
+import { redis } from "@/lib/redis";
 
 type RateLimitOptions = {
   /** Jumlah maksimum request dalam window */

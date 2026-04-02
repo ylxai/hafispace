@@ -1,13 +1,15 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
+import { Suspense } from "react";
+
 import { authOptions } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
+
 import { MetricsCards } from "./metrics-cards";
-import { RevenueChart } from "./revenue-chart";
-import { TopPackagesChart } from "./top-packages-chart";
-import { SessionCalendar } from "./session-calendar";
 import { RecentBookings } from "./recent-bookings";
+import { RevenueChart } from "./revenue-chart";
+import { SessionCalendar } from "./session-calendar";
+import { TopPackagesChart } from "./top-packages-chart";
 
 /**
  * Critical data — above the fold: metrics, recent bookings, upcoming sessions.

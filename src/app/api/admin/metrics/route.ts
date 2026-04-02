@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth/options";
+
 import { unauthorizedResponse } from "@/lib/api/response";
+import { auth } from "@/lib/auth/options";
 import { getCachedVendorMetrics } from "@/lib/services/metrics.service";
 
 export async function GET() {

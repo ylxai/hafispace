@@ -1,9 +1,10 @@
 "use client";
 
+import { Check } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 import { useInView } from "react-intersection-observer";
-import Image from "next/image";
-import { Check } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 
 type Photo = {
@@ -50,7 +51,21 @@ export function ProgressivePhotoCard({
 
   return (
     <div ref={ref} className="w-full">
-      <button
+      {/**
+       * Pattern: Clickable card with inner interactive element
+       * 
+       * HTML spec: <button> CANNOT contain interactive content (<button>, <a>, etc.)
+       * Solution: Use <div role="button"> for outer card, <button> for inner selection indicator
+       * 
+       * This is the correct accessible pattern for "card with action button":
+       * - Outer div: handles lightbox click (entire card)
+       * - Inner button: handles selection toggle (checkmark icon)
+       * 
+       * @see https://www.w3.org/WAI/ARIA/apg/patterns/button/
+       */}
+      <div
+        role="button"
+        tabIndex={0}
         onClick={(e) => {
           if (e.shiftKey || e.metaKey || e.ctrlKey) {
             e.preventDefault();
@@ -59,16 +74,23 @@ export function ProgressivePhotoCard({
             onClick();
           }
         }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick();
+          }
+        }}
         className={cn(
           "relative w-full aspect-square overflow-hidden rounded-lg",
           "transition-all duration-200 ease-out",
           "group cursor-pointer",
           "hover:shadow-lg hover:scale-[1.02]",
+          "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1",
           isSelected && "ring-4 ring-blue-500 scale-95"
         )}
         aria-label={`${isSelected ? "Deselect" : "Select"} ${photo.filename}`}
       >
-        {/* Selection indicator - button for keyboard accessibility */}
+        {/* Selection indicator - proper <button> inside div container (valid HTML) */}
         <button
           type="button"
           aria-label={isSelected ? `Batalkan pilihan ${photo.filename}` : `Pilih ${photo.filename}`}
@@ -139,7 +161,7 @@ export function ProgressivePhotoCard({
             </span>
           </div>
         )}
-      </button>
+      </div>
 
       {/* Caption (optional) */}
       <div className="mt-2 px-1">

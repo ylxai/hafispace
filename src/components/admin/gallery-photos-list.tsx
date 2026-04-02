@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
-import { useToast } from "@/components/ui/toast";
+import { useState } from "react";
+
 import { DeleteConfirmationModal } from "@/components/admin/delete-confirmation-modal";
+import { useToast } from "@/components/ui/toast";
 
 type Photo = {
   id: string;

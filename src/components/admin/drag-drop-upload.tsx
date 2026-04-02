@@ -1,9 +1,13 @@
 "use client";
 
-import { useCallback, useState, useEffect } from "react";
-import { useDropzone, type FileRejection } from "react-dropzone";
-import { useToast } from "@/components/ui/toast";
 import Image from "next/image";
+import { useCallback, useEffect,useState } from "react";
+import { type FileRejection,useDropzone } from "react-dropzone";
+
+import { UploadProgressTracker, useUploadProgress } from "@/components/admin/upload-progress-tracker";
+import { useToast } from "@/components/ui/toast";
+import { createUploadFunction,useResumableUpload } from "@/hooks/use-resumable-upload";
+import { getCompressionSummary,optimizeMultipleImages } from "@/lib/image-compression";
 
 interface CloudinaryAccount {
   id: string;
@@ -35,6 +39,29 @@ export function DragDropUpload({ galleryId, onUploadComplete, onCancel, onEditFi
   const [totalProgress, setTotalProgress] = useState(0);
   const [accounts, setAccounts] = useState<CloudinaryAccount[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
+  const [compressionProgress, setCompressionProgress] = useState<{ current: number; total: number } | null>(null);
+  const [compressionStats, setCompressionStats] = useState<{ totalSavings: number; totalOriginalSizeFormatted: string; totalCompressedSizeFormatted: string } | null>(null);
+
+  // Sprint 1: Upload progress tracking
+  const {
+    fileStates,
+    initializeFiles,
+    updateFileProgress,
+    markFileSuccess,
+    markFileError,
+  } = useUploadProgress();
+
+  // Sprint 1: Resumable upload with retry
+  const { uploadFiles, retrySingle, hasFailures, isUploading: isRetrying } = useResumableUpload({
+    maxRetries: 3,
+    retryDelay: 1000,
+    onProgress: (id, progress) => updateFileProgress(id, progress),
+    onSuccess: (id) => markFileSuccess(id),
+    onError: (id, error) => markFileError(id, error),
+  });
+
+  // Combined uploading state: local or hook retry
+  const isAnyUploading = isUploading || isRetrying;
 
   useEffect(() => {
     async function fetchAccounts() {
@@ -111,105 +138,80 @@ export function DragDropUpload({ galleryId, onUploadComplete, onCancel, onEditFi
     }
 
     setIsUploading(true);
+    setCompressionProgress(null);
+    setCompressionStats(null);
 
     try {
-      const formData = new FormData();
-      files.forEach((fileItem) => {
-        formData.append("files", fileItem.file);
-      });
-      formData.append("accountId", selectedAccountId);
-
-      // Update status to uploading
-      setFiles((prev) =>
-        prev.map((file) => ({ ...file, status: "uploading" as const }))
+      // ─── Step 1: Client-side compression ───────────────────────────────────
+      setCompressionProgress({ current: 0, total: files.length });
+      
+      const compressionResults = await optimizeMultipleImages(
+        files.map((f) => f.file),
+        (current, total) => setCompressionProgress({ current, total })
       );
 
-      // Create cancel function for each file
-      const cancelFunctions = new Map<string, () => void>();
-      
-      // Simulate progress updates with individual cancel support
-      const simulateProgress = setInterval(() => {
-        setFiles((prev) =>
-          prev.map((file) => {
-            if (file.status === "uploading" && file.progress < 90) {
-              // Create cancel function for this file if it doesn't exist
-              if (!cancelFunctions.has(file.filename)) {
-                const cancelFn = () => {
-                  setFiles(prev => 
-                    prev.map(f => 
-                      f.filename === file.filename 
-                        ? { ...f, status: "pending", progress: 0 } 
-                        : f
-                    )
-                  );
-                };
-                cancelFunctions.set(file.filename, cancelFn);
-              }
-              
-              return { ...file, progress: file.progress + Math.random() * 10 };
-            }
-            return file;
-          })
-        );
-      }, 200);
-
-      const response = await fetch(`/api/admin/galleries/${galleryId}/upload`, {
-        method: "POST",
-        body: formData,
+      // Show compression stats
+      const summary = getCompressionSummary(compressionResults);
+      setCompressionStats({
+        totalSavings: summary.totalSavings,
+        totalOriginalSizeFormatted: summary.totalOriginalSizeFormatted,
+        totalCompressedSizeFormatted: summary.totalCompressedSizeFormatted,
       });
+      setCompressionProgress(null);
 
-      clearInterval(simulateProgress);
+      // ─── Step 2: Initialize progress tracker ────────────────────────────────
+      // Generate unique IDs upfront to avoid React state closure issue
+      // (fileStates from hook won't be updated until next render)
+      const compressedFiles = compressionResults.map((r) => r.file);
+      const fileIds = compressedFiles.map(() => crypto.randomUUID());
 
-      const result = await response.json();
+      // Initialize tracker with pre-generated IDs (avoids React state closure issue)
+      initializeFiles(compressedFiles, fileIds);
 
-      if (response.ok) {
-        // Create lookup maps for performance (O(N+M) instead of O(N*M))
-        const uploadedMap = new Map<string, { filename: string }>(
-          result.photos.map((p: { filename: string }) => [p.filename, p])
-        );
-        const failedMap = new Map<string, { filename: string; error: string }>(
-          result.failed.map((f: { filename: string; error: string }) => [f.filename, f])
-        );
+      // ─── Step 3: Upload via hook (includes auto-retry + exponential backoff) ──
+      // Pass selectedAccountId for multi-tenant Cloudinary support
+      const uploadFn = createUploadFunction(galleryId, selectedAccountId);
 
-        // Update file statuses
-        setFiles((prev) =>
-          prev.map((file) => {
-            const uploadedFile = uploadedMap.get(file.filename);
-            if (uploadedFile) {
-              return { ...file, status: "completed", progress: 100 };
-            }
-            const failedFile = failedMap.get(file.filename);
-            if (failedFile) {
-              return { ...file, status: "error", progress: 0, error: failedFile.error };
-            }
-            return file;
-          })
-        );
+      // Use uploadFiles() from hook so initial upload ALSO benefits from retry logic
+      const results = await uploadFiles(compressedFiles, uploadFn, fileIds);
 
-        setTotalProgress(100);
-        toast.success(`${result.stats.successful} photo(s) uploaded successfully!`);
-        
+      const successful = results.filter((r) => r.success).length;
+      const failed = results.filter((r) => !r.success).length;
+
+      setTotalProgress(100);
+
+      if (successful > 0) {
+        toast.success(`${successful} foto berhasil diupload!${failed > 0 ? ` ${failed} gagal.` : ""}`);
         setTimeout(() => {
-          onUploadComplete({
-            successful: result.stats.successful,
-            failed: result.stats.failed,
-          });
-        }, 1000);
+          onUploadComplete({ successful, failed });
+        }, 1500);
       } else {
-        throw new Error(result.error ?? "Upload failed");
+        toast.error(`Semua upload gagal. Silakan coba lagi.`);
       }
+
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Upload failed";
       toast.error(errorMessage);
-      setFiles((prev) =>
-        prev.map((file) =>
-          file.status === "uploading" ? { ...file, status: "error", error: errorMessage } : file
-        )
-      );
     } finally {
       setIsUploading(false);
+      setCompressionProgress(null);
     }
   };
+
+  /**
+   * Retry a specific failed file using resumable upload hook
+   */
+  const handleRetryFile = useCallback(async (file: File) => {
+    // Use object identity (fs.file === file) for robustness with duplicate filenames
+    const fileState = fileStates.find((fs) => fs.file === file);
+    if (!fileState) return;
+
+    // Pass selectedAccountId for multi-tenant Cloudinary support
+    const uploadFn = createUploadFunction(galleryId, selectedAccountId);
+
+    // Pass same fileId for consistent progress tracking
+    await retrySingle(file, uploadFn, fileState.id);
+  }, [fileStates, retrySingle, galleryId, selectedAccountId]);
 
   const completedCount = files.filter((f) => f.status === "completed").length;
   const errorCount = files.filter((f) => f.status === "error").length;
@@ -251,8 +253,61 @@ export function DragDropUpload({ galleryId, onUploadComplete, onCancel, onEditFi
         )}
       </div>
 
-      {/* File List */}
-      {files.length > 0 && (
+      {/* Compression Progress */}
+      {compressionProgress && (
+        <div className="rounded-xl bg-blue-50 border border-blue-100 p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm font-medium text-blue-700">
+              Mengoptimasi foto... ({compressionProgress.current}/{compressionProgress.total})
+            </span>
+          </div>
+          <div className="h-1.5 bg-blue-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-blue-500 transition-all duration-300"
+              style={{ width: `${(compressionProgress.current / compressionProgress.total) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Compression Stats */}
+      {compressionStats && compressionStats.totalSavings > 1 && (
+        <div className="rounded-xl bg-green-50 border border-green-100 p-3">
+          <p className="text-sm text-green-700">
+            ✅ Optimasi selesai — hemat <strong>{compressionStats.totalSavings.toFixed(0)}%</strong>{" "}
+            ({compressionStats.totalOriginalSizeFormatted} → {compressionStats.totalCompressedSizeFormatted})
+          </p>
+        </div>
+      )}
+
+      {/* Sprint 1: UploadProgressTracker */}
+      {fileStates.length > 0 && (
+        <UploadProgressTracker
+          files={fileStates}
+          onRetry={handleRetryFile}
+        />
+      )}
+
+      {/* Retry All Failed Button - disabled during any upload/retry */}
+      {hasFailures && !isAnyUploading && (
+        <button
+          type="button"
+          onClick={async () => {
+            // Sequential retry to avoid overwhelming server (not parallel forEach)
+            const failedFiles = fileStates.filter(fs => fs.status === "error").map(fs => fs.file);
+            for (const file of failedFiles) {
+              await handleRetryFile(file);
+            }
+          }}
+          className="w-full rounded-xl border border-red-200 bg-red-50 py-2 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
+        >
+          🔄 Coba Ulang Semua yang Gagal ({fileStates.filter(fs => fs.status === "error").length} file)
+        </button>
+      )}
+
+      {/* File List (pre-upload) */}
+      {files.length > 0 && fileStates.length === 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-slate-700">

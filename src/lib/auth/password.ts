@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+
 import { BCRYPT_COST_FACTOR } from "@/lib/constants.server";
 
 export async function hashPassword(password: string) {

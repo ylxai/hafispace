@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
+import { useEffect,useState } from 'react';
+
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 
 

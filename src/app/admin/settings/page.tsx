@@ -1,14 +1,15 @@
 "use client";
 
-import { StudioProfilePanel } from "./_components/studio-profile-panel";
-import { AccessControlPanel } from "./_components/access-control-panel";
-import { NotificationsPanel } from "./_components/notifications-panel";
-import { FormBookingPanel } from "./_components/form-booking-panel";
-import { ViesusEnhancementPanel } from "./_components/viesus-enhancement-panel";
-import { CustomFieldsPanel } from "./_components/custom-fields-panel";
 import { CloudinaryAccountsPanel } from "@/components/admin/cloudinary-accounts";
 import { PageHeader } from "@/components/admin/shared";
 import { SettingsAccordion } from "@/components/admin/shared";
+
+import { AccessControlPanel } from "./_components/access-control-panel";
+import { CustomFieldsPanel } from "./_components/custom-fields-panel";
+import { FormBookingPanel } from "./_components/form-booking-panel";
+import { NotificationsPanel } from "./_components/notifications-panel";
+import { StudioProfilePanel } from "./_components/studio-profile-panel";
+import { ViesusEnhancementPanel } from "./_components/viesus-enhancement-panel";
 
 export default function AdminSettingsPage() {
   return (

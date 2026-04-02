@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+
 // Validate all critical env variables when this module is first imported
 import { env } from "@/lib/env";
 

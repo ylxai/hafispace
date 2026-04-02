@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense } from 'react';
+
 import { BookingFormContent } from "./_components/booking-form-content";
 
 export default function BookingPage() {

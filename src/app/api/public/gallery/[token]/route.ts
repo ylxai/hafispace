@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { redis } from "@/lib/redis";
+
 import { DEFAULT_MAX_SELECTION, GALLERY_VIEW_COOKIE_TTL_SECONDS } from "@/lib/constants";
 import { FINGERPRINT_TTL_SECONDS, GALLERY_MAX_PHOTOS } from "@/lib/constants.server";
+import { prisma } from "@/lib/db";
+import { redis } from "@/lib/redis";
 
 const PHOTOS_PER_PAGE = 50;
 

@@ -1,10 +1,12 @@
+import { randomBytes } from "node:crypto";
+
 import { NextResponse } from "next/server";
+import { z } from "zod";
+
+import { verifyGalleryOwnershipWithSelect } from "@/lib/api/gallery-auth";
+import { notFoundResponse, parseRequestBody,unauthorizedResponse } from "@/lib/api/response";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { unauthorizedResponse, notFoundResponse, parseRequestBody } from "@/lib/api/response";
-import { verifyGalleryOwnershipWithSelect } from "@/lib/api/gallery-auth";
-import { randomBytes } from "node:crypto";
-import { z } from "zod";
 
 const updateTokenSchema = z.object({
   action: z.enum(["regenerate", "set-expiry", "clear-expiry"]),

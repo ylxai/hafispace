@@ -1,9 +1,12 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Bonheur_Royale } from "next/font/google";
 import "./globals.css";
-import Providers from "./providers";
+
+import type { Metadata } from "next";
+import { Bonheur_Royale,Geist, Geist_Mono } from "next/font/google";
+
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { ToastProvider } from "@/components/ui/toast";
+
+import Providers from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
