@@ -14,7 +14,7 @@
  */
 
 // Import for internal use in this file
-import type { BookingStatus, DpStatus, PackageKategori } from "@/types/admin";
+import type { BookingStatus, DpStatus, PackageKategori, PrintItem } from "@/types/admin";
 import type { GalleryStatus } from "@/types/gallery";
 
 // Re-export booking-related types dari admin untuk convenience
@@ -50,7 +50,7 @@ export interface Package {
   deskripsi: string | null;
   kuotaEdit: number | null;
   maxSelection: number;       // default 40 (NOT nullable)
-  includeCetak: boolean | null; // boolean in AdminPackage - align for consistency
+  includeCetak: PrintItem[] | null; // Array of print items - matches AdminPackage
   kategori: PackageKategori;  // from @/types/admin - type safe enum
 }
 
