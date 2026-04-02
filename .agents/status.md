@@ -452,28 +452,144 @@ main (stable)
 ```
 Hi Kiro! 
 
-Context untuk feat/single-gallery-page:
+Selamat datang di Hafiportrait Platform. Berikut semua yang perlu kamu 
+tahu sebelum mulai kerja di feat/single-gallery-page.
 
-1. Worktree sudah siap di: .adal/worktrees/gallery-page
-2. Branch: feat/single-gallery-page (dari main 05e63f2)
-3. Existing gallery page: src/app/gallery/[token]/page.tsx
+═══════════════════════════════════════════════════════
+ STEP 1: SETUP
+═══════════════════════════════════════════════════════
 
-Sprint 1 components yang sudah tersedia (gunakan ini!):
-- ProgressivePhotoCard: src/components/gallery/progressive-photo-card.tsx
-- SelectionBottomBar: src/components/gallery/selection-bottom-bar.tsx
+Worktree kamu sudah siap:
+  Path: .adal/worktrees/gallery-page
+  Branch: feat/single-gallery-page
 
-Important patterns:
-- Photo selection: use photo.id (not storageKey)
-- File tracking: import createFileId from @/lib/upload-types
-- Styling: Tailwind CSS v4 (no config file, CSS-based)
-- Auth: Gallery access via token only (no login)
+Cara masuk ke worktree:
+  cd .adal/worktrees/gallery-page
 
-Pre-push hook aktif - akan auto-run lint + typecheck + tests sebelum push.
-Run: bash scripts/review.sh sebelum buat PR.
+Install dependencies (jika belum):
+  npm install
 
-Jika butuh shared types (ApiPhoto, etc), tunggu feat/shared-types 
-di-merge dulu ke main, baru rebase.
+═══════════════════════════════════════════════════════
+ STEP 2: PAHAMI CODEBASE
+═══════════════════════════════════════════════════════
 
-Good luck! 🚀
+File utama yang akan kamu kerjakan:
+  src/app/gallery/[token]/page.tsx     ← Gallery client page (UTAMA)
+  src/components/gallery/              ← Gallery components folder
+
+Components Sprint 1 yang WAJIB digunakan (sudah ada di codebase):
+  ProgressivePhotoCard:
+    Path: src/components/gallery/progressive-photo-card.tsx
+    Usage: <ProgressivePhotoCard photo={photo} onClick={...} isSelected={...}
+             canSelect={...} onToggleSelect={...} priority={index < 4} />
+  
+  SelectionBottomBar:
+    Path: src/components/gallery/selection-bottom-bar.tsx
+    Usage: <SelectionBottomBar selectedCount={n} maxSelection={max}
+             isMaxed={...} isLocked={...} onClearAll={...} onSubmit={...} />
+
+Utility yang tersedia:
+  cn() function: import { cn } from "@/lib/utils" (clsx + tailwind-merge)
+  createFileId(): import { createFileId } from "@/lib/upload-types"
+
+═══════════════════════════════════════════════════════
+ STEP 3: ARCHITECTURE YANG HARUS DIPAHAMI
+═══════════════════════════════════════════════════════
+
+Cara gallery bekerja:
+  1. Client buka URL: /gallery/[token]
+  2. Fetch gallery data via TanStack Query
+  3. Photo selection disimpan di localStorage DULU (local-first)
+  4. Setelah submit → kirim ke server → locked
+  
+Photo selection pattern:
+  - selectedIds = Set<string> (Set of Photo.id)
+  - toggle(photo.id) untuk pilih/batal pilih
+  - PhotoSelection.fileId = Photo.id (BUKAN storageKey!)
+  
+State management:
+  - useLocalSelection hook untuk selection state
+  - isLocked: boolean (setelah submit, read-only)
+  - isMaxed: selectedCount >= maxSelection
+
+Photo type sementara (pakai ini dulu, nanti update setelah shared-types):
+  type Photo = {
+    id: string;
+    filename: string;
+    url: string;
+    thumbnailUrl: string | null;
+    width: number | null;
+    height: number | null;
+    createdAt?: string;
+    urutan?: number | null;
+  }
+
+JANGAN expose storageKey ke UI (internal Cloudinary identifier, security!)
+
+═══════════════════════════════════════════════════════
+ STEP 4: STYLING RULES
+═══════════════════════════════════════════════════════
+
+Tailwind CSS v4 (CSS-based config, NO tailwind.config.js):
+  - Pakai utility classes langsung
+  - Custom properties di src/app/globals.css
+  - Theme variables: var(--antique-gold), var(--warm-gray), dll
+
+Design patterns:
+  - Mobile-first (sm: md: lg: breakpoints)
+  - glass class tersedia untuk glassmorphism effect
+  - rounded-xl untuk cards
+  - shadow-glass-md untuk card shadows
+
+═══════════════════════════════════════════════════════
+ STEP 5: QUALITY GATES (WAJIB SEBELUM PUSH)
+═══════════════════════════════════════════════════════
+
+Jalankan sebelum buat PR:
+  npm run lint           # 0 errors, 0 warnings
+  npx tsc --noEmit       # 0 type errors
+  bash scripts/review.sh # Full review check
+
+Pre-push hook AKTIF - auto-run sebelum git push.
+Jangan paksa skip hooks!
+
+═══════════════════════════════════════════════════════
+ STEP 6: WORKFLOW
+═══════════════════════════════════════════════════════
+
+1. Selalu cek .agents/status.md sebelum mulai
+2. Update status task di file ini setelah selesai
+3. Koordinasi via Messages section di file ini
+4. Jangan edit file di luar scope kamu (lihat File Ownership)
+5. Sebelum push: git rebase origin/main
+
+Untuk buat PR:
+  git push origin feat/single-gallery-page
+  Buat PR ke main di GitHub
+
+TUNGGU feat/shared-types merged sebelum:
+  - Import dari @/types/gallery
+  - Import dari @/types/booking
+  Untuk sekarang, definisikan local type di file kamu.
+
+═══════════════════════════════════════════════════════
+ STEP 7: TASK LIST KAMU
+═══════════════════════════════════════════════════════
+
+Lihat section "🟢 Kiro CLI → feat/single-gallery-page" di atas.
+
+Sprint A (Day 1-4):
+  - Single-page layout (no tab switching)
+  - Mobile: grid + SelectionBottomBar + bottom sheet
+  - Desktop: grid + selection sidebar (280px)
+  - Filter & sort
+
+Sprint B (Day 5-7):
+  - Swipe gesture (mobile)
+  - Masonry layout toggle
+  - Comparison mode (2 photos side by side)
+
+Good luck! Update .agents/status.md kalau ada blocker atau questions.
+🚀
 - Rovo Dev
 ```
