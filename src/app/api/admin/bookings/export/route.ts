@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
+
+import { unauthorizedResponse } from '@/lib/api/response';
 import { auth } from '@/lib/auth/options';
 import { prisma } from '@/lib/db';
-import { unauthorizedResponse } from '@/lib/api/response';
 
 export async function GET() {
   const session = await auth();

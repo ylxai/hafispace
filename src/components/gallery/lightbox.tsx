@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useCallback, useState, useRef } from "react";
 import Image from "next/image";
-import cloudinaryLoader from "@/lib/image-loader";
-import { MIN_SWIPE_DISTANCE_PX } from "@/lib/constants";
+import { useCallback, useEffect, useRef,useState } from "react";
+
 import { generateLightboxThumbnailUrl } from "@/lib/cloudinary/utils";
+import { MIN_SWIPE_DISTANCE_PX } from "@/lib/constants";
+import cloudinaryLoader from "@/lib/image-loader";
 
 interface Photo {
   id: string;

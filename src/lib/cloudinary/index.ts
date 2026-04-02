@@ -5,27 +5,26 @@
  */
 
 export {
+  applyViesusEnhancement,
+  deletePhotoFromCloudinary,
+  deletePhotosFromCloudinary,
+  generateUploadSignature,
+  getCloudinaryAccount,
+  getCloudinaryConfig,
+  getPhotoFromCloudinary,
+  getVendorCloudinaryClient,
+  getViesusEnhancedUrl,
+  isViesusEnhancementEnabled,
+  listPhotosFromCloudinary,
+  testCloudinaryConnection,
+  testCloudinaryConnectionWithCredentials,
+  uploadPhotosToCloudinary,
+  uploadPhotoToCloudinary,
+  uploadPhotoToCloudinaryWithViesus,
+} from './core';
+export {
   extractCloudName,
   extractPublicId,
   generateThumbnailUrl,
   generateThumbnailUrlFromUrl,
 } from './utils';
-
-export {
-  isViesusEnhancementEnabled,
-  getCloudinaryAccount,
-  getCloudinaryConfig,
-  getVendorCloudinaryClient,
-  uploadPhotoToCloudinary,
-  uploadPhotosToCloudinary,
-  getPhotoFromCloudinary,
-  deletePhotoFromCloudinary,
-  deletePhotosFromCloudinary,
-  listPhotosFromCloudinary,
-  testCloudinaryConnection,
-  testCloudinaryConnectionWithCredentials,
-  getViesusEnhancedUrl,
-  applyViesusEnhancement,
-  generateUploadSignature,
-  uploadPhotoToCloudinaryWithViesus,
-} from './core';

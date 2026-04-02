@@ -1,17 +1,18 @@
 "use client";
 
-import { formatRupiah, formatRupiahShort } from "@/lib/format";
+import type { TooltipProps } from "recharts";
 import {
-  AreaChart,
   Area,
+  AreaChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
 } from "recharts";
-import type { TooltipProps } from "recharts";
+
+import { formatRupiah, formatRupiahShort } from "@/lib/format";
 
 interface TrendData {
   bulan: string;

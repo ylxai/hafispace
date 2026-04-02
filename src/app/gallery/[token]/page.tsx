@@ -1,14 +1,15 @@
 "use client";
 
-import { useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
-import { useState, useMemo, useCallback, useRef } from "react";
-import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
-import { generateDownloadUrl } from '@/lib/cloudinary/utils';
-import { useLocalSelection, clearLocalSelections } from "@/hooks/use-local-selection";
+import { useParams } from "next/navigation";
+import { useCallback, useMemo, useRef,useState } from "react";
+
 import { ProgressivePhotoCard } from "@/components/gallery/progressive-photo-card";
 import { SelectionBottomBar } from "@/components/gallery/selection-bottom-bar";
+import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
+import { clearLocalSelections,useLocalSelection } from "@/hooks/use-local-selection";
+import { generateDownloadUrl } from '@/lib/cloudinary/utils';
 
 // Lazy-load Lightbox component to reduce initial bundle size
 const Lightbox = dynamic(

@@ -17,4 +17,4 @@ export default function cloudinaryLoader({ src, width, quality }: { src: string;
   return `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${params.join(',')}/${src}`;
 }
 
-export { Image, cloudinaryLoader };
+export { cloudinaryLoader,Image };

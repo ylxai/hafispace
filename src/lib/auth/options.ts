@@ -1,9 +1,9 @@
-import { getServerSession } from "next-auth";
 import type { NextAuthOptions } from "next-auth";
+import { getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-import { prisma } from "@/lib/db";
 import { verifyPassword } from "@/lib/auth/password";
+import { prisma } from "@/lib/db";
 
 export const authOptions: NextAuthOptions = {
   session: {

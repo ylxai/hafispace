@@ -1,9 +1,10 @@
 "use client";
 
+import { Check } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 import { useInView } from "react-intersection-observer";
-import Image from "next/image";
-import { Check } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 
 type Photo = {

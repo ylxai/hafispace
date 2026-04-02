@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
 import { Prisma } from '@prisma/client';
+import { describe, expect,it } from 'vitest';
+
 import { convertDecimalToNumber } from '../decimal';
 
 describe('convertDecimalToNumber', () => {

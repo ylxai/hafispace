@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect,useState } from "react";
+
 import { GalleryPhotosList } from "@/components/admin/gallery-photos-list";
 import { useToast } from "@/components/ui/toast";
 

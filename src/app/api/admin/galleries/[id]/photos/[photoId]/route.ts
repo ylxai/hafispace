@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+
 import { auth } from "@/lib/auth/options";
-import { prisma } from "@/lib/db";
 import { deletePhotoFromCloudinary } from "@/lib/cloudinary/core";
+import { prisma } from "@/lib/db";
 import logger from "@/lib/logger";
 
 /**

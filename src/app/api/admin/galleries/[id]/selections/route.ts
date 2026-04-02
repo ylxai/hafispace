@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth/options";
-import { prisma } from "@/lib/db";
-import { unauthorizedResponse, notFoundResponse, parseAndValidate } from "@/lib/api/response";
+import { z } from "zod";
+
 import { verifyGalleryOwnershipWithSelect } from "@/lib/api/gallery-auth";
 import { verifySelectionOwnership } from "@/lib/api/resource-auth";
-import { z } from "zod";
+import { notFoundResponse, parseAndValidate,unauthorizedResponse } from "@/lib/api/response";
+import { auth } from "@/lib/auth/options";
+import { prisma } from "@/lib/db";
 import logger from "@/lib/logger";
 
 const toggleLockSchema = z.object({

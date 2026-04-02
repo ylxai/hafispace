@@ -1,10 +1,12 @@
+import type { UploadApiErrorResponse,UploadApiResponse } from 'cloudinary';
 import { v2 as cloudinary } from 'cloudinary';
-import type { UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
+
+import logger from '@/lib/logger';
+import type { CloudinaryDeletionResult, CloudinaryPingResult,CloudinaryResource, CloudinaryResourceResult } from '@/types/cloudinary';
+
 import { prisma } from '../db';
 import { decrypt } from '../encryption';
-import type { CloudinaryResource, CloudinaryResourceResult, CloudinaryDeletionResult, CloudinaryPingResult } from '@/types/cloudinary';
 import { getVendorGalleryFolder } from './constants';
-import logger from '@/lib/logger';
 
 // NO GLOBAL CONFIG — all operations use per-request credentials via getCloudinaryConfig()
 // This prevents race conditions in multi-tenant environments where concurrent requests

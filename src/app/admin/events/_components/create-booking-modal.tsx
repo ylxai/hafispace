@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { bookingSchema } from "@/lib/api/validation";
+import { useState } from "react";
 import { z } from "zod";
+
+import { bookingSchema } from "@/lib/api/validation";
 
 interface PackageOption {
   id: string;

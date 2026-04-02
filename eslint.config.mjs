@@ -1,9 +1,11 @@
-import { defineConfig, globalIgnores } from "eslint/config";
+import nextPlugin from "@next/eslint-plugin-next";
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsparser from "@typescript-eslint/parser";
-import nextPlugin from "@next/eslint-plugin-next";
-import { fileURLToPath } from "url";
+import { defineConfig, globalIgnores } from "eslint/config";
+import simpleImportSort from "eslint-plugin-simple-import-sort";
+import unusedImports from "eslint-plugin-unused-imports";
 import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -39,10 +41,13 @@ const eslintConfig = defineConfig([
     },
     plugins: {
       "@typescript-eslint": tseslint,
+      "unused-imports": unusedImports,
+      "simple-import-sort": simpleImportSort,
     },
     rules: {
+      // ─── TypeScript ───────────────────────────────────────────────────────
       "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-unused-vars": "off", // Handled by unused-imports below
       "@typescript-eslint/consistent-type-imports": [
         "warn",
         { prefer: "type-imports", fixStyle: "separate-type-imports" },
@@ -50,10 +55,42 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-non-null-assertion": "warn",
       "@typescript-eslint/prefer-nullish-coalescing": "warn",
       "@typescript-eslint/prefer-optional-chain": "warn",
-      "no-console": "off",
+
+      // ─── Unused Imports ──────────────────────────────────────────────────
+      // Auto-fix: remove unused imports, warn on unused vars
+      "unused-imports/no-unused-imports": "error",
+      "unused-imports/no-unused-vars": [
+        "warn",
+        {
+          vars: "all",
+          varsIgnorePattern: "^_",
+          args: "after-used",
+          argsIgnorePattern: "^_",
+        },
+      ],
+
+      // ─── Import Sort ──────────────────────────────────────────────────────
+      // Auto-fix: sort imports alphabetically, group by type
+      "simple-import-sort/imports": "warn",
+      "simple-import-sort/exports": "warn",
+
+      // ─── General ──────────────────────────────────────────────────────────
+      "no-console": "off",   // Pino logger used instead (server-side)
       "no-debugger": "warn",
       "no-var": "error",
       "prefer-const": "warn",
+    },
+  },
+
+  // JS/MJS files (eslint config, etc.) - relaxed rules
+  {
+    files: ["**/*.{js,mjs,cjs}"],
+    plugins: {
+      "simple-import-sort": simpleImportSort,
+    },
+    rules: {
+      "simple-import-sort/imports": "warn",
+      "simple-import-sort/exports": "warn",
     },
   },
   globalIgnores([

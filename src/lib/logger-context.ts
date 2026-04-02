@@ -1,4 +1,5 @@
 import type { Logger } from "pino";
+
 import logger from "./logger";
 
 /**

@@ -1,8 +1,9 @@
-import type { NextConfig } from "next";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-import { getAllowedOrigins } from "./src/lib/cors";
 import { withSentryConfig } from "@sentry/nextjs";
+import type { NextConfig } from "next";
+import { dirname,resolve } from "path";
+import { fileURLToPath } from "url";
+
+import { getAllowedOrigins } from "./src/lib/cors";
 import { env } from "./src/lib/env";
 
 const __filename = fileURLToPath(import.meta.url);

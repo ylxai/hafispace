@@ -1,6 +1,7 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { prisma } from "@/lib/db";
+import { type NextRequest,NextResponse } from "next/server";
+
 import { notFoundResponse } from "@/lib/api/response";
+import { prisma } from "@/lib/db";
 
 export async function GET(
   _request: NextRequest,

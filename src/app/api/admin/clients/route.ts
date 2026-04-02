@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { createPaginationResponse,parsePaginationParams } from "@/lib/api/pagination";
+import { verifyClientOwnership } from "@/lib/api/resource-auth";
+import { notFoundResponse,parseAndValidate, unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
+import { clientSchema } from "@/lib/api/validation";
 import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
-import { clientSchema } from "@/lib/api/validation";
-import { unauthorizedResponse, validationErrorResponse, parseAndValidate, notFoundResponse } from "@/lib/api/response";
-import { parsePaginationParams, createPaginationResponse } from "@/lib/api/pagination";
-import { verifyClientOwnership } from "@/lib/api/resource-auth";
 
 export async function GET(request: Request) {
   const session = await auth();

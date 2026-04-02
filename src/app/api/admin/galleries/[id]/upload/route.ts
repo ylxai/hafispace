@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
+
+import { internalErrorResponse,notFoundResponse, unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
 import { auth } from "@/lib/auth/options";
-import { prisma } from "@/lib/db";
+import { deletePhotoFromCloudinary,getCloudinaryAccount } from "@/lib/cloudinary";
+import { CLOUDINARY_FOLDERS } from "@/lib/cloudinary/constants";
 import {
   uploadMultipleImages,
 } from "@/lib/cloudinary-upload";
-import { CLOUDINARY_FOLDERS } from "@/lib/cloudinary/constants";
-import { getCloudinaryAccount, deletePhotoFromCloudinary } from "@/lib/cloudinary";
-import { unauthorizedResponse, notFoundResponse, validationErrorResponse, internalErrorResponse } from "@/lib/api/response";
-import logger from "@/lib/logger";
 import { GALLERY_MAX_PHOTOS } from "@/lib/constants.server";
+import { prisma } from "@/lib/db";
+import logger from "@/lib/logger";
 
 // Upload validation constants
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB per file (increased for high-res)

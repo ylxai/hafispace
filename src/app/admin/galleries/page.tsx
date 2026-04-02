@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, Suspense } from "react";
-import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter,useSearchParams } from "next/navigation";
+import { Suspense,useState } from "react";
+
 import { StatusBadge } from "@/components/admin";
-import { useAdminGalleries } from "@/hooks/use-admin-galleries";
-import { useToast } from "@/components/ui/toast";
-import { ErrorState } from "@/components/ui/error-state";
+import { BulkActionBar,PageHeader } from "@/components/admin/shared";
 import { Pagination } from "@/components/ui";
-import { PageHeader, BulkActionBar } from "@/components/admin/shared";
+import { ErrorState } from "@/components/ui/error-state";
+import { useToast } from "@/components/ui/toast";
+import { useAdminGalleries } from "@/hooks/use-admin-galleries";
 import type { AdminGallery } from "@/types/admin";
+
 import { EditGalleryModal } from "./_components/edit-gallery-modal";
 
 function AdminGalleriesContent() {

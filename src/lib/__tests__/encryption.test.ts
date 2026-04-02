@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { encrypt, decrypt, isEncrypted, generateMasterKey, isEncryptionConfigured } from '../encryption';
+import { describe, expect,it } from 'vitest';
+
+import { decrypt, encrypt, generateMasterKey, isEncrypted, isEncryptionConfigured } from '../encryption';
 
 describe('Encryption Utilities', () => {
   // Set up test environment variable
