@@ -1,0 +1,245 @@
+---
+title: "Upload System"
+description: "Sistem upload foto dengan client-side compression, progress tracking, dan resume failed uploads"
+---
+
+## Overview
+
+Upload system menggunakan Sprint 1 UX improvements yang memberikan pengalaman upload yang lebih baik:
+- **Client-side compression** — reduce file size 50-70% sebelum upload
+- **Real-time progress** — per-file tracking dengan status visual
+- **Resume failed uploads** — auto-retry dengan exponential backoff
+- **Type-safe ID tracking** — branded `FileUploadId` untuk mencegah bugs
+
+## Upload Flow
+
+<Steps>
+  <Step title="Pilih & Compress">
+    User drag-drop atau pilih files. Sistem compress otomatis menggunakan Web Worker.
+    
+    ```typescript
+    import { optimizeMultipleImages } from "@/lib/image-compression";
+    
+    const results = await optimizeMultipleImages(files, (current, total) => {
+      setCompressionProgress({ current, total });
+    });
+    // results: [{ file, originalSize, compressedSize, savings }]
+    ```
+    
+    - Files < 1MB dilewati (sudah kecil)
+    - Target: 5MB max, 4000px max dimension, 90% quality
+    - Web Worker: non-blocking, UI tetap responsive
+  </Step>
+
+  <Step title="Generate IDs">
+    Generate `FileUploadId` **sebelum** `initializeFiles()` untuk menghindari React state closure bug.
+    
+    ```typescript
+    import { createFileId } from "@/lib/upload-types";
+    
+    // ✅ BENAR: Generate SEBELUM initializeFiles
+    const fileIds = compressedFiles.map(() => createFileId());
+    initializeFiles(compressedFiles, fileIds);
+    
+    // ❌ SALAH: Generate di dalam loop setelah state update
+    // IDs akan tidak sinkron dengan fileStates
+    ```
+  </Step>
+
+  <Step title="Upload dengan Retry">
+    Upload via `uploadFiles()` hook — includes auto-retry dengan exponential backoff.
+    
+    ```typescript
+    import { createUploadFunction } from "@/hooks/use-resumable-upload";
+    
+    // selectedAccountId WAJIB untuk multi-tenant Cloudinary
+    const uploadFn = createUploadFunction(galleryId, selectedAccountId);
+    
+    const results = await uploadFiles(compressedFiles, uploadFn, fileIds);
+    // Auto-retry 3x: 1s → 2s → 4s delay
+    ```
+  </Step>
+
+  <Step title="Handle Results">
+    Tampilkan hasil dan retry jika ada yang gagal.
+    
+    ```typescript
+    const successful = results.filter((r) => r.success).length;
+    const failed = results.filter((r) => !r.success).length;
+    
+    // Retry individual file
+    const fileState = fileStates.find((fs) => fs.file === file); // object identity!
+    await retrySingle(file, uploadFn, fileState.id);
+    ```
+  </Step>
+</Steps>
+
+## FileUploadId Contract
+
+<Warning>
+  **JANGAN** gunakan `file.name` atau `crypto.randomUUID()` langsung sebagai identifier. Gunakan `createFileId()` dari `@/lib/upload-types`.
+</Warning>
+
+Platform menggunakan **branded type** untuk mencegah ID mismatch bugs:
+
+```typescript
+import { createFileId, type FileUploadId } from "@/lib/upload-types";
+
+// ✅ BENAR
+const id: FileUploadId = createFileId();
+
+// ❌ SALAH — TypeScript ERROR
+const id: FileUploadId = file.name;         // string ≠ FileUploadId
+const id: FileUploadId = crypto.randomUUID(); // string ≠ FileUploadId
+```
+
+### Kenapa Branded Type?
+
+| Problem | Solution |
+|---------|----------|
+| `file.name` duplikat (2 files `photo.jpg`) | UUID selalu unique |
+| `string` bisa salah di-pass ke callback | TypeScript ERROR saat compile |
+| Silent runtime bug (no error, wrong behavior) | Caught at compile time |
+
+## Image Compression
+
+```typescript
+import {
+  optimizeForUpload,
+  optimizeMultipleImages,
+  formatBytes,
+  getCompressionSummary,
+} from "@/lib/image-compression";
+
+// Single file
+const result = await optimizeForUpload(file);
+// result.savings: percentage saved (e.g., 68%)
+// result.compressionTime: milliseconds
+
+// Multiple files dengan progress
+const results = await optimizeMultipleImages(files, (current, total) => {
+  console.log(`${current}/${total} compressed`);
+});
+
+// Summary statistics
+const summary = getCompressionSummary(results);
+// summary.totalSavings: 65%
+// summary.totalOriginalSizeFormatted: "48 MB"
+// summary.totalCompressedSizeFormatted: "16.8 MB"
+```
+
+### Compression Settings
+
+| Setting | Value | Keterangan |
+|---------|-------|------------|
+| `maxSizeMB` | 5 | Target max file size |
+| `maxWidthOrHeight` | 4000px | Preserve high quality |
+| `initialQuality` | 0.9 (90%) | Tinggi untuk foto pernikahan |
+| `useWebWorker` | true | Non-blocking |
+| Skip threshold | < 1MB | File kecil tidak perlu compress |
+
+## Resume Failed Uploads
+
+```typescript
+import { useResumableUpload, createUploadFunction } from "@/hooks/use-resumable-upload";
+
+const {
+  uploadFiles,    // Upload batch dengan auto-retry
+  retrySingle,    // Retry satu file
+  retryFailed,    // Retry semua yang gagal
+  isUploading,    // State dari hook
+  stats,          // { total, successful, failed, successRate }
+  hasFailures,    // boolean
+} = useResumableUpload({
+  maxRetries: 3,
+  retryDelay: 1000, // Base delay (exponential: 1s, 2s, 4s)
+  onProgress: (id, progress) => updateFileProgress(id, progress),
+  onSuccess: (id) => markFileSuccess(id),
+  onError: (id, error) => markFileError(id, error),
+});
+```
+
+### Retry Pattern
+
+```typescript
+// ✅ BENAR: Sequential retry (tidak overwhelm server)
+const failedFiles = fileStates
+  .filter((fs) => fs.status === "error")
+  .map((fs) => fs.file);
+
+for (const file of failedFiles) {
+  await handleRetryFile(file);
+}
+
+// ❌ SALAH: Parallel retry
+failedFiles.forEach((f) => handleRetryFile(f));
+```
+
+### isUploading State
+
+```typescript
+// Combine state dari hook (retry) + local (initial upload)
+const { isUploading: isRetrying } = useResumableUpload(...);
+const [isUploading, setIsUploading] = useState(false);
+
+// ✅ BENAR: Combined state
+const isAnyUploading = isUploading || isRetrying;
+
+// Gunakan isAnyUploading untuk disable UI
+{hasFailures && !isAnyUploading && (
+  <button onClick={handleRetryAll}>Coba Ulang</button>
+)}
+```
+
+## File Lookup Pattern
+
+Selalu gunakan **object identity** untuk lookup file state, bukan filename:
+
+```typescript
+// ✅ BENAR: object identity
+const fileState = fileStates.find((fs) => fs.file === file);
+
+// ❌ SALAH: filename comparison (breaks dengan duplicate names)
+const fileState = fileStates.find((fs) => fs.file.name === file.name);
+```
+
+## Progress Tracking
+
+```typescript
+import {
+  UploadProgressTracker,
+  useUploadProgress,
+} from "@/components/admin/upload-progress-tracker";
+
+const {
+  fileStates,
+  initializeFiles,
+  updateFileProgress,
+  markFileSuccess,
+  markFileError,
+} = useUploadProgress();
+
+// Initialize dengan pre-generated IDs
+initializeFiles(files, fileIds);
+
+// Render tracker
+<UploadProgressTracker
+  files={fileStates}
+  onRetry={(file) => handleRetryFile(file)}
+/>
+```
+
+## Error Handling
+
+| Error Type | HTTP Status | Code |
+|-----------|------------|------|
+| No files | 400 | `VALIDATION_ERROR` |
+| File too large (> 15MB) | 400 | `VALIDATION_ERROR` |
+| Quota exceeded | 400 | `QUOTA_EXCEEDED` |
+| Invalid MIME type | 400 | `VALIDATION_ERROR` |
+| No Cloudinary account | 400 | `BAD_REQUEST` |
+| DB write failed | 500 | `INTERNAL_ERROR` |
+
+<Note>
+  Jika DB gagal setelah upload ke Cloudinary, sistem otomatis **rollback** dan hapus file dari Cloudinary untuk menghindari orphan files.
+</Note>

@@ -1,0 +1,254 @@
+---
+title: "Gallery View"
+description: "Halaman galeri foto klien — progressive loading, photo selection, dan sticky bottom bar"
+---
+
+## Overview
+
+Halaman galeri (`/gallery/[token]`) adalah halaman publik yang diakses klien via unique token. Sprint 1 menghadirkan UX improvements signifikan:
+- **Progressive loading** — foto dimuat saat mendekati viewport (60% faster)
+- **SelectionBottomBar** — sticky bottom bar untuk mobile-friendly selection
+- **Accessible components** — keyboard navigation dan screen reader support
+
+## Akses Galeri
+
+Klien mengakses galeri via link dengan unique token:
+
+```
+https://hafiportrait.com/gallery/[token]
+```
+
+Token bersifat unik per galeri dan tidak memerlukan login. Akses dikontrol via token saja.
+
+## Progressive Photo Loading
+
+`ProgressivePhotoCard` menggunakan **Intersection Observer API** untuk memuat foto hanya saat mendekati viewport:
+
+```
+Viewport
+┌─────────────────────┐
+│  Photo 1 (loaded)   │  ← Already visible
+│  Photo 2 (loaded)   │  ← Already visible
+│  Photo 3 (loaded)   │  ← In viewport
+├─────────────────────┤
+│  [200px margin]     │  ← Trigger zone
+│  Photo 4 (loading)  │  ← Loading now
+│  Photo 5 (skeleton) │  ← Not yet
+└─────────────────────┘
+```
+
+### Implementasi
+
+```tsx
+import { ProgressivePhotoCard } from "@/components/gallery/progressive-photo-card";
+
+<div className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-4">
+  {photos.map((photo, index) => (
+    <ProgressivePhotoCard
+      key={photo.id}
+      photo={photo}
+      isSelected={selectedIds.has(photo.id)}
+      canSelect={!isMaxed || isSelected}
+      onToggleSelect={() => toggle(photo.id)}
+      onClick={() => openLightbox(index)}
+      priority={index < 4} // LCP optimization untuk 4 foto pertama
+    />
+  ))}
+</div>
+```
+
+### Props
+
+| Prop | Type | Keterangan |
+|------|------|------------|
+| `photo` | `Photo` | Data foto (id, url, filename) |
+| `isSelected` | `boolean` | Apakah foto dipilih |
+| `canSelect` | `boolean` | Apakah bisa dipilih (false jika maxed & not selected) |
+| `onToggleSelect` | `() => void` | Callback toggle seleksi |
+| `onClick` | `() => void` | Callback buka lightbox |
+| `priority` | `boolean` | Priority loading (true untuk 4 foto pertama) |
+
+### Performance Impact
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Initial load (100 foto) | ~15s | **~6s** |
+| Scrolling FPS | 30-40 | **55-60** |
+| Bandwidth usage | 100% | **~30%** (awal) |
+
+<Note>
+  Set `priority={true}` untuk 4 foto pertama (above the fold) agar LCP (Largest Contentful Paint) optimal.
+</Note>
+
+## Selection UX
+
+### canSelect Logic
+
+```typescript
+// ✅ BENAR: Allow deselect even when maxed
+const canSelect = hasPickspace && !isLocked && (!isMaxed || isSelected);
+
+// ❌ SALAH: Block semua saat maxed
+const canSelect = hasPickspace && !isLocked && !isMaxed;
+```
+
+Logika ini memastikan klien bisa **membatalkan pilihan** meskipun sudah mencapai batas maksimal.
+
+### Interaction Patterns
+
+| Interaction | Action |
+|-------------|--------|
+| Click foto | Buka lightbox preview |
+| Shift+Click | Toggle seleksi foto |
+| Click checkmark | Toggle seleksi foto |
+| Tab | Navigate antar foto (keyboard) |
+| Enter/Space | Pilih foto yang sedang difokus |
+
+### Accessible Selection Button
+
+`ProgressivePhotoCard` menggunakan pattern yang valid secara HTML:
+
+```tsx
+{/* Outer: div[role=button] untuk clickable area */}
+<div
+  role="button"
+  tabIndex={0}
+  onClick={...}
+  onKeyDown={(e) => {
+    if (e.key === "Enter" || e.key === " ") onClick();
+  }}
+>
+  {/* Inner: <button> untuk selection indicator */}
+  <button
+    type="button"
+    aria-label={isSelected ? `Batalkan pilihan ${photo.filename}` : `Pilih ${photo.filename}`}
+    onClick={(e) => { e.stopPropagation(); onToggleSelect(photo.id); }}
+  >
+    {isSelected && <Check />}
+  </button>
+</div>
+```
+
+<Warning>
+  **Jangan** nested `<button>` di dalam `<button>` — ini invalid HTML dan menyebabkan inconsistent browser behavior. Gunakan `div[role=button]` untuk outer container.
+</Warning>
+
+## Sticky Selection Bottom Bar
+
+`SelectionBottomBar` memberikan feedback visual yang jelas dan akses mudah ke actions:
+
+```tsx
+import { SelectionBottomBar } from "@/components/gallery/selection-bottom-bar";
+
+<SelectionBottomBar
+  selectedCount={localSelectionCount}
+  maxSelection={maxSelection}
+  isMaxed={isMaxed}
+  isLocked={isLocked}
+  onClearAll={clearAll}
+  onSubmit={handleSubmit}
+  isSubmitting={isSubmitting}
+/>
+```
+
+### Props
+
+| Prop | Type | Keterangan |
+|------|------|------------|
+| `selectedCount` | `number` | Jumlah foto terpilih |
+| `maxSelection` | `number` | Batas maksimal foto |
+| `isMaxed` | `boolean` | Apakah sudah mencapai batas |
+| `isLocked` | `boolean` | Apakah seleksi sudah dikunci (submitted) |
+| `onClearAll` | `() => void` | Reset semua seleksi |
+| `onSubmit` | `() => void` | Submit seleksi |
+| `isSubmitting` | `boolean` | Loading state saat submit |
+
+### Auto-hide Behavior
+
+Bottom bar otomatis tersembunyi ketika:
+- `isLocked === true` (seleksi sudah disubmit)
+- `selectedCount === 0` (belum ada foto dipilih)
+
+### Mobile Optimization
+
+- **safe-area-bottom** — respects iPhone notch/home indicator
+- **Large touch targets** — minimum 44x44px
+- **Progress bar** — visual feedback seleksi
+- **Helper text** — "Tekan foto untuk preview, Shift+klik untuk pilih"
+
+## Tab Navigation
+
+Galeri memiliki 2 tab utama:
+
+```
+┌──────────────┬──────────────┐
+│  Semua Foto  │  Dipilih     │
+└──────────────┴──────────────┘
+```
+
+| Tab | Konten | Behavior |
+|-----|--------|----------|
+| Semua Foto | Grid semua foto | Selection mode jika `hasPickspace` |
+| Dipilih | Hanya foto terpilih | Review before submit |
+
+## Gallery States
+
+| State | Keterangan | UI |
+|-------|------------|-----|
+| `DRAFT` | Galeri belum dipublish | Pesan "Galeri belum tersedia" |
+| `PUBLISHED` | Aktif, klien bisa akses | Grid foto + selection |
+| `isLocked` | Seleksi sudah dikunci | Read-only, tidak bisa pilih |
+| `isMaxed` | Batas foto tercapai | Checkmark hijau, tidak bisa tambah |
+
+## Local-First Selection
+
+Platform menggunakan **local-first state** dengan Redis sync:
+
+```
+User pilih foto
+      │
+      ▼
+localStorage (instant, offline-capable)
+      │
+      ▼  (debounced 500ms)
+Redis counter (realtime sync via Ably)
+      │
+      ▼
+Server validation saat submit
+```
+
+Ini memastikan selection terasa instant meskipun jaringan lambat.
+
+## Lightbox
+
+Foto bisa dibuka di lightbox untuk preview lebih besar:
+
+```tsx
+const Lightbox = dynamic(() => import("@/components/gallery/lightbox"), {
+  ssr: false, // Client-only (heavy component)
+});
+
+<Lightbox
+  photos={gallery.photos}
+  initialIndex={lightboxIndex}
+  isOpen={lightboxOpen}
+  onClose={() => setLightboxOpen(false)}
+  showSelectionControls={hasPickspace && !isLocked}
+  isSelected={(photo) => selectedIds.has(photo.id)}
+  onSelect={handleLightboxToggleSelect}
+/>
+```
+
+Lightbox di-load secara **dynamic** (`ssr: false`) untuk mengurangi initial bundle size.
+
+## Realtime Counter
+
+Jumlah foto terpilih di-sync secara realtime via **Ably**:
+
+```typescript
+// Channel format: gallery-{token}
+// Event: selection-update
+// Payload: { count: number, userId: string }
+```
+
+Ini memungkinkan vendor melihat progress seleksi klien secara live dari dashboard.
