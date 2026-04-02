@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
+import type { JWT } from "next-auth/jwt";
 import { getToken } from "next-auth/jwt";
-import { beforeEach,describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AuthError,getAuthUser, requireAuth } from "../context";
+import { AuthError, getAuthUser, requireAuth } from "../context";
 
 // Mock next-auth/jwt
 vi.mock("next-auth/jwt", () => ({
