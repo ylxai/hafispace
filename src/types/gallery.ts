@@ -115,6 +115,7 @@ export interface PhotoSelectionItem {
   fileId: string;      // = Photo.id
   filename: string;
   url: string;         // = Photo.url (CDN URL) - consistent with ApiPhoto.url
+  thumbnailUrl: string | null; // Thumbnail for preview in selections modal
   selectionType: "EDIT" | "PRINT";
   printSize: string | null;
   isLocked: boolean;

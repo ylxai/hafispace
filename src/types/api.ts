@@ -23,7 +23,11 @@ export type { ApiErrorResponse } from "@/lib/api/response";
  */
 export type ApiSuccessResponse<T = unknown> = {
   data: T;
-  success?: true; // Optional - not all success responses include this
+  /**
+   * Optional success indicator - only included by specific endpoints (e.g., auth, mutations).
+   * Most API endpoints return raw objects or { data: T } without this field.
+   */
+  success?: true;
 };
 
 /**
@@ -60,6 +64,10 @@ export type CursorPaginationMeta = {
  * - GET /admin/events → { items: [], pagination: {} }
  *
  * @note In feat/response-types branch, these will be migrated to `data` key.
+ * @note This type does NOT include a `success` field (unlike ApiSuccessResponse).
+ *       Paginated responses use a different structure pattern:
+ *       { items: T[], pagination: PaginationMeta }
+ *       rather than { success: true, data: T[], pagination: ... }
  */
 export type ApiPaginatedResponse<T> = {
   items: T[];        // ← actual API field name (not 'data')
