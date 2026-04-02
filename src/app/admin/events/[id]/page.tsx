@@ -9,14 +9,10 @@ import { StatusBadge } from "@/components/admin";
 import { WhatsappIcon } from "@/components/icons/whatsapp-icon";
 import { useToast } from "@/components/ui/toast";
 import { formatDate, formatDateTime, formatRupiah } from "@/lib/format";
-
-
-
 // ─── Types ────────────────────────────────────────────────────────────────────
+import type { BookingStatus, DpStatus } from "@/types/admin";
 
-type BookingStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
 type PaymentType = "DP" | "PELUNASAN" | "LAINNYA";
-type DpStatus = "UNPAID" | "PARTIAL" | "PAID";
 
 interface Payment {
   id: string;

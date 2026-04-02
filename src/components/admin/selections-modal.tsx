@@ -32,18 +32,10 @@ function SelectionThumbnail({ src, alt }: { src: string; alt: string }) {
 // Cloudinary utilities dipindahkan ke src/lib/cloudinary/utils.ts
 // Menggunakan generateThumbnailUrlFromUrl dari shared utils
 
-interface SelectedPhoto {
-  id: string;
-  fileId: string;
-  filename: string;
-  selectionType: "EDIT" | "PRINT";
-  printSize: string | null;
-  selectedAt: string;
-  isLocked: boolean;
-  lockedAt: string | null;
-  thumbnailUrl: string | null;
-  url: string | null;
-}
+import type { PhotoSelectionItem } from "@/types/gallery";
+
+// Use shared type - single source of truth
+type SelectedPhoto = PhotoSelectionItem;
 
 interface SelectionStats {
   total: number;

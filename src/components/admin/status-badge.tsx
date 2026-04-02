@@ -1,5 +1,4 @@
-export type BookingStatus = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
-export type GalleryStatus = "DRAFT" | "IN_REVIEW" | "DELIVERED";
+import type { BookingStatus, GalleryStatus } from "@/types/admin";
 
 type StatusBadgeProps = {
   label: BookingStatus | GalleryStatus;
