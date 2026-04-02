@@ -63,7 +63,9 @@ describe('convertDecimalToNumber', () => {
     
     expect(result[0]).toBe(10.5);
     expect(result[1]).toBe(20.75);
-    expect(result[2].value).toBe(30.25);
+    // Cast to object with value property for heterogeneous array
+    const third = result[2] as { value: number };
+    expect(third?.value).toBe(30.25);
   });
 
   it('should preserve plain objects created with Object.create(null)', () => {

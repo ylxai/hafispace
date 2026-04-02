@@ -2,8 +2,9 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useParams } from "next/navigation";
-import { useCallback, useMemo, useRef,useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { ProgressivePhotoCard } from "@/components/gallery/progressive-photo-card";
 import { SelectionBottomBar } from "@/components/gallery/selection-bottom-bar";
@@ -33,6 +34,7 @@ type Photo = {
   id: string;
   filename: string;
   url: string;
+  createdAt?: string; // Optional untuk kompatibilitas dengan Lightbox Photo type
   thumbnailUrl: string | null;
   width: number | null;
   height: number | null;
@@ -515,9 +517,6 @@ export default function ViewspacePage() {
                 </p>
                 <div className="space-y-2 px-2">
                   {activeSelectedPhotos.map((photo, idx) => {
-                    const cloudName = extractCloudName(photo.url);
-                    const publicId = extractPublicId(photo.url);
-                    const thumbnailUrl = generateThumbnailUrl(cloudName, publicId);
                     const originalIndex = gallery.photos.findIndex(p => p.id === photo.id);
                     
                     return (
@@ -532,17 +531,12 @@ export default function ViewspacePage() {
                           className="shrink-0 overflow-hidden rounded-lg"
                         >
                           <Image
-                            src={thumbnailUrl}
+                            src={photo.url}
                             alt={`Foto pilihan ${idx + 1}`}
                             width={56}
                             height={56}
                             className="h-14 w-14 object-cover"
-                            loader={cloudinaryLoader}
                             quality={75}
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = photo.url;
-                            }}
                           />
                         </button>
                         <div className="flex-1 min-w-0">

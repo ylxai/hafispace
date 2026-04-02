@@ -1,0 +1,37 @@
+#!/bin/sh
+# Hafiportrait Platform - Pre-push Hook
+# Runs full quality checks before push to remote
+# Blocks push if any check fails
+
+echo "🔍 Running pre-push quality checks..."
+
+# 1. ESLint - 0 errors, 0 warnings required
+echo "📋 Checking ESLint..."
+npm run lint -- --max-warnings=0
+if [ $? -ne 0 ]; then
+  echo "❌ ESLint failed. Fix errors before pushing."
+  echo "   Run: npm run lint -- --fix"
+  exit 1
+fi
+echo "✅ ESLint passed"
+
+# 2. TypeScript check - no type errors
+echo "📋 Checking TypeScript..."
+npx tsc --noEmit
+if [ $? -ne 0 ]; then
+  echo "❌ TypeScript check failed. Fix type errors before pushing."
+  exit 1
+fi
+echo "✅ TypeScript passed"
+
+# 3. Unit tests - only run tests in main project (exclude worktrees)
+echo "📋 Running unit tests..."
+npm run test:run -- --reporter=verbose --exclude=".adal/**"
+if [ $? -ne 0 ]; then
+  echo "❌ Tests failed. Fix failing tests before pushing."
+  exit 1
+fi
+echo "✅ Tests passed"
+
+echo ""
+echo "🎉 All pre-push checks passed! Pushing to remote..."
