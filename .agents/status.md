@@ -22,61 +22,156 @@
 ### 🔵 Rovo Dev → `feat/shared-types`
 
 **Worktree:** `.adal/worktrees/shared-types`  
-**Goal:** Implement shared TypeScript types to eliminate duplicate type definitions
+**Goal:** Implement shared TypeScript types to eliminate 5+ duplicate type definitions
 
-**Tasks:**
-- [ ] Create `src/types/gallery.ts`
-  - `ApiPhoto` - Photo type for API responses (no storageKey)
-  - `AdminGalleryRow` - Gallery summary for admin list
-  - `ClientGallery` - Full gallery for client view
-  - `PhotoSelectionItem` - Selection with fileId = Photo.id
-  - `GallerySettings` - Gallery configuration
-- [ ] Create `src/types/booking.ts`
-  - `Booking` - Full booking type
-  - `Payment` - Payment record
-  - `Package` - Photography package
-  - `Client` - Client data
-  - `BookingSummary` - Booking + payments + calculations
-  - `BookingStatus` - Status enum
-- [ ] Update `src/types/api.ts`
-  - `ApiSuccess<T>` - Standard success response wrapper
-  - `ApiPaginated<T>` - Paginated response
-  - Domain response types (BookingListResponse, etc)
-- [ ] Migrate hooks to use shared types
-- [ ] Migrate components to use shared types
-- [ ] Remove local type definitions
+#### Sprint A: Shared Types (Day 1-3)
+
+**Day 1 - Gallery Types** (`src/types/gallery.ts`)
+- [ ] `ApiPhoto` - Ganti 5 definisi Photo berbeda (lightbox, progressive-card, page, modal)
+  - Fields: `id, filename, url, thumbnailUrl, width, height, createdAt?, urutan?`
+  - NO storageKey (security - never expose to client)
+- [ ] `AdminGalleryRow` - Gallery summary untuk admin list
+  - Fields: `id, namaProject, status, clientToken, photoCount, selectionCount, clientName, storageProvider, createdAt`
+- [ ] `ClientGallery` - Full gallery untuk client view
+  - Fields: `id, photos, selections (string[]), settings, isLocked, maxSelection`
+- [ ] `GallerySettings` - Konfigurasi galeri
+  - Fields: `maxSelection, enableDownload, enablePrint, watermarkEnabled, watermarkText, welcomeMessage, ...`
+- [ ] `PhotoSelectionItem` - Selection item (fileId = Photo.id!)
+  - Fields: `id, fileId, filename, isLocked, selectedAt, selectionType`
+
+**Day 2 - Booking Types** (`src/types/booking.ts`)
+- [ ] `BookingStatus` - `"PENDING" | "CONFIRMED" | "DONE" | "CANCELLED"`
+- [ ] `Package` - `id, namaPackage, hargaPackage: number, deskripsi, isActive`
+- [ ] `Client` - `id, namaClient, hpClient, emailClient, alamatClient`
+- [ ] `Booking` - Full booking dengan package + client embedded
+- [ ] `Payment` - `id, jumlahBayar: number, metodeBayar, tanggalBayar, catatan`
+- [ ] `BookingSummary` - `booking, payments[], totalBayar, sisaTagihan`
+
+**Day 3 - API Types + Migration** (`src/types/api.ts` update + consumers)
+- [ ] `ApiSuccess<T>` wrapper `{ data: T; success: true }`
+- [ ] `ApiPaginated<T>` wrapper `{ data: T[]; pagination: {...}; success: true }`
+- [ ] Domain response types: `GalleryListResponse`, `ClientGalleryResponse`, `BookingDetailResponse`
+- [ ] Migrate `use-admin-galleries.ts` → import `AdminGalleryRow`
+- [ ] Migrate `use-admin-events.ts` → import `Booking, Payment`
+- [ ] Migrate `gallery/[token]/page.tsx` → import `ApiPhoto, ClientGallery`
+- [ ] Migrate `lightbox.tsx` → import `ApiPhoto`
+- [ ] Migrate `progressive-photo-card.tsx` → import `ApiPhoto`
+- [ ] Remove all local Photo/Gallery/Booking type definitions
+
+#### Sprint B: Auth & process.env Cleanup (Day 4)
+- [ ] Add `/api/ably-token` to middleware matcher
+- [ ] Fix `process.env.NEXTAUTH_URL` in `src/app/invoice/[kodeBooking]/page.tsx`
+- [ ] Fix `process.env.NEXT_PUBLIC_APP_URL` in `edit-gallery-modal.tsx`
+- [ ] Fix `process.env.NEXT_PUBLIC_APP_URL` in `gallery/[token]/page.tsx`
+- [ ] Document defense-in-depth auth pattern (redundant auth() = intentional)
+
+#### Sprint C: Response Types (Day 5-7)
+- [ ] Add `successResponse<T>()` helper to `src/lib/api/response.ts`
+- [ ] Add `paginatedResponse<T>()` helper
+- [ ] Audit all 35+ API routes (classify response format)
+- [ ] Standardize list endpoints → `{ data: [], pagination: {} }`
+- [ ] Standardize detail endpoints → `{ data: {} }`
+- [ ] Standardize delete endpoints → `{ data: { deleted: true, id } }`
+- [ ] Update frontend hooks to use shared response types
+
+#### Sprint D: Optimistic UI (Day 8-10)
+- [ ] Photo selection toggle (gallery client) - useGallerySelection hook
+- [ ] Gallery publish/unpublish toggle (admin)
+- [ ] Package enable/disable toggle (admin)
+- [ ] Booking status update (admin)
 
 **Status:** 🟡 Not started  
 **Blockers:** None  
-**Last commit:** -
+**Last commit:** -  
+**Estimated:** 10 days total
 
 ---
 
 ### 🟢 Kiro CLI → `feat/single-gallery-page`
 
 **Worktree:** `.adal/worktrees/gallery-page`  
-**Goal:** Build compact single-page gallery view for clients
+**Goal:** Build compact single-page gallery view - no tab switching, mobile-first
 
-**Context about the platform:**
+**Context:**
 - Next.js 15 App Router, TypeScript strict, Tailwind CSS v4
 - Gallery client page: `src/app/gallery/[token]/page.tsx`
-- Sprint 1 components available:
-  - `ProgressivePhotoCard` - Progressive loading photo card
-  - `SelectionBottomBar` - Sticky selection bar
-- Photo selection stored in localStorage (local-first)
-- Realtime counter via Ably
+- Sprint 1 components (USE THESE!):
+  - `ProgressivePhotoCard` → `src/components/gallery/progressive-photo-card.tsx`
+  - `SelectionBottomBar` → `src/components/gallery/selection-bottom-bar.tsx`
+- Photo selection: localStorage (local-first), Redis sync via Ably
+- Auth: token-based (no login required)
 
-**Tasks:**
-- [ ] Design compact single-page layout (no tab switching)
-- [ ] Integrate `ProgressivePhotoCard` for photo grid
-- [ ] Integrate `SelectionBottomBar` for selection UX
-- [ ] Mobile-first responsive design
-- [ ] Smooth scroll with photo groups
-- [ ] Selection summary sidebar (desktop) / bottom sheet (mobile)
+⚠️ **IMPORTANT:** Use local Photo type initially. After `feat/shared-types` merged, rebase and import from `@/types/gallery`.
+
+#### Sprint A: Layout & Core (Day 1-4)
+
+**Day 1 - Layout Design**
+- [ ] Design single-page layout (eliminate tab switching)
+  ```
+  Mobile: Full-width grid + SelectionBottomBar + bottom sheet
+  Desktop: Grid (left) + Selection sidebar (right, 280px fixed)
+  ```
+- [ ] Create new page component or refactor existing
+- [ ] Mobile-first responsive breakpoints
+
+**Day 2 - Mobile Implementation**
+- [ ] 2-column photo grid dengan `ProgressivePhotoCard`
+- [ ] `SelectionBottomBar` integration
+- [ ] Bottom sheet for selection review (mobile)
+- [ ] Safe area handling (iPhone notch)
+
+**Day 3 - Desktop Implementation**
+- [ ] 3-4 column photo grid
+- [ ] Fixed sidebar (280px) untuk selection panel
+  - Count: "15 / 50 dipilih"
+  - Progress bar
+  - Selected photos list (thumbnail 40x40)
+  - Remove individual + Clear all
+  - Submit button
+
+**Day 4 - Filter & Sort**
+- [ ] Sort: Terbaru, Terlama
+- [ ] Filter: Semua, Terpilih
+- [ ] Keyboard navigation (arrow keys, space, enter)
+
+#### Sprint B: Advanced Features (Day 5-7)
+
+**Day 5 - Swipe Gesture (Mobile)**
+- [ ] Swipe right = select photo
+- [ ] Swipe left = deselect photo
+- [ ] Visual feedback during swipe
+- [ ] Haptic feedback (vibration API)
+
+**Day 6 - Masonry Layout**
+- [ ] Toggle: Grid ↔ Masonry view
+- [ ] `react-masonry-css` atau custom CSS
+- [ ] Persist preference in localStorage
+
+**Day 7 - Comparison Mode**
+- [ ] Select 2 photos → side-by-side comparison
+- [ ] Helpful for similar poses
 
 **Status:** 🟡 Not started  
 **Blockers:** None  
-**Last commit:** -
+**Last commit:** -  
+**Estimated:** 7 days
+
+---
+
+### ⚠️ Conflict Resolution Table
+
+| File | Rovo Dev needs | Kiro CLI needs | Rule |
+|------|---------------|----------------|------|
+| `src/app/gallery/[token]/page.tsx` | Import shared types | New layout | Rovo Dev → merge → Kiro rebase |
+| `src/components/gallery/progressive-photo-card.tsx` | Import ApiPhoto | Enhance card | Rovo Dev → merge → Kiro rebase |
+| `package.json` | - | react-swipeable? | Koordinasi dulu! |
+| `src/types/**` | OWNS | READ ONLY | Rovo Dev owner |
+
+### 📅 Merge Order (CRITICAL)
+```
+1. feat/shared-types (Rovo Dev) → main FIRST
+2. feat/single-gallery-page (Kiro CLI) → rebase dari main → merge
+```
 
 ---
 
