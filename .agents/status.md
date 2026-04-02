@@ -275,6 +275,21 @@ main (stable)
 
 ---
 
+## 🗺️ Refactor Branch Plan
+
+```
+main
+├── feat/shared-types    ← P0 Foundation (mulai PERTAMA)
+├── feat/response-types  ← P1 (setelah shared-types merged)
+├── feat/service-layer   ← P1 (setelah response-types merged)
+├── fix/auth-cleanup     ← P2 Independent (bisa parallel)
+└── feat/optimistic-ui   ← P2 (setelah response-types merged)
+```
+
+Note: API Versioning ❌ SKIP (internal platform, tidak dibutuhkan)
+
+---
+
 ## 🔧 Complete Refactor Backlog
 
 > Status: PLANNED | IN_PROGRESS | DONE | SKIPPED
