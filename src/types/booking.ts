@@ -28,9 +28,9 @@ export interface Client {
   namaClient: string;
   hpClient: string;
   emailClient: string | null;
-  alamatClient: string | null;
   instagram: string | null;
   createdAt: string;
+  // Note: alamatClient tidak ada di Client model (hanya di Booking model)
 }
 
 // ─── Package ──────────────────────────────────────────────────────────────────
@@ -42,26 +42,35 @@ export interface Client {
 export interface Package {
   id: string;
   namaPaket: string;
-  harga: number;         // Decimal → number (via convertDecimalToNumber)
+  harga: number;              // Decimal → number (field name: harga, NOT hargaPackage)
   deskripsi: string | null;
   kuotaEdit: number | null;
-  maxSelection: number | null;
-  includeCetak: boolean | null;
+  maxSelection: number;       // default 40 (NOT nullable)
+  includeCetak: unknown | null; // JSON field di Prisma
+  kategori: string;           // PackageCategory enum
 }
 
 // ─── Payment ──────────────────────────────────────────────────────────────────
 
 /**
  * Record pembayaran booking.
- * `jumlahBayar` adalah Decimal di DB, sudah dikonversi ke number di API response.
+ * `jumlah` adalah Decimal di DB, sudah dikonversi ke number di API response.
+ *
+ * Field names sesuai Prisma schema (Payment model):
+ * - jumlah (bukan jumlahBayar)
+ * - tipe: "DP" | "PELUNASAN" | "LAINNYA"
+ * - keterangan (bukan catatan)
+ * - buktiBayar (URL bukti pembayaran)
  */
+export type PaymentType = "DP" | "PELUNASAN" | "LAINNYA";
+
 export interface Payment {
   id: string;
   bookingId: string;
-  jumlahBayar: number;   // Decimal → number
-  metodeBayar: string;
-  tanggalBayar: string;
-  catatan: string | null;
+  jumlah: number;          // Decimal → number (field name: jumlah, NOT jumlahBayar)
+  tipe: PaymentType;       // NOT metodeBayar
+  keterangan: string | null; // NOT catatan
+  buktiBayar: string | null; // URL bukti pembayaran
   createdAt: string;
 }
 
@@ -76,22 +85,21 @@ export interface Payment {
 export interface BookingDetail {
   id: string;
   kodeBooking: string;
-  namaClient: string;
-  hpClient: string;
-  emailClient: string | null;
-  alamatClient: string | null;
+  namaClient: string;      // Flat field (not nested in client)
+  hpClient: string;        // Flat field
+  emailClient: string | null; // Flat field
   tanggalSesi: string;
   lokasiSesi: string | null;
-  hargaPaket: number;    // Decimal → number
+  hargaPaket: number;      // Decimal → number
   status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
   dpStatus: "UNPAID" | "PARTIAL" | "PAID";
   notes: string | null;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
   paketId: string | null;
   clientId: string | null;
   paket: Package | null;
-  client: Client | null;
+  client: Client | null;   // Nested client object (relasi)
   payments: Payment[];
   galleries: BookingGallery[];
 }
