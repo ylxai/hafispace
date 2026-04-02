@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import type { ApiErrorResponse } from "@/lib/api/response";
 import { AuthError } from "@/lib/auth/context";
+import logger from "@/lib/logger";
 
 /**
  * Central error handler for API routes.
@@ -22,7 +23,7 @@ export function handleApiError(error: unknown): NextResponse {
     );
   }
   
-  // Validation errors (400) - could add custom ValidationError class
+  // Validation errors (400)
   if (error instanceof Error && error.name === "ValidationError") {
     return NextResponse.json<ApiErrorResponse>(
       { 
@@ -33,11 +34,13 @@ export function handleApiError(error: unknown): NextResponse {
     );
   }
   
-  // Generic errors (500)
+  // Generic errors (500) - log and return safe message
+  logger.error({ err: error }, "Unhandled API error");
+  
   return NextResponse.json<ApiErrorResponse>(
     { 
       code: "INTERNAL_ERROR", 
-      message: error instanceof Error ? error.message : "Internal server error"
+      message: "Internal server error" // Don't leak error details
     },
     { status: 500 }
   );
