@@ -56,6 +56,16 @@ export type AdminClient = {
 
 // ─── Package ─────────────────────────────────────────────────────────────────
 
+/**
+ * Print item included in package.
+ * Used in AdminPackage.includeCetak and local component types.
+ */
+export interface PrintItem {
+  id?: string;      // Optional - for React keys (client-side only)
+  nama: string;     // Print product name (e.g., "Album", "Foto 4R")
+  jumlah: number;   // Quantity
+}
+
 export type PackageStatus = "ACTIVE" | "INACTIVE";
 export type PackageKategori = "WEDDING" | "PREWEDDING" | "MATERNITY" | "BIRTHDAY" | "FAMILY" | "OTHER";
 
@@ -67,7 +77,7 @@ export type AdminPackage = {
   deskripsi: string | null;
   kuotaEdit: number | null;
   maxSelection: number | null;
-  includeCetak: boolean | null;
+  includeCetak: PrintItem[] | null;  // Array of print items (not boolean!)
   urutan: number;
   status: PackageStatus;
 };
@@ -76,12 +86,8 @@ export type AdminPackage = {
 
 export type PaginationMeta = {
   page: number;
-  limit: number;
+  pageSize: number; // Unified with api.ts PaginationMeta (was: limit)
   total: number;
   totalPages: number;
 };
 
-export type PaginatedResponse<T> = {
-  items: T[];
-  pagination: PaginationMeta;
-};

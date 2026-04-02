@@ -6,17 +6,11 @@ import { useCallback, useEffect, useRef,useState } from "react";
 import { generateLightboxThumbnailUrl } from "@/lib/cloudinary/utils";
 import { MIN_SWIPE_DISTANCE_PX } from "@/lib/constants";
 import cloudinaryLoader from "@/lib/image-loader";
+import type { ApiPhoto } from "@/types/gallery";
 
-interface Photo {
-  id: string;
-  // storageKey dihapus dari public API response (security) — pakai id sebagai fileId
-  filename: string;
-  url: string;
-  thumbnailUrl: string | null;
-  width: number | null;
-  height: number | null;
-  createdAt?: string; // Optional untuk backward compatibility
-}
+// ApiPhoto adalah single source of truth untuk Photo type
+// import dari @/types/gallery menggantikan local definition
+type Photo = ApiPhoto;
 
 interface LightboxProps {
   photos: Photo[];
