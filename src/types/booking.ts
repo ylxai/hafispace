@@ -24,8 +24,9 @@ export type { AdminClient, AdminPackage, PackageKategori, PackageStatus } from "
 // ─── Client ───────────────────────────────────────────────────────────────────
 
 /**
- * Data klien lengkap (dari Client model di Prisma).
- * Digunakan di booking detail dan form.
+ * Client data as embedded in Booking model (not the standalone Client entity).
+ * Fields: namaClient, hpClient, emailClient from Booking model.
+ * For actual Client entity, use AdminClient from @/types/admin.
  */
 export interface Client {
   id: string;

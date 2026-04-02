@@ -62,6 +62,7 @@ export interface GallerySettings {
   welcomeMessage: string | null;
   thankYouMessage: string | null;
   maxSelection: number | null;
+  bannerMessage: string | null; // Custom banner message shown in gallery
 }
 
 // ─── Client Gallery ───────────────────────────────────────────────────────────
@@ -88,6 +89,7 @@ export interface ClientGallery {
   vendor: {
     namaStudio: string | null;
     logoUrl: string | null;
+    phone: string | null;       // For WhatsApp integration
   };
   // Gallery settings
   settings: GallerySettings | null;

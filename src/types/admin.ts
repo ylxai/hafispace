@@ -55,7 +55,6 @@ export type AdminClient = {
 };
 
 // ─── Package ─────────────────────────────────────────────────────────────────
-// ─── Package ─────────────────────────────────────────────────────────────────
 
 /**
  * Print item included in package.
@@ -94,4 +93,3 @@ export type PaginationMeta = {
 
 // Re-export from api.ts as single source of truth
 // PaginatedResponse<T> is now ApiPaginatedResponse<T> from @/types/api
-export type { ApiPaginatedResponse as PaginatedResponse } from "@/types/api";
