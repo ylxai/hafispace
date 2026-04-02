@@ -99,7 +99,7 @@ export interface PhotoSelectionItem {
   id: string;
   fileId: string;      // = Photo.id
   filename: string;
-  filePath: string;    // = Photo.url (CDN URL)
+  url: string;         // = Photo.url (CDN URL) - consistent with ApiPhoto.url
   selectionType: "EDIT" | "PRINT";
   printSize: string | null;
   isLocked: boolean;

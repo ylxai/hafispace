@@ -14,7 +14,7 @@
  */
 
 // Import for internal use in this file
-import type { BookingStatus, DpStatus } from "@/types/admin";
+import type { BookingStatus, DpStatus, PackageKategori } from "@/types/admin";
 import type { GalleryStatus } from "@/types/gallery";
 
 // Re-export booking-related types dari admin untuk convenience
@@ -50,8 +50,8 @@ export interface Package {
   deskripsi: string | null;
   kuotaEdit: number | null;
   maxSelection: number;       // default 40 (NOT nullable)
-  includeCetak: Record<string, unknown> | null; // JSON field di Prisma (use Record not unknown)
-  kategori: string;           // PackageCategory enum
+  includeCetak: boolean | null; // boolean in AdminPackage - align for consistency
+  kategori: PackageKategori;  // from @/types/admin - type safe enum
 }
 
 // ─── Payment ──────────────────────────────────────────────────────────────────
