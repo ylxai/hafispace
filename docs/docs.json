@@ -38,6 +38,8 @@
           "guides/database",
           "guides/authentication",
           "guides/cloudinary",
+          "guides/upload-system",
+          "guides/gallery-view",
           "guides/deployment",
           "guides/rate-limiting",
           "guides/monitoring",
