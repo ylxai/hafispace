@@ -1,23 +1,23 @@
 import { type NextRequest,NextResponse } from "next/server";
 import { z } from "zod";
 
+import { handleApiError } from "@/lib/api/error-handler";
 import { verifyBookingOwnership } from "@/lib/api/resource-auth";
-import { notFoundResponse, parseAndValidate,unauthorizedResponse } from "@/lib/api/response";
-import { auth } from "@/lib/auth/options";
+import { notFoundResponse, parseAndValidate } from "@/lib/api/response";
+import { requireAuth } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
 
 // GET — detail booking lengkap
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) return unauthorizedResponse();
+  try {
+    const user = await requireAuth(request);
+    const { id } = await params;
 
-  const { id } = await params;
-
-  const ownership = await verifyBookingOwnership(id, session.user.id);
-  if (!ownership.found) return notFoundResponse("Booking not found");
+    const ownership = await verifyBookingOwnership(id, user.id);
+    if (!ownership.found) return notFoundResponse("Booking not found");
 
   const booking = await prisma.booking.findUnique({
     where: { id },
@@ -115,6 +115,9 @@ export async function GET(
       lunas: sisaTagihan === 0 && hargaPaket > 0,
     },
   });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
 
 // PATCH — update status booking
@@ -131,40 +134,42 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) return unauthorizedResponse();
+  try {
+    const user = await requireAuth(request);
+    const { id } = await params;
 
-  const { id } = await params;
+    const ownership = await verifyBookingOwnership(id, user.id);
+    if (!ownership.found) return notFoundResponse("Booking not found");
 
-  const ownership = await verifyBookingOwnership(id, session.user.id);
-  if (!ownership.found) return notFoundResponse("Booking not found");
+    const result = await parseAndValidate(request, updateSchema);
+    if (!result.ok) return result.response;
 
-  const result = await parseAndValidate(request, updateSchema);
-  if (!result.ok) return result.response;
+    const { status, lokasiSesi, tanggalSesi, hargaPaket, notes, paketId } = result.data;
 
-  const { status, lokasiSesi, tanggalSesi, hargaPaket, notes, paketId } = result.data;
+    if (paketId) {
+      const paket = await prisma.package.findFirst({
+        where: { id: paketId, vendorId: user.id },
+        select: { id: true },
+      });
+      if (!paket) return notFoundResponse("Package not found");
+    }
 
-  if (paketId) {
-    const paket = await prisma.package.findFirst({
-      where: { id: paketId, vendorId: session.user.id },
-      select: { id: true },
+    // Sertakan vendorId sebagai defense-in-depth — cegah IDOR jika verifyBookingOwnership dilewati
+    const updated = await prisma.booking.update({
+      where: { id, vendorId: user.id },
+      data: {
+        ...(status !== undefined && { status }),
+        ...(lokasiSesi !== undefined && { lokasiSesi }),
+        ...(tanggalSesi !== undefined && { tanggalSesi: new Date(tanggalSesi) }),
+        ...(hargaPaket !== undefined && { hargaPaket }),
+        ...(notes !== undefined && { notes }),
+        ...(paketId !== undefined && { paketId }),
+      },
+      select: { id: true, status: true, updatedAt: true },
     });
-    if (!paket) return notFoundResponse("Package not found");
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    return handleApiError(error);
   }
-
-  // Sertakan vendorId sebagai defense-in-depth — cegah IDOR jika verifyBookingOwnership dilewati
-  const updated = await prisma.booking.update({
-    where: { id, vendorId: session.user.id },
-    data: {
-      ...(status !== undefined && { status }),
-      ...(lokasiSesi !== undefined && { lokasiSesi }),
-      ...(tanggalSesi !== undefined && { tanggalSesi: new Date(tanggalSesi) }),
-      ...(hargaPaket !== undefined && { hargaPaket }),
-      ...(notes !== undefined && { notes }),
-      ...(paketId !== undefined && { paketId }),
-    },
-    select: { id: true, status: true, updatedAt: true },
-  });
-
-  return NextResponse.json(updated);
 }
