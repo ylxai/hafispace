@@ -1,13 +1,14 @@
 import { type NextRequest,NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { notFoundResponse, parseRequestBody,unauthorizedResponse, validationErrorResponse } from '@/lib/api/response';
-import { auth } from '@/lib/auth/options';
+import { handleApiError } from '@/lib/api/error-handler';
+import { notFoundResponse, parseRequestBody, validationErrorResponse } from '@/lib/api/response';
+import { requireAuth } from '@/lib/auth/context';
 import { prisma } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) return unauthorizedResponse();
+  try {
+    const user = await requireAuth(request);
 
   const bodyResult = await parseRequestBody(request);
   if (!bodyResult.ok) return bodyResult.response;
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
   const { bookingId } = reminderParsed.data;
 
   const booking = await prisma.booking.findFirst({
-    where: { id: bookingId, vendorId: session.user.id },
+    where: { id: bookingId, vendorId: user.id },
     select: {
       namaClient: true,
       hpClient: true,
@@ -42,4 +43,7 @@ export async function POST(request: NextRequest) {
   const waUrl = `https://wa.me/${waNumber.startsWith('0') ? '62' + waNumber.slice(1) : waNumber}?text=${message}`;
 
   return NextResponse.json({ success: true, waUrl });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
