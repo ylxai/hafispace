@@ -113,18 +113,17 @@ export async function DELETE(request: NextRequest) {
       return validationErrorResponse("Gallery ID is required");
     }
 
-    const gallery = await prisma.gallery.findUnique({
-      where: { id: galleryId },
+    const gallery = await prisma.gallery.findFirst({
+      where: { id: galleryId, vendorId: user.id },
       select: {
         id: true,
-        vendorId: true,
         _count: {
           select: { photos: true },
         },
       },
     });
 
-    if (!gallery?.vendorId || gallery.vendorId !== user.id) {
+    if (!gallery) {
       return notFoundResponse("Gallery not found");
     }
 
@@ -135,7 +134,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     await prisma.gallery.delete({
-      where: { id: galleryId },
+      where: { id: galleryId, vendorId: user.id },
     });
 
     return NextResponse.json({ 

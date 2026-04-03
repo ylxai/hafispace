@@ -118,7 +118,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     await prisma.client.delete({
-      where: { id: clientId },
+      where: { id: clientId, vendorId: user.id },
     });
 
     return NextResponse.json({ 
@@ -145,7 +145,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const updatedClient = await prisma.client.update({
-      where: { id },
+      where: { id, vendorId: user.id },
       data: { name, email, phone, instagram },
     });
 
