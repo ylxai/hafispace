@@ -2,7 +2,7 @@ import { type NextRequest,NextResponse } from "next/server";
 import { z } from "zod";
 
 import { handleApiError } from "@/lib/api/error-handler";
-import { notFoundResponse, parseRequestBody,validationErrorResponse  } from "@/lib/api/response";
+import { notFoundResponse, parseAndValidate,validationErrorResponse  } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
 
@@ -46,14 +46,10 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request);
 
-    const bodyResult = await parseRequestBody(request);
-    if (!bodyResult.ok) return bodyResult.response;
-    const parsed = customFieldSchema.safeParse(bodyResult.data);
-    if (!parsed.success) {
-      return validationErrorResponse(parsed.error.format());
-    }
+    const result = await parseAndValidate(request, customFieldSchema);
+    if (!result.ok) return result.response;
 
-    const { label, tipe, isRequired, options } = parsed.data;
+    const { label, tipe, isRequired, options } = result.data;
 
     // Hitung urutan berikutnya
     const lastField = await prisma.customField.findFirst({
@@ -88,17 +84,15 @@ export async function PATCH(request: NextRequest) {
   try {
     const user = await requireAuth(request);
 
-    const bodyResult = await parseRequestBody(request);
-    if (!bodyResult.ok) return bodyResult.response;
     const patchSchema = z.object({
       id: z.string().min(1, "Field ID required"),
       urutan: z.number().optional(),
       isActive: z.boolean().optional(),
       label: z.string().optional(),
     });
-    const patchParsed = patchSchema.safeParse(bodyResult.data);
-    if (!patchParsed.success) return validationErrorResponse(patchParsed.error.format());
-    const body = patchParsed.data;
+    const result = await parseAndValidate(request, patchSchema);
+    if (!result.ok) return result.response;
+    const body = result.data;
     const { id } = body;
 
     const existing = await prisma.customField.findFirst({
@@ -107,7 +101,7 @@ export async function PATCH(request: NextRequest) {
     if (!existing) return notFoundResponse("Field not found");
 
     const updated = await prisma.customField.update({
-      where: { id },
+      where: { id, vendorId: user.id },
       data: {
         ...(body.urutan !== undefined && { urutan: body.urutan }),
         ...(body.isActive !== undefined && { isActive: body.isActive }),
@@ -135,7 +129,7 @@ export async function DELETE(request: NextRequest) {
     });
     if (!existing) return notFoundResponse("Field not found");
 
-    await prisma.customField.delete({ where: { id } });
+    await prisma.customField.delete({ where: { id, vendorId: user.id } });
 
     return NextResponse.json({ success: true });
   } catch (error) {
