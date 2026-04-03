@@ -1,5 +1,6 @@
 import { type NextRequest,NextResponse } from "next/server";
 
+import { handleApiError } from "@/lib/api/error-handler";
 import { notFoundResponse } from "@/lib/api/response";
 import { prisma } from "@/lib/db";
 
@@ -7,7 +8,8 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ kodeBooking: string }> }
 ) {
-  const { kodeBooking } = await params;
+  try {
+    const { kodeBooking } = await params;
 
   const booking = await prisma.booking.findUnique({
     where: { kodeBooking },
@@ -81,4 +83,7 @@ export async function GET(
       lunas: sisaTagihan === 0 && hargaPaket > 0,
     },
   });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
