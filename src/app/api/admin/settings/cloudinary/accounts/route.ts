@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
-import { internalErrorResponse,notFoundResponse, unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
-import { auth } from "@/lib/auth/options";
+import { handleApiError } from "@/lib/api/error-handler";
+import { notFoundResponse, validationErrorResponse } from "@/lib/api/response";
+import { requireAuth } from "@/lib/auth/context";
 import { testCloudinaryConnectionWithCredentials } from "@/lib/cloudinary";
 import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
-import logger from "@/lib/logger";
 
 interface CloudinaryAccount {
   name: string;
@@ -14,16 +14,11 @@ interface CloudinaryAccount {
   apiSecret: string;
 }
 
-export async function GET() {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function GET(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
     const accounts = await prisma.vendorCloudinary.findMany({
-      where: { vendorId: session.user.id },
+      where: { vendorId: user.id },
       orderBy: [
         { isDefault: 'desc' },
         { createdAt: 'desc' }
@@ -47,19 +42,13 @@ export async function GET() {
 
     return NextResponse.json({ accounts: accountsFormatted });
   } catch (error) {
-    logger.error({ err: error }, "Error fetching Cloudinary accounts");
-    return internalErrorResponse("Failed to fetch accounts");
+    return handleApiError(error);
   }
 }
 
-export async function POST(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function POST(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
     const { name, cloudName, apiKey, apiSecret, setAsDefault }: CloudinaryAccount & { setAsDefault?: boolean } = await request.json();
 
     if (!name || !cloudName || !apiKey || !apiSecret) {
@@ -80,14 +69,14 @@ export async function POST(request: Request) {
     // If setAsDefault, unset other defaults first
     if (setAsDefault) {
       await prisma.vendorCloudinary.updateMany({
-        where: { vendorId: session.user.id, isDefault: true },
+        where: { vendorId: user.id, isDefault: true },
         data: { isDefault: false },
       });
     }
 
     // Check if this is the first account
     const existingCount = await prisma.vendorCloudinary.count({
-      where: { vendorId: session.user.id },
+      where: { vendorId: user.id },
     });
 
     const isFirstAccount = existingCount === 0;
@@ -95,7 +84,7 @@ export async function POST(request: Request) {
     // Create new account with encrypted credentials
     const account = await prisma.vendorCloudinary.create({
       data: {
-        vendorId: session.user.id,
+        vendorId: user.id,
         name,
         cloudName,
         apiKey: encrypt(apiKey),      // 🔒 Encrypt before save
@@ -115,19 +104,13 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    logger.error({ err: error }, "Error adding Cloudinary account");
-    return internalErrorResponse("Failed to add Cloudinary account");
+    return handleApiError(error);
   }
 }
 
-export async function PUT(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function PUT(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
     const { id, name, setAsDefault, isActive }: { id: string; name?: string; setAsDefault?: boolean; isActive?: boolean } = await request.json();
 
     if (!id) {
@@ -136,7 +119,7 @@ export async function PUT(request: Request) {
 
     // Verify ownership
     const existingAccount = await prisma.vendorCloudinary.findFirst({
-      where: { id, vendorId: session.user.id },
+      where: { id, vendorId: user.id },
     });
 
     if (!existingAccount) {
@@ -146,7 +129,7 @@ export async function PUT(request: Request) {
     // If setting as default, unset other defaults
     if (setAsDefault) {
       await prisma.vendorCloudinary.updateMany({
-        where: { vendorId: session.user.id, isDefault: true },
+        where: { vendorId: user.id, isDefault: true },
         data: { isDefault: false },
       });
     }
@@ -170,19 +153,13 @@ export async function PUT(request: Request) {
       },
     });
   } catch (error) {
-    logger.error({ err: error }, "Error updating Cloudinary account");
-    return internalErrorResponse("Failed to update account");
+    return handleApiError(error);
   }
 }
 
-export async function DELETE(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function DELETE(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -192,7 +169,7 @@ export async function DELETE(request: Request) {
 
     // Verify ownership
     const existingAccount = await prisma.vendorCloudinary.findFirst({
-      where: { id, vendorId: session.user.id },
+      where: { id, vendorId: user.id },
     });
 
     if (!existingAccount) {
@@ -201,7 +178,7 @@ export async function DELETE(request: Request) {
 
     // Don't allow deleting if it's the only account
     const accountCount = await prisma.vendorCloudinary.count({
-      where: { vendorId: session.user.id },
+      where: { vendorId: user.id },
     });
 
     if (accountCount <= 1) {
@@ -217,7 +194,7 @@ export async function DELETE(request: Request) {
     // If deleted account was default, set another as default
     if (existingAccount.isDefault) {
       const firstAccount = await prisma.vendorCloudinary.findFirst({
-        where: { vendorId: session.user.id },
+        where: { vendorId: user.id },
       });
       if (firstAccount) {
         await prisma.vendorCloudinary.update({
@@ -229,7 +206,6 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ message: "Account deleted successfully" });
   } catch (error) {
-    logger.error({ err: error }, "Error deleting Cloudinary account");
-    return internalErrorResponse("Failed to delete account");
+    return handleApiError(error);
   }
 }
