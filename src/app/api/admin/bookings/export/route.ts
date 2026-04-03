@@ -1,15 +1,16 @@
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-import { unauthorizedResponse } from '@/lib/api/response';
-import { auth } from '@/lib/auth/options';
+import { handleApiError } from '@/lib/api/error-handler';
+import { requireAuth } from '@/lib/auth/context';
 import { prisma } from '@/lib/db';
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) return unauthorizedResponse();
+export async function GET(request: NextRequest) {
+  try {
+    const user = await requireAuth(request);
 
-  const bookings = await prisma.booking.findMany({
-    where: { vendorId: session.user.id },
+    const bookings = await prisma.booking.findMany({
+      where: { vendorId: user.id },
     orderBy: { createdAt: 'desc' },
     select: {
       kodeBooking: true,
@@ -59,4 +60,7 @@ export async function GET() {
       'Content-Disposition': `attachment; filename="bookings-${new Date().toISOString().slice(0,10)}.csv"`,
     },
   });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

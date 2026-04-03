@@ -1,8 +1,10 @@
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { parseRequestBody,unauthorizedResponse } from "@/lib/api/response";
-import { auth } from "@/lib/auth/options";
+import { handleApiError } from "@/lib/api/error-handler";
+import { parseRequestBody, unauthorizedResponse } from "@/lib/api/response";
+import { requireAuth } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
 
 
@@ -26,12 +28,12 @@ const settingsSchema = z.object({
   notifGalleryDelivered: z.boolean().optional(),
 });
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) return unauthorizedResponse();
+export async function GET(request: NextRequest) {
+  try {
+    const user = await requireAuth(request);
 
-  const vendor = await prisma.vendor.findUnique({
-    where: { id: session.user.id },
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: user.id },
     select: {
       id: true,
       username: true,
@@ -65,11 +67,14 @@ export async function GET() {
     vendor: vendorData,
     enableViesusEnhancement: enableViesusEnhancement ?? false,
   });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
 
-export async function PATCH(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) return unauthorizedResponse();
+export async function PATCH(request: NextRequest) {
+  try {
+    const user = await requireAuth(request);
 
   const bodyResult = await parseRequestBody(request);
   if (!bodyResult.ok) return bodyResult.response;
@@ -85,7 +90,7 @@ export async function PATCH(request: Request) {
   const { namaStudio, phone, email, enableViesusEnhancement, waAdmin, dpPercentage, rekeningPembayaran, syaratKetentuan, themeColor, successMessage, bookingFormActive, notifEmail, notifNewBooking, notifGalleryDelivered } = parsed.data;
 
   await prisma.vendor.update({
-    where: { id: session.user.id },
+    where: { id: user.id },
     data: {
       ...(namaStudio !== undefined && { namaStudio }),
       ...(phone !== undefined && { phone }),
@@ -106,7 +111,7 @@ export async function PATCH(request: Request) {
 
   // Return updated vendor data with VIESUS setting
   const updated = await prisma.vendor.findUnique({
-    where: { id: session.user.id },
+    where: { id: user.id },
     select: {
       id: true,
       username: true,
@@ -134,4 +139,7 @@ export async function PATCH(request: Request) {
     vendor: updatedVendor,
     enableViesusEnhancement: updatedViesus ?? false,
   });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

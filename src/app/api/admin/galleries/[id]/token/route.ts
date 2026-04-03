@@ -1,11 +1,13 @@
 import { randomBytes } from "node:crypto";
 
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { handleApiError } from "@/lib/api/error-handler";
 import { verifyGalleryOwnershipWithSelect } from "@/lib/api/gallery-auth";
-import { notFoundResponse, parseRequestBody,unauthorizedResponse } from "@/lib/api/response";
-import { auth } from "@/lib/auth/options";
+import { notFoundResponse, parseRequestBody } from "@/lib/api/response";
+import { requireAuth } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
 
 const updateTokenSchema = z.object({
@@ -17,13 +19,12 @@ const updateTokenSchema = z.object({
 // PATCH /api/admin/galleries/:id/token
 // Actions: regenerate token, set expiry, clear expiry
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) return unauthorizedResponse();
-
-  const { id: galleryId } = await params;
+  try {
+    const user = await requireAuth(request);
+    const { id: galleryId } = await params;
 
   const bodyResult = await parseRequestBody(request);
   if (!bodyResult.ok) return bodyResult.response;
@@ -37,7 +38,7 @@ export async function PATCH(
 
   const { action, expiresAt } = parsed.data;
 
-  const ownership = await verifyGalleryOwnershipWithSelect(galleryId, session.user.id, {
+  const ownership = await verifyGalleryOwnershipWithSelect(galleryId, user.id, {
     clientToken: true,
     tokenExpiresAt: true,
   });
@@ -78,4 +79,7 @@ export async function PATCH(
     clientToken: updated.clientToken,
     tokenExpiresAt: updated.tokenExpiresAt?.toISOString() ?? null,
   });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { handleApiError } from "@/lib/api/error-handler";
 import { DEFAULT_MAX_SELECTION, GALLERY_VIEW_COOKIE_TTL_SECONDS } from "@/lib/constants";
 import { FINGERPRINT_TTL_SECONDS, GALLERY_MAX_PHOTOS } from "@/lib/constants.server";
 import { prisma } from "@/lib/db";
@@ -46,7 +47,8 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ token: string }> }
 ) {
-  const { token } = await params;
+  try {
+    const { token } = await params;
 
   // Parse pagination params
   const url = new URL(_request.url);
@@ -219,4 +221,7 @@ export async function GET(
   }
 
   return response;
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

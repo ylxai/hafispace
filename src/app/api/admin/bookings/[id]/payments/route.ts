@@ -1,8 +1,9 @@
 import { type NextRequest,NextResponse } from "next/server";
 import { z } from "zod";
 
-import { notFoundResponse , parseRequestBody,unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
-import { auth } from "@/lib/auth/options";
+import { handleApiError } from "@/lib/api/error-handler";
+import { notFoundResponse , parseRequestBody, validationErrorResponse } from "@/lib/api/response";
+import { requireAuth } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
 import { convertDecimalToNumber } from "@/lib/decimal";
 
@@ -21,17 +22,16 @@ const paymentSchema = z.object({
 
 // GET — list payments per booking
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) return unauthorizedResponse();
+  try {
+    const user = await requireAuth(request);
+    const { id: bookingId } = await params;
 
-  const { id: bookingId } = await params;
-
-  // Verifikasi booking milik vendor
-  const booking = await prisma.booking.findFirst({
-    where: { id: bookingId, vendorId: session.user.id },
+    // Verifikasi booking milik vendor
+    const booking = await prisma.booking.findFirst({
+      where: { id: bookingId, vendorId: user.id },
     select: {
       id: true,
       namaClient: true,
@@ -78,6 +78,9 @@ export async function GET(
       },
     })
   );
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
 
 // POST — catat pembayaran baru
@@ -85,13 +88,13 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) return unauthorizedResponse();
+  try {
+    const user = await requireAuth(request);
 
   const { id: bookingId } = await params;
 
   const booking = await prisma.booking.findFirst({
-    where: { id: bookingId, vendorId: session.user.id },
+    where: { id: bookingId, vendorId: user.id },
     select: { id: true, hargaPaket: true },
   });
   if (!booking) return notFoundResponse("Booking not found");
@@ -106,7 +109,7 @@ export async function POST(
   const payment = await prisma.payment.create({
     data: {
       bookingId,
-      vendorId: session.user.id,
+      vendorId: user.id,
       jumlah,
       tipe,
       keterangan,
@@ -135,6 +138,9 @@ export async function POST(
   });
 
   return NextResponse.json(convertDecimalToNumber(payment), { status: 201 });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
 
 // DELETE — hapus payment
@@ -142,17 +148,16 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) return unauthorizedResponse();
-
-  const { id: bookingId } = await params;
+  try {
+    const user = await requireAuth(request);
+    const { id: bookingId } = await params;
   const { searchParams } = new URL(request.url);
   const paymentId = searchParams.get("paymentId");
   if (!paymentId) return validationErrorResponse("Payment ID required");
 
   // Verifikasi payment milik vendor
   const payment = await prisma.payment.findFirst({
-    where: { id: paymentId, bookingId, vendorId: session.user.id },
+    where: { id: paymentId, bookingId, vendorId: user.id },
   });
   if (!payment) return notFoundResponse("Payment not found");
 
@@ -187,4 +192,7 @@ export async function DELETE(
   });
 
   return NextResponse.json({ success: true });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }

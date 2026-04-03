@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { handleApiError } from "@/lib/api/error-handler";
 import { prisma } from "@/lib/db";
 import { getSelectionCount } from "@/lib/selection-counter";
 
@@ -7,7 +8,8 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ token: string }> }
 ) {
-  const { token } = await params;
+  try {
+    const { token } = await params;
 
   const gallery = await prisma.gallery.findUnique({
     where: { clientToken: token },
@@ -22,4 +24,7 @@ export async function GET(
   const count = await getSelectionCount(gallery.id);
 
   return NextResponse.json({ count });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
