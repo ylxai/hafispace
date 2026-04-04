@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
-    // ✅ Configure quality levels for Next.js 16 compatibility
+    // Configure image quality levels for optimization
     qualities: [75, 80, 90, 95],
   },
   // Limit request body size for JSON payloads (not file uploads)
@@ -39,10 +39,34 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: [
+          // Clickjacking protection
           { key: "X-Frame-Options", value: "DENY" },
+          // MIME type sniffing protection
           { key: "X-Content-Type-Options", value: "nosniff" },
+          // Referrer policy
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // Permissions policy — disable unused browser features
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          // HSTS — force HTTPS for 1 year (includeSubDomains)
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+          // Content Security Policy — prevent XSS
+          // unsafe-inline diizinkan untuk Next.js inline scripts & styles
+          // Cloudinary sebagai media source, Sentry sebagai connect-src
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob: https://res.cloudinary.com",
+              "media-src 'self' https://res.cloudinary.com",
+              "font-src 'self' data:",
+              "connect-src 'self' https://*.sentry.io https://*.ably.io wss://*.ably.io https://api.cloudinary.com https://*.ingest.sentry.io",
+              "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join("; "),
+          },
         ],
       },
     ];

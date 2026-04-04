@@ -60,6 +60,9 @@ export async function sendBookingConfirmationEmail({
     const safeKode = escapeHtml(kodeBooking);
     const safeRekening = rekeningPembayaran ? escapeHtml(rekeningPembayaran) : null;
 
+    // Sanitize invoiceUrl — hanya izinkan https:// URL untuk prevent URL injection
+    const safeInvoiceUrl = invoiceUrl.startsWith("https://") ? invoiceUrl : "#";
+
     await getResend().emails.send({
       from: `${safeStudio} <onboarding@resend.dev>`,
       to,
@@ -76,7 +79,7 @@ export async function sendBookingConfirmationEmail({
             <p><strong>DP (${dpPercentage}%):</strong> ${formatRupiah(dpAmount)}</p>
           </div>
           ${safeRekening ? `<div style="background: #fefce8; border-radius: 12px; padding: 16px; margin: 16px 0;"><p><strong>Rekening Pembayaran:</strong></p><pre style="font-family: monospace;">${safeRekening}</pre></div>` : ''}
-          <a href="${invoiceUrl}" style="display: inline-block; background: #0f172a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin: 16px 0;">Lihat Invoice</a>
+          <a href="${safeInvoiceUrl}" style="display: inline-block; background: #0f172a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin: 16px 0;">Lihat Invoice</a>
           <p style="color: #94a3b8; font-size: 12px;">Powered by Hafispace</p>
         </div>
       `,

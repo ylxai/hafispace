@@ -66,7 +66,8 @@ export interface PrintItem {
   jumlah: number;   // Quantity
 }
 
-export type PackageStatus = "ACTIVE" | "INACTIVE";
+// Lowercase matches actual DB values and Zod schema in validation.ts
+export type PackageStatus = "active" | "inactive";
 export type PackageKategori = "WEDDING" | "PREWEDDING" | "MATERNITY" | "BIRTHDAY" | "FAMILY" | "OTHER";
 
 export type AdminPackage = {
