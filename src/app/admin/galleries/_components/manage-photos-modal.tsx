@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 import { GalleryPhotosList } from "@/components/admin/gallery-photos-list";
 import { useToast } from "@/components/ui/toast";
@@ -30,10 +31,12 @@ export function ManagePhotosModal({ galleryId, onClose }: ManagePhotosModalProps
     gcTime: 0,    // Jangan cache — modal bisa dibuka lagi dengan data berbeda
   });
 
-  // Show toast saat error
-  if (isError && error instanceof Error) {
-    toast.error(error.message);
-  }
+  // Show toast saat error — di dalam useEffect agar tidak trigger di render phase
+  useEffect(() => {
+    if (isError && error instanceof Error) {
+      toast.error(error.message);
+    }
+  }, [isError, error, toast]);
 
   const handlePhotosChanged = () => {
     void queryClient.invalidateQueries({ queryKey: ["gallery-photos", galleryId] });
