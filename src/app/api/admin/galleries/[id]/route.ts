@@ -59,27 +59,29 @@ export async function POST(
       }
     );
 
-    // Calculate proper ordering for new photo
-    const maxUrutan = await prisma.photo.aggregate({
-      where: { galleryId: gallery.id },
-      _max: { urutan: true },
-    });
-    const nextUrutan = (maxUrutan._max.urutan ?? -1) + 1;
+    // Save photo record to database — atomic transaction untuk hindari race condition urutan
+    // Tanpa transaction, dua upload bersamaan bisa mendapat urutan yang sama
+    const photo = await prisma.$transaction(async (tx) => {
+      const maxUrutan = await tx.photo.aggregate({
+        where: { galleryId: gallery.id },
+        _max: { urutan: true },
+      });
+      const nextUrutan = (maxUrutan._max.urutan ?? -1) + 1;
 
-    // Save photo record to database
-    const photo = await prisma.photo.create({
-      data: {
-        galleryId: gallery.id,
-        storageKey: result.publicId, // Cloudinary public ID
-        filename: file.name,
-        url: result.secureUrl,
-        thumbnailUrl: result.secureUrl, // Could be a different thumbnail URL if needed
-        width: result.width,
-        height: result.height,
-        size: result.size,
-        mimeType: file.type || `image/${result.format}`,
-        urutan: nextUrutan, // ✅ Proper ordering based on existing photos
-      },
+      return tx.photo.create({
+        data: {
+          galleryId: gallery.id,
+          storageKey: result.publicId, // Cloudinary public ID
+          filename: file.name,
+          url: result.secureUrl,
+          thumbnailUrl: result.secureUrl,
+          width: result.width,
+          height: result.height,
+          size: result.size,
+          mimeType: file.type || `image/${result.format}`,
+          urutan: nextUrutan,
+        },
+      });
     });
 
     return NextResponse.json({
@@ -149,26 +151,29 @@ export async function PUT(
     );
 
     if (newPhotos.length > 0) {
-      const maxUrutan = await prisma.photo.aggregate({
-        where: { galleryId: gallery.id },
-        _max: { urutan: true },
-      });
-      let nextUrutan = (maxUrutan._max.urutan ?? -1) + 1;
+      // Atomic transaction untuk hindari race condition urutan saat sync concurrent
+      await prisma.$transaction(async (tx) => {
+        const maxUrutan = await tx.photo.aggregate({
+          where: { galleryId: gallery.id },
+          _max: { urutan: true },
+        });
+        let nextUrutan = (maxUrutan._max.urutan ?? -1) + 1;
 
-      await prisma.photo.createMany({
-        data: newPhotos.map((p) => ({
-          galleryId: gallery.id,
-          storageKey: p.publicId,
-          filename: p.originalFilename,
-          url: p.secureUrl,
-          thumbnailUrl: p.secureUrl,
-          width: p.width,
-          height: p.height,
-          size: p.size,
-          mimeType: `image/${p.format}`,
-          urutan: nextUrutan++,
-        })),
-        skipDuplicates: true,
+        await tx.photo.createMany({
+          data: newPhotos.map((p) => ({
+            galleryId: gallery.id,
+            storageKey: p.publicId,
+            filename: p.originalFilename,
+            url: p.secureUrl,
+            thumbnailUrl: p.secureUrl,
+            width: p.width,
+            height: p.height,
+            size: p.size,
+            mimeType: `image/${p.format}`,
+            urutan: nextUrutan++,
+          })),
+          skipDuplicates: true,
+        });
       });
     }
 

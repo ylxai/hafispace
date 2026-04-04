@@ -1,29 +1,36 @@
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
-import { internalErrorResponse,notFoundResponse, unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
-import { auth } from "@/lib/auth/options";
+import { handleApiError } from "@/lib/api/error-handler";
+import { notFoundResponse, parseAndValidate, validationErrorResponse } from "@/lib/api/response";
+import { requireAuth } from "@/lib/auth/context";
 import { testCloudinaryConnectionWithCredentials } from "@/lib/cloudinary";
 import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
-import logger from "@/lib/logger";
 
-interface CloudinaryAccount {
-  name: string;
-  cloudName: string;
-  apiKey: string;
-  apiSecret: string;
-}
+// Zod schemas untuk type-safe validation
+const createAccountSchema = z.object({
+  name: z.string().min(1, "Name is required").max(100),
+  cloudName: z.string().min(1, "Cloud name is required").max(100),
+  apiKey: z.string().min(1, "API key is required").max(200),
+  apiSecret: z.string().min(1, "API secret is required").max(200),
+  setAsDefault: z.boolean().optional(),
+});
 
-export async function GET() {
-  const session = await auth();
+const updateAccountSchema = z.object({
+  id: z.string().uuid("Account ID must be a valid UUID"),
+  name: z.string().min(1).max(100).optional(),
+  setAsDefault: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+});
 
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
 
+export async function GET(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
     const accounts = await prisma.vendorCloudinary.findMany({
-      where: { vendorId: session.user.id },
+      where: { vendorId: user.id },
       orderBy: [
         { isDefault: 'desc' },
         { createdAt: 'desc' }
@@ -47,24 +54,17 @@ export async function GET() {
 
     return NextResponse.json({ accounts: accountsFormatted });
   } catch (error) {
-    logger.error({ err: error }, "Error fetching Cloudinary accounts");
-    return internalErrorResponse("Failed to fetch accounts");
+    return handleApiError(error);
   }
 }
 
-export async function POST(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    const { name, cloudName, apiKey, apiSecret, setAsDefault }: CloudinaryAccount & { setAsDefault?: boolean } = await request.json();
+    const user = await requireAuth(request);
 
-    if (!name || !cloudName || !apiKey || !apiSecret) {
-      return validationErrorResponse("Missing required fields: name, cloudName, apiKey, apiSecret");
-    }
+    const parsed = await parseAndValidate(request, createAccountSchema);
+    if (!parsed.ok) return parsed.response;
+    const { name, cloudName, apiKey, apiSecret, setAsDefault } = parsed.data;
 
     // Test Cloudinary connection first (using helper that doesn't mutate global state)
     const cloudinaryConnected = await testCloudinaryConnectionWithCredentials(
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       apiKey,
       apiSecret
     );
-    
+
     if (!cloudinaryConnected) {
       return validationErrorResponse("Failed to connect to Cloudinary with provided credentials");
     }
@@ -80,14 +80,14 @@ export async function POST(request: Request) {
     // If setAsDefault, unset other defaults first
     if (setAsDefault) {
       await prisma.vendorCloudinary.updateMany({
-        where: { vendorId: session.user.id, isDefault: true },
+        where: { vendorId: user.id, isDefault: true },
         data: { isDefault: false },
       });
     }
 
     // Check if this is the first account
     const existingCount = await prisma.vendorCloudinary.count({
-      where: { vendorId: session.user.id },
+      where: { vendorId: user.id },
     });
 
     const isFirstAccount = existingCount === 0;
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
     // Create new account with encrypted credentials
     const account = await prisma.vendorCloudinary.create({
       data: {
-        vendorId: session.user.id,
+        vendorId: user.id,
         name,
         cloudName,
         apiKey: encrypt(apiKey),      // 🔒 Encrypt before save
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: "Cloudinary account added successfully",
       account: {
         id: account.id,
@@ -115,28 +115,21 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    logger.error({ err: error }, "Error adding Cloudinary account");
-    return internalErrorResponse("Failed to add Cloudinary account");
+    return handleApiError(error);
   }
 }
 
-export async function PUT(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function PUT(request: NextRequest) {
   try {
-    const { id, name, setAsDefault, isActive }: { id: string; name?: string; setAsDefault?: boolean; isActive?: boolean } = await request.json();
+    const user = await requireAuth(request);
 
-    if (!id) {
-      return validationErrorResponse("Account ID is required");
-    }
+    const parsed = await parseAndValidate(request, updateAccountSchema);
+    if (!parsed.ok) return parsed.response;
+    const { id, name, setAsDefault, isActive } = parsed.data;
 
     // Verify ownership
     const existingAccount = await prisma.vendorCloudinary.findFirst({
-      where: { id, vendorId: session.user.id },
+      where: { id, vendorId: user.id },
     });
 
     if (!existingAccount) {
@@ -146,7 +139,7 @@ export async function PUT(request: Request) {
     // If setting as default, unset other defaults
     if (setAsDefault) {
       await prisma.vendorCloudinary.updateMany({
-        where: { vendorId: session.user.id, isDefault: true },
+        where: { vendorId: user.id, isDefault: true },
         data: { isDefault: false },
       });
     }
@@ -154,13 +147,13 @@ export async function PUT(request: Request) {
     const updated = await prisma.vendorCloudinary.update({
       where: { id },
       data: {
-        ...(name && { name }),
+        ...(name !== undefined && { name }),
         ...(setAsDefault !== undefined && { isDefault: setAsDefault }),
         ...(isActive !== undefined && { isActive }),
       },
     });
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: "Account updated successfully",
       account: {
         id: updated.id,
@@ -170,19 +163,14 @@ export async function PUT(request: Request) {
       },
     });
   } catch (error) {
-    logger.error({ err: error }, "Error updating Cloudinary account");
-    return internalErrorResponse("Failed to update account");
+    return handleApiError(error);
   }
 }
 
-export async function DELETE(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function DELETE(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -192,7 +180,7 @@ export async function DELETE(request: Request) {
 
     // Verify ownership
     const existingAccount = await prisma.vendorCloudinary.findFirst({
-      where: { id, vendorId: session.user.id },
+      where: { id, vendorId: user.id },
     });
 
     if (!existingAccount) {
@@ -201,12 +189,13 @@ export async function DELETE(request: Request) {
 
     // Don't allow deleting if it's the only account
     const accountCount = await prisma.vendorCloudinary.count({
-      where: { vendorId: session.user.id },
+      where: { vendorId: user.id },
     });
 
     if (accountCount <= 1) {
-      return NextResponse.json({ 
-        error: "Cannot delete the only account. Add another account first." 
+      return NextResponse.json({
+        code: "CONFLICT",
+        error: "Cannot delete the only account. Add another account first.",
       }, { status: 400 });
     }
 
@@ -217,7 +206,7 @@ export async function DELETE(request: Request) {
     // If deleted account was default, set another as default
     if (existingAccount.isDefault) {
       const firstAccount = await prisma.vendorCloudinary.findFirst({
-        where: { vendorId: session.user.id },
+        where: { vendorId: user.id },
       });
       if (firstAccount) {
         await prisma.vendorCloudinary.update({
@@ -229,7 +218,6 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ message: "Account deleted successfully" });
   } catch (error) {
-    logger.error({ err: error }, "Error deleting Cloudinary account");
-    return internalErrorResponse("Failed to delete account");
+    return handleApiError(error);
   }
 }

@@ -1,37 +1,47 @@
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { unauthorizedResponse } from "@/lib/api/response";
-import { auth } from "@/lib/auth/options";
+import { handleApiError } from "@/lib/api/error-handler";
+import { notFoundResponse } from "@/lib/api/response";
+import { requireAuth } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
-import logger from "@/lib/logger";
 
-// GET all photos from gallery
+const PHOTOS_PER_PAGE = 100;
+
+// GET all photos from gallery with pagination
 export async function GET(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: galleryId } = await params;
-
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return unauthorizedResponse();
-    }
+    const user = await requireAuth(request);
+    const { id: galleryId } = await params;
 
-    // Verify gallery ownership
+    // Verify gallery ownership — return 404 jika tidak ada, 403 jika bukan milik vendor
     const gallery = await prisma.gallery.findUnique({
       where: { id: galleryId },
-      select: { vendorId: true }
+      select: { vendorId: true },
     });
 
-    if (gallery?.vendorId !== session.user.id) {
+    if (!gallery) {
+      return notFoundResponse("Gallery not found");
+    }
+
+    if (gallery.vendorId !== user.id) {
       return NextResponse.json(
         { code: "FORBIDDEN", message: "Forbidden" },
         { status: 403 }
       );
     }
 
-    // Get all photos ordered by urutan
+    // Pagination via cursor (lebih efisien dari offset untuk large galleries)
+    const url = new URL(request.url);
+    const cursor = url.searchParams.get("cursor") ?? undefined;
+    const limit = Math.min(
+      parseInt(url.searchParams.get("limit") ?? String(PHOTOS_PER_PAGE), 10),
+      PHOTOS_PER_PAGE
+    );
+
     const photos = await prisma.photo.findMany({
       where: { galleryId },
       select: {
@@ -40,22 +50,30 @@ export async function GET(
         url: true,
         width: true,
         height: true,
-        createdAt: true
+        urutan: true,
+        createdAt: true,
       },
-      orderBy: { urutan: "asc" }
+      orderBy: { urutan: "asc" },
+      take: limit + 1, // fetch satu extra untuk detect hasNextPage
+      ...(cursor && { cursor: { id: cursor }, skip: 1 }),
     });
+
+    const hasNextPage = photos.length > limit;
+    const items = hasNextPage ? photos.slice(0, limit) : photos;
+    const nextCursor = hasNextPage ? items[items.length - 1]?.id : null;
 
     return NextResponse.json({
       code: "OK",
       message: "Photos retrieved successfully",
-      photos
-    }, { status: 200 });
+      photos: items,
+      pagination: {
+        hasNextPage,
+        nextCursor,
+        limit,
+      },
+    });
   } catch (error) {
-    logger.error({ err: error }, "GET /api/admin/galleries/[id]/photos");
-    return NextResponse.json(
-      { code: "ERROR", message: "Failed to fetch photos" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
