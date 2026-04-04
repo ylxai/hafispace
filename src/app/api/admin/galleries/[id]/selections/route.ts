@@ -1,36 +1,32 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { handleApiError } from "@/lib/api/error-handler";
 import { verifyGalleryOwnershipWithSelect } from "@/lib/api/gallery-auth";
 import { verifySelectionOwnership } from "@/lib/api/resource-auth";
-import { notFoundResponse, parseAndValidate,unauthorizedResponse } from "@/lib/api/response";
-import { auth } from "@/lib/auth/options";
+import { notFoundResponse, parseAndValidate } from "@/lib/api/response";
+import { requireAuth } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
-import logger from "@/lib/logger";
 
 const toggleLockSchema = z.object({
   selectionId: z.string().uuid(),
   isLocked: z.boolean(),
 });
 
-const deleteSchema = z.object({
+const _deleteSchema = z.object({
   selectionId: z.string().uuid(),
 });
 
 export async function GET(
-  _request: Request,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
   const { id: galleryId } = await params;
 
   try {
-    const ownership = await verifyGalleryOwnershipWithSelect(galleryId, session.user.id, {
+    const user = await requireAuth(_request);
+
+    const ownership = await verifyGalleryOwnershipWithSelect(galleryId, user.id, {
       selections: {
         orderBy: { selectedAt: "desc" },
       },
@@ -80,29 +76,20 @@ export async function GET(
         locked: selections.filter((s) => s.isLocked).length,
       },
     });
-  } catch (error) {
-    logger.error({ err: error }, "Error fetching selections");
-    return NextResponse.json(
-      { code: "INTERNAL_ERROR", message: "Failed to fetch selections" },
-      { status: 500 }
-    );
-  }
+    } catch (error) {
+      return handleApiError(error);
+    }
 }
 
-export async function PATCH(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function PATCH(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
     const result = await parseAndValidate(request, toggleLockSchema);
     if (!result.ok) return result.response;
 
     const { selectionId, isLocked } = result.data;
 
-    const ownership = await verifySelectionOwnership(selectionId, session.user.id);
+    const ownership = await verifySelectionOwnership(selectionId, user.id);
     if (!ownership.found) {
       return notFoundResponse("Selection not found");
     }
@@ -120,7 +107,7 @@ export async function PATCH(request: Request) {
 
     await prisma.activityLog.create({
       data: {
-        vendorId: session.user.id,
+        vendorId: user.id,
         galleryId,
         action: isLocked ? "SELECTION_LOCKED" : "SELECTION_UNLOCKED",
         details: `Selection ${filename} ${isLocked ? "locked" : "unlocked"}`,
@@ -135,29 +122,17 @@ export async function PATCH(request: Request) {
         lockedAt: updated.lockedAt?.toISOString() ?? null,
       },
     });
-  } catch (error) {
-    logger.error({ err: error }, "Error updating selection");
-    return NextResponse.json(
-      { code: "INTERNAL_ERROR", message: "Failed to update selection" },
-      { status: 500 }
-    );
-  }
+    } catch (error) {
+      return handleApiError(error);
+    }
 }
 
-export async function DELETE(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function DELETE(request: NextRequest) {
   try {
-    const result = await parseAndValidate(request, deleteSchema);
-    if (!result.ok) return result.response;
+    const user = await requireAuth(request);
+    const { selectionId } = await request.json();
 
-    const { selectionId } = result.data;
-
-    const ownership = await verifySelectionOwnership(selectionId, session.user.id);
+    const ownership = await verifySelectionOwnership(selectionId, user.id);
     if (!ownership.found) {
       return notFoundResponse("Selection not found");
     }
@@ -170,7 +145,7 @@ export async function DELETE(request: Request) {
 
     await prisma.activityLog.create({
       data: {
-        vendorId: session.user.id,
+        vendorId: user.id,
         galleryId: selection.galleryId,
         action: "SELECTION_DELETED",
         details: `Selection ${selection.filename} deleted`,
@@ -178,11 +153,7 @@ export async function DELETE(request: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    logger.error({ err: error }, "Error deleting selection");
-    return NextResponse.json(
-      { code: "INTERNAL_ERROR", message: "Failed to delete selection" },
-      { status: 500 }
-    );
-  }
+    } catch (error) {
+      return handleApiError(error);
+    }
 }

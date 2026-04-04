@@ -1,30 +1,25 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
-import { internalErrorResponse,notFoundResponse, unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
-import { auth } from "@/lib/auth/options";
+import { handleApiError } from "@/lib/api/error-handler";
+import { notFoundResponse, validationErrorResponse } from "@/lib/api/response";
+import { requireAuth } from "@/lib/auth/context";
 import { listPhotosFromCloudinary,uploadPhotoToCloudinary } from "@/lib/cloudinary";
 import { CLOUDINARY_FOLDERS } from "@/lib/cloudinary/constants";
 import { prisma } from "@/lib/db";
-import logger from "@/lib/logger";
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
   const { id: galleryId } = await params;
 
   try {
+    const user = await requireAuth(request);
     // Verify that the gallery belongs to the current vendor
     const gallery = await prisma.gallery.findUnique({
       where: {
         id: galleryId,
-        vendorId: session.user.id,
+        vendorId: user.id,
       },
     });
 
@@ -50,11 +45,11 @@ export async function POST(
 
     // Upload to Cloudinary
     const result = await uploadPhotoToCloudinary(
-      session.user.id,
+      user.id,
       buffer,
       file.name,
       {
-        folder: `${CLOUDINARY_FOLDERS.GALLERIES}/${session.user.id}/${galleryId}`,
+        folder: `${CLOUDINARY_FOLDERS.GALLERIES}/${user.id}/${galleryId}`,
         resourceType: 'image',
       }
     );
@@ -96,31 +91,26 @@ export async function POST(
         mimeType: photo.mimeType,
       },
     });
-  } catch (error) {
-    logger.error({ err: error }, "Error uploading photo to Cloudinary");
-    return internalErrorResponse("Failed to upload photo to Cloudinary");
-  }
+    } catch (error) {
+      return handleApiError(error);
+    }
 }
 
 // Endpoint to sync photos from Cloudinary folder to database
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
   const { id: galleryId } = await params;
 
   try {
+    const user = await requireAuth(request);
+
     // Verify that the gallery belongs to the current vendor
     const gallery = await prisma.gallery.findUnique({
       where: {
         id: galleryId,
-        vendorId: session.user.id,
+        vendorId: user.id,
       },
     });
 
@@ -130,9 +120,9 @@ export async function PUT(
 
     // Fetch photos from Cloudinary folder
     const cloudinaryResult = await listPhotosFromCloudinary(
-      session.user.id,
+      user.id,
       {
-        folder: `${CLOUDINARY_FOLDERS.GALLERIES}/${session.user.id}/${galleryId}`,
+        folder: `${CLOUDINARY_FOLDERS.GALLERIES}/${user.id}/${galleryId}`,
       }
     );
 
@@ -182,7 +172,6 @@ export async function PUT(
       photoCount,
     });
   } catch (error) {
-    logger.error({ err: error }, "Error syncing photos from Cloudinary");
-    return internalErrorResponse("Failed to sync photos from Cloudinary");
+    return handleApiError(error);
   }
 }

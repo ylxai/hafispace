@@ -216,7 +216,7 @@ export async function PUT(request: NextRequest) {
 
     if (paketId !== undefined && paketId !== null) {
       const paket = await prisma.package.findFirst({
-        where: { id: paketId, vendorId: session.user.id },
+        where: { id: paketId, vendorId: user.id },
         select: { id: true },
       });
       if (!paket) {
@@ -225,7 +225,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const updatedBooking = await prisma.booking.update({
-      where: { id, vendorId: session.user.id },
+      where: { id, vendorId: user.id },
       data: {
         ...(namaClient !== undefined && { namaClient }),
         ...(hpClient !== undefined && { hpClient }),

@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
+import { handleApiError } from "@/lib/api/error-handler";
 import { bulkPhotoDeleteSchema } from "@/lib/api/validation";
-import { auth } from "@/lib/auth/options";
+import { requireAuth } from "@/lib/auth/context";
 import { deletePhotosFromCloudinary } from "@/lib/cloudinary/core";
 import { prisma } from "@/lib/db";
-import logger from "@/lib/logger";
 
 /**
  * POST /api/admin/galleries/[id]/photos/bulk
@@ -26,19 +26,13 @@ import logger from "@/lib/logger";
  * Note: Database cleanup happens regardless of Cloudinary success
  */
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: galleryId } = await params;
 
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { code: "UNAUTHORIZED", message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const user = await requireAuth(request);
 
     // Verify gallery ownership
     const gallery = await prisma.gallery.findUnique({
@@ -46,7 +40,7 @@ export async function POST(
       select: { vendorId: true }
     });
 
-    if (gallery?.vendorId !== session.user.id) {
+    if (!gallery?.vendorId || gallery.vendorId !== user.id) {
       return NextResponse.json(
         { code: "FORBIDDEN", message: "Forbidden" },
         { status: 403 }
@@ -127,14 +121,7 @@ export async function POST(
     };
 
     return NextResponse.json(responseData, { status: 200 });
-  } catch (error) {
-    logger.error({ err: error }, "POST /api/admin/galleries/[id]/photos/bulk");
-    return NextResponse.json(
-      {
-        code: "ERROR",
-        message: "Failed to delete photos"
-      },
-      { status: 500 }
-    );
-  }
+   } catch (error) {
+     return handleApiError(error);
+   }
 }
