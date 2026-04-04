@@ -176,9 +176,9 @@ export async function POST(
       }
     }
 
-     // Prepare Cloudinary folder path
-     const folderPath = `${CLOUDINARY_FOLDERS.GALLERIES}/${user.id}/${galleryId}`;
-     const uploadedAt = new Date().toISOString();
+    // Prepare Cloudinary folder path
+    const folderPath = `${CLOUDINARY_FOLDERS.GALLERIES}/${user.id}/${galleryId}`;
+    const uploadedAt = new Date().toISOString();
 
     // Upload dalam batch kecil (5 files per batch) untuk hindari OOM
     const BATCH_SIZE = 5;

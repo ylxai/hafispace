@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { handleApiError } from "@/lib/api/error-handler";
+import { BusinessError, handleApiError } from "@/lib/api/error-handler";
 import { createPaginationResponse,parsePaginationParams } from "@/lib/api/pagination";
 import { verifyBookingOwnership } from "@/lib/api/resource-auth";
 import { notFoundResponse,parseAndValidate, validationErrorResponse } from "@/lib/api/response";
@@ -171,7 +171,7 @@ export async function DELETE(request: NextRequest) {
       });
 
       if (galleryCount > 0) {
-        throw Object.assign(new Error(`Cannot delete booking with ${galleryCount} gallery(ies). Delete galleries first.`), { code: 'HAS_GALLERIES' });
+        throw new BusinessError(`Cannot delete booking with ${galleryCount} gallery(ies). Delete galleries first.`, "HAS_GALLERIES", 400);
       }
 
       await tx.booking.delete({
