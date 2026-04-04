@@ -13,7 +13,7 @@ const toggleLockSchema = z.object({
   isLocked: z.boolean(),
 });
 
-const _deleteSchema = z.object({
+const deleteSchema = z.object({
   selectionId: z.string().uuid(),
 });
 
@@ -130,7 +130,9 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const user = await requireAuth(request);
-    const { selectionId } = await request.json();
+    const result = await parseAndValidate(request, deleteSchema);
+    if (!result.ok) return result.response;
+    const { selectionId } = result.data;
 
     const ownership = await verifySelectionOwnership(selectionId, user.id);
     if (!ownership.found) {

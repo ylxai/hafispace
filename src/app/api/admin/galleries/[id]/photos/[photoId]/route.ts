@@ -56,7 +56,6 @@ export async function DELETE(
     try {
       await deletePhotoFromCloudinary(gallery.vendorId, photo.storageKey);
     } catch (error) {
-      // logger.error({ err: error, storageKey: photo.storageKey }, `Failed to delete ${photo.storageKey} from Cloudinary`);
       cloudinaryError = error instanceof Error ? error.message : "Unknown error";
     }
 

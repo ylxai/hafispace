@@ -322,12 +322,12 @@ export async function POST(
         
         // DB gagal — rollback dengan hapus semua file dari Cloudinary (cegah orphan files)
         logger.error({ err: dbError }, "DB write failed after Cloudinary upload — rolling back");
-        const _rollbackResults = await Promise.allSettled(
+        const rollbackResults = await Promise.allSettled(
           successfulUploads
             .filter(r => r.data?.publicId)
             .map(r => deletePhotoFromCloudinary(user.id, r.data?.publicId ?? ""))
         );
-        _rollbackResults.forEach((r, i) => {
+        rollbackResults.forEach((r, i) => {
           if (r.status === "rejected") {
             logger.error({ err: r.reason, index: i }, `Rollback failed for upload[${i}]`);
           }
