@@ -76,8 +76,8 @@ export function DragDropUpload({ galleryId, onUploadComplete, onCancel, onEditFi
             setSelectedAccountId(defaultAccount.id);
           }
         }
-      } catch (error) {
-        console.error("Failed to fetch accounts:", error);
+      } catch {
+        toast.error("Failed to load Cloudinary accounts. Please refresh.");
       }
     }
     fetchAccounts();

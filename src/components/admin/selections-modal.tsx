@@ -69,8 +69,8 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
       const data = await res.json();
       setSelections(data.selections);
       setStats(data.stats);
-    } catch (error) {
-      console.error("Error fetching selections:", error);
+    } catch {
+      // Fetch error sudah ditangani via setError state di bawah
       toast.error("Failed to load selections");
     } finally {
       setIsLoading(false);
@@ -184,8 +184,8 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
         locked: currentLockState ? prev.locked - 1 : prev.locked + 1,
       }));
       toast.success(`Selection ${currentLockState ? "unlocked" : "locked"}`);
-    } catch (error) {
-      console.error("Error toggling lock:", error);
+    } catch {
+      // Toggle lock error sudah ditangani via toast di bawah
       toast.error("Failed to update selection");
     } finally {
       setActionInProgress(null);
@@ -213,8 +213,8 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
         locked: selections.find((s) => s.id === selectionId)?.isLocked ? prev.locked - 1 : prev.locked,
       }));
       toast.success("Selection removed");
-    } catch (error) {
-      console.error("Error deleting selection:", error);
+    } catch {
+      // Delete selection error sudah ditangani via toast di bawah
       toast.error("Failed to remove selection");
     } finally {
       setActionInProgress(null);

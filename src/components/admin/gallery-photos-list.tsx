@@ -85,8 +85,8 @@ export function GalleryPhotosList({
       setSelectedPhotoIds(new Set());
       await queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
       onPhotosChanged?.();
-    } catch (error) {
-      console.error("Bulk delete error:", error);
+    } catch {
+      // Bulk delete error sudah ditangani via toast di bawah
       toast.error("Failed to delete photos");
     } finally {
       setIsProcessing(false);
@@ -120,8 +120,8 @@ export function GalleryPhotosList({
       toast.success("Photo deleted successfully");
       await queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
       onPhotosChanged?.();
-    } catch (error) {
-      console.error("Delete photo error:", error);
+    } catch {
+      // Delete error sudah ditangani via toast di bawah
       toast.error("Failed to delete photo");
     } finally {
       setDeletingPhotoIds(new Set());

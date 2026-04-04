@@ -29,8 +29,7 @@ export default function LoginPage() {
       } else {
         router.push("/admin");
       }
-    } catch (err) {
-      console.error("Login error:", err);
+    } catch {
       setError("Terjadi kesalahan. Silakan coba lagi.");
       setIsLoading(false);
     }

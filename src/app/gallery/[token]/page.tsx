@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ProgressivePhotoCard } from "@/components/gallery/progressive-photo-card";
 import { SelectionBottomBar } from "@/components/gallery/selection-bottom-bar";
@@ -103,11 +103,12 @@ export default function ViewspacePage() {
   });
 
   // Jika gallery sudah locked, bersihkan localStorage
-  const lockClearedRef = useRef(false); // ✅ Use useRef instead of useState for non-render effect
-  if (isLocked && !lockClearedRef.current) {
-    clearLocalSelections(token);
-    lockClearedRef.current = true;
-  }
+  // useEffect agar tidak ada side effect saat render phase (React Strict Mode safe)
+  useEffect(() => {
+    if (isLocked) {
+      clearLocalSelections(token);
+    }
+  }, [isLocked, token]);
 
   // Server-side selected photos (untuk locked gallery — backward compat storageKey)
   const serverSelectedPhotos = useMemo(() => {
@@ -190,8 +191,8 @@ export default function ViewspacePage() {
           photos: activeSelectedPhotos.map(p => p.filename),
         }),
       });
-    } catch (e) {
-      console.error('Failed to send notification:', e);
+    } catch {
+      // Notification error non-critical — submission sudah berhasil
     }
 
     const phone = data?.gallery?.vendor.phone?.replace(/\D/g, '') ?? '';
