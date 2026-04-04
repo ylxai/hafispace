@@ -1,12 +1,22 @@
 import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { handleApiError } from "@/lib/api/error-handler";
-import { notFoundResponse } from "@/lib/api/response";
+import { forbiddenResponse, notFoundResponse, validationErrorResponse } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
 
 const PHOTOS_PER_PAGE = 100;
+
+// Query param schema untuk pagination
+const paginationSchema = z.object({
+  cursor: z.string().uuid("cursor must be a valid UUID").optional(),
+  limit: z
+    .string()
+    .optional()
+    .transform((v) => (v !== undefined ? parseInt(v, 10) : PHOTOS_PER_PAGE))
+    .pipe(z.number().int().min(1).max(PHOTOS_PER_PAGE)),
+});
 
 // GET all photos from gallery with pagination
 export async function GET(
@@ -28,19 +38,21 @@ export async function GET(
     }
 
     if (gallery.vendorId !== user.id) {
-      return NextResponse.json(
-        { code: "FORBIDDEN", message: "Forbidden" },
-        { status: 403 }
-      );
+      return forbiddenResponse();
     }
 
-    // Pagination via cursor (lebih efisien dari offset untuk large galleries)
+    // Validate & parse query params via Zod — prevents NaN/invalid UUID errors
     const url = new URL(request.url);
-    const cursor = url.searchParams.get("cursor") ?? undefined;
-    const limit = Math.min(
-      parseInt(url.searchParams.get("limit") ?? String(PHOTOS_PER_PAGE), 10),
-      PHOTOS_PER_PAGE
-    );
+    const rawParams = {
+      cursor: url.searchParams.get("cursor") ?? undefined,
+      limit: url.searchParams.get("limit") ?? undefined,
+    };
+
+    const parsed = paginationSchema.safeParse(rawParams);
+    if (!parsed.success) {
+      return validationErrorResponse(parsed.error.format());
+    }
+    const { cursor, limit } = parsed.data;
 
     const photos = await prisma.photo.findMany({
       where: { galleryId },
@@ -53,16 +65,17 @@ export async function GET(
         urutan: true,
         createdAt: true,
       },
-      orderBy: { urutan: "asc" },
+      // Deterministic sort: urutan bisa sama, id selalu unique
+      orderBy: [{ urutan: "asc" }, { id: "asc" }],
       take: limit + 1, // fetch satu extra untuk detect hasNextPage
       ...(cursor && { cursor: { id: cursor }, skip: 1 }),
     });
 
     const hasNextPage = photos.length > limit;
     const items = hasNextPage ? photos.slice(0, limit) : photos;
-    const nextCursor = hasNextPage ? items[items.length - 1]?.id : null;
+    const nextCursor = hasNextPage ? (items[items.length - 1]?.id ?? null) : null;
 
-    return NextResponse.json({
+    return Response.json({
       code: "OK",
       message: "Photos retrieved successfully",
       photos: items,

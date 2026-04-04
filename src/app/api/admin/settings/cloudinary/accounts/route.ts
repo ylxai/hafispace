@@ -174,13 +174,16 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
-    if (!id) {
-      return validationErrorResponse("Account ID is required");
+    // Validate UUID format — prevents PostgreSQL error on invalid UUID
+    const idParsed = z.string().uuid("Account ID must be a valid UUID").safeParse(id);
+    if (!idParsed.success) {
+      return validationErrorResponse("Account ID must be a valid UUID");
     }
+    const validatedId = idParsed.data;
 
     // Verify ownership
     const existingAccount = await prisma.vendorCloudinary.findFirst({
-      where: { id, vendorId: user.id },
+      where: { id: validatedId, vendorId: user.id },
     });
 
     if (!existingAccount) {
@@ -200,7 +203,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     await prisma.vendorCloudinary.delete({
-      where: { id },
+      where: { id: validatedId },
     });
 
     // If deleted account was default, set another as default
