@@ -1,28 +1,23 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
+import { BusinessError, handleApiError } from "@/lib/api/error-handler";
 import { createPaginationResponse,parsePaginationParams } from "@/lib/api/pagination";
 import { verifyBookingOwnership } from "@/lib/api/resource-auth";
-import { internalErrorResponse, notFoundResponse,parseAndValidate, unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
+import { notFoundResponse,parseAndValidate, validationErrorResponse } from "@/lib/api/response";
 import { bookingSchema, bookingUpdateSchema } from "@/lib/api/validation";
-import { auth } from "@/lib/auth/options";
+import { requireAuth } from "@/lib/auth/context";
 import { generateUniqueKodeBooking } from "@/lib/booking-utils";
 import { prisma } from "@/lib/db";
-import logger from "@/lib/logger";
 
-export async function GET(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function GET(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
     const { searchParams } = new URL(request.url);
     const { page, limit, skip } = parsePaginationParams(searchParams);
 
     const [bookings, total] = await Promise.all([
       prisma.booking.findMany({
-        where: { vendorId: session.user.id },
+        where: { vendorId: user.id },
         select: {
           id: true,
           kodeBooking: true,
@@ -47,7 +42,7 @@ export async function GET(request: Request) {
         take: limit,
       }),
       prisma.booking.count({
-        where: { vendorId: session.user.id },
+        where: { vendorId: user.id },
       }),
     ]);
 
@@ -75,19 +70,14 @@ export async function GET(request: Request) {
       pagination: createPaginationResponse(page, limit, total),
     });
   } catch (error) {
-    logger.error({ err: error }, "Error fetching bookings");
-    return internalErrorResponse("Failed to load bookings");
+    return handleApiError(error);
   }
 }
 
-export async function POST(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function POST(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
+
     const result = await parseAndValidate(request, bookingSchema);
     if (!result.ok) return result.response;
 
@@ -115,7 +105,7 @@ export async function POST(request: Request) {
     if (paketId) {
       // Pastikan paket milik vendor yang sedang login — cegah IDOR
       const paket = await prisma.package.findFirst({
-        where: { id: paketId, vendorId: session.user.id },
+        where: { id: paketId, vendorId: user.id },
         select: { maxSelection: true },
       });
       // Tolak jika paket tidak ditemukan atau bukan milik vendor
@@ -131,7 +121,7 @@ export async function POST(request: Request) {
     const booking = await generateUniqueKodeBooking((kodeBooking) => {
       return prisma.booking.create({
         data: {
-          vendorId: session.user.id,
+          vendorId: user.id,
           kodeBooking,
           namaClient,
           hpClient,
@@ -150,19 +140,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json(booking, { status: 201 });
   } catch (error) {
-    logger.error({ err: error }, "Error creating booking");
-    return internalErrorResponse("Failed to create booking");
+    return handleApiError(error);
   }
 }
 
-export async function DELETE(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function DELETE(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
     // Support both query param (legacy) and body (new) for consistency
     const { searchParams } = new URL(request.url);
     let bookingId = searchParams.get("id");
@@ -176,7 +160,7 @@ export async function DELETE(request: Request) {
       return validationErrorResponse("Booking ID is required");
     }
 
-    const ownership = await verifyBookingOwnership(bookingId, session.user.id);
+    const ownership = await verifyBookingOwnership(bookingId, user.id);
     if (!ownership.found) {
       return notFoundResponse("Booking not found");
     }
@@ -187,11 +171,11 @@ export async function DELETE(request: Request) {
       });
 
       if (galleryCount > 0) {
-        throw Object.assign(new Error(`Cannot delete booking with ${galleryCount} gallery(ies). Delete galleries first.`), { code: 'HAS_GALLERIES' });
+        throw new BusinessError(`Cannot delete booking with ${galleryCount} gallery(ies). Delete galleries first.`, "HAS_GALLERIES", 400);
       }
 
       await tx.booking.delete({
-        where: { id: bookingId, vendorId: session.user.id },
+        where: { id: bookingId, vendorId: user.id },
       });
     });
 
@@ -200,22 +184,13 @@ export async function DELETE(request: Request) {
       message: "Booking deleted successfully",
     });
   } catch (error) {
-    if (error instanceof Error && 'code' in error && (error as { code?: string }).code === 'HAS_GALLERIES') {
-      return validationErrorResponse(error.message);
-    }
-    logger.error({ err: error }, "Error deleting booking");
-    return internalErrorResponse("Failed to delete booking");
+    return handleApiError(error);
   }
 }
 
-export async function PUT(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function PUT(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
     const result = await parseAndValidate(request, bookingUpdateSchema);
     if (!result.ok) return result.response;
 
@@ -234,14 +209,14 @@ export async function PUT(request: Request) {
       notes,
     } = result.data;
 
-    const ownership = await verifyBookingOwnership(id, session.user.id);
+    const ownership = await verifyBookingOwnership(id, user.id);
     if (!ownership.found) {
       return notFoundResponse("Booking not found");
     }
 
     if (paketId !== undefined && paketId !== null) {
       const paket = await prisma.package.findFirst({
-        where: { id: paketId, vendorId: session.user.id },
+        where: { id: paketId, vendorId: user.id },
         select: { id: true },
       });
       if (!paket) {
@@ -250,7 +225,7 @@ export async function PUT(request: Request) {
     }
 
     const updatedBooking = await prisma.booking.update({
-      where: { id, vendorId: session.user.id },
+      where: { id, vendorId: user.id },
       data: {
         ...(namaClient !== undefined && { namaClient }),
         ...(hpClient !== undefined && { hpClient }),
@@ -272,7 +247,6 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(updatedBooking);
   } catch (error) {
-    logger.error({ err: error }, "Error updating booking");
-    return internalErrorResponse("Failed to update booking");
+    return handleApiError(error);
   }
 }

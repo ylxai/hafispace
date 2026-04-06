@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
-import { auth } from "@/lib/auth/options";
+import { handleApiError } from "@/lib/api/error-handler";
+import { requireAuth } from "@/lib/auth/context";
 import { deletePhotoFromCloudinary } from "@/lib/cloudinary/core";
 import { prisma } from "@/lib/db";
-import logger from "@/lib/logger";
 
 /**
  * DELETE /api/admin/galleries/[id]/photos/[photoId]
@@ -18,18 +18,12 @@ import logger from "@/lib/logger";
  * Security: Vendor isolation enforced via gallery.vendorId check
  */
 export async function DELETE(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string; photoId: string }> }
 ) {
   const { id: galleryId, photoId } = await params;
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { code: "UNAUTHORIZED", message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const user = await requireAuth(request);
 
     // Verify gallery ownership
     const gallery = await prisma.gallery.findUnique({
@@ -37,7 +31,7 @@ export async function DELETE(
       select: { vendorId: true }
     });
 
-    if (gallery?.vendorId !== session.user.id) {
+    if (!gallery?.vendorId || gallery.vendorId !== user.id) {
       return NextResponse.json(
         { code: "FORBIDDEN", message: "Forbidden" },
         { status: 403 }
@@ -62,7 +56,6 @@ export async function DELETE(
     try {
       await deletePhotoFromCloudinary(gallery.vendorId, photo.storageKey);
     } catch (error) {
-      logger.error({ err: error, storageKey: photo.storageKey }, `Failed to delete ${photo.storageKey} from Cloudinary`);
       cloudinaryError = error instanceof Error ? error.message : "Unknown error";
     }
 
@@ -90,13 +83,6 @@ export async function DELETE(
 
     return NextResponse.json(response, { status: 200 });
   } catch (error) {
-    logger.error({ err: error }, "DELETE /api/admin/galleries/[id]/photos/[photoId]");
-    return NextResponse.json(
-      {
-        code: "ERROR",
-        message: "Failed to delete photo"
-      },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

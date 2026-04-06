@@ -5,6 +5,26 @@ import { AuthError } from "@/lib/auth/context";
 import logger from "@/lib/logger";
 
 /**
+ * Business logic error for domain-specific errors that need specific HTTP status codes.
+ * Use this for errors like "cannot delete because has dependencies", "quota exceeded", etc.
+ *
+ * Consistent with AuthError — both extend Error and are handled by handleApiError.
+ *
+ * @example
+ * throw new BusinessError("Cannot delete booking with galleries", "HAS_GALLERIES", 400);
+ */
+export class BusinessError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public status: number = 400
+  ) {
+    super(message);
+    this.name = "BusinessError";
+  }
+}
+
+/**
  * Central error handler for API routes.
  * Converts different error types to consistent API responses.
  * 
@@ -18,6 +38,17 @@ export function handleApiError(error: unknown): NextResponse {
       { 
         code: error.code, 
         message: error.message 
+      },
+      { status: error.status }
+    );
+  }
+
+  // Business logic errors (4xx) — domain-specific errors with known status codes
+  if (error instanceof BusinessError) {
+    return NextResponse.json<ApiErrorResponse>(
+      {
+        code: error.code,
+        message: error.message,
       },
       { status: error.status }
     );

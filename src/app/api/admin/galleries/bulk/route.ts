@@ -1,10 +1,9 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { unauthorizedResponse } from "@/lib/api/response";
-import { auth } from "@/lib/auth/options";
+import { handleApiError } from "@/lib/api/error-handler";
+import { requireAuth } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
-import logger from "@/lib/logger";
 
 const bulkDeleteSchema = z.object({
   galleryIds: z.array(z.string().uuid()),
@@ -15,14 +14,9 @@ const bulkUpdateSchema = z.object({
   status: z.enum(["DRAFT", "IN_REVIEW", "DELIVERED"]).optional(),
 });
 
-export async function POST(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function POST(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
     const body = await request.json();
     const { action, ...data } = body;
 
@@ -31,10 +25,10 @@ export async function POST(request: Request) {
       
       // Verify all galleries belong to vendor and have no photos
       const galleries = await prisma.gallery.findMany({
-        where: {
-          id: { in: galleryIds },
-          vendorId: session.user.id,
-        },
+          where: {
+            id: { in: galleryIds },
+            vendorId: user.id,
+          },
         include: {
           _count: {
             select: { photos: true },
@@ -61,10 +55,10 @@ export async function POST(request: Request) {
 
       // Delete galleries
       const deletedCount = await prisma.gallery.deleteMany({
-        where: {
-          id: { in: galleryIds },
-          vendorId: session.user.id,
-        },
+          where: {
+            id: { in: galleryIds },
+            vendorId: user.id,
+          },
       });
 
       return NextResponse.json({ 
@@ -85,10 +79,10 @@ export async function POST(request: Request) {
 
       // Update galleries
       const updatedCount = await prisma.gallery.updateMany({
-        where: {
-          id: { in: galleryIds },
-          vendorId: session.user.id,
-        },
+          where: {
+            id: { in: galleryIds },
+            vendorId: user.id,
+          },
         data: { status },
       });
 
@@ -112,10 +106,6 @@ export async function POST(request: Request) {
       );
     }
     
-    logger.error({ err: error }, "Bulk gallery operation error");
-    return NextResponse.json(
-      { code: "INTERNAL_ERROR", message: "Failed to perform bulk operation" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

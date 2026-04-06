@@ -1,8 +1,9 @@
 import { v2 as cloudinary } from "cloudinary";
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
-import { internalErrorResponse, notFoundResponse, parseRequestBody,unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
-import { auth } from "@/lib/auth/options";
+import { handleApiError } from "@/lib/api/error-handler";
+import { notFoundResponse, parseRequestBody, validationErrorResponse } from "@/lib/api/response";
+import { requireAuth } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
 import logger from "@/lib/logger";
 
@@ -12,16 +13,11 @@ interface CloudinaryConfig {
   apiSecret: string;
 }
 
-export async function GET() {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function GET(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
     const vendor = await prisma.vendor.findUnique({
-      where: { id: session.user.id },
+      where: { id: user.id },
       select: {
         cloudinaryCloudName: true,
         cloudinaryApiKey: true,
@@ -42,19 +38,13 @@ export async function GET() {
       apiKey: vendor.cloudinaryApiKey ? `${vendor.cloudinaryApiKey.substring(0, 4)}...` : null, // Mask the API key
     });
   } catch (error) {
-    logger.error({ err: error }, "Error fetching Cloudinary config");
-    return internalErrorResponse("Failed to fetch Cloudinary configuration");
+    return handleApiError(error);
   }
 }
 
-export async function POST(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function POST(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
     const bodyResult = await parseRequestBody(request);
     if (!bodyResult.ok) return bodyResult.response;
     const { cloudName, apiKey, apiSecret } = bodyResult.data as Partial<CloudinaryConfig>;
@@ -86,7 +76,7 @@ export async function POST(request: Request) {
 
     // Update vendor with Cloudinary credentials
     await prisma.vendor.update({
-      where: { id: session.user.id },
+      where: { id: user.id },
       data: {
         cloudinaryCloudName: cloudName,
         cloudinaryApiKey: apiKey,
@@ -99,22 +89,16 @@ export async function POST(request: Request) {
       hasConfig: true,
     });
   } catch (error) {
-    logger.error({ err: error }, "Error saving Cloudinary config");
-    return internalErrorResponse("Failed to save Cloudinary configuration");
+    return handleApiError(error);
   }
 }
 
-export async function DELETE() {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function DELETE(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
     // Remove Cloudinary credentials from vendor
     await prisma.vendor.update({
-      where: { id: session.user.id },
+      where: { id: user.id },
       data: {
         cloudinaryCloudName: null,
         cloudinaryApiKey: null,
@@ -127,7 +111,6 @@ export async function DELETE() {
       hasConfig: false,
     });
   } catch (error) {
-    logger.error({ err: error }, "Error removing Cloudinary config");
-    return internalErrorResponse("Failed to remove Cloudinary configuration");
+    return handleApiError(error);
   }
 }
