@@ -1,13 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-type AdminMetrics = {
-  clientCount: number;
-  bookingCount: number;
-  activeBookingCount: number;
-  galleryCount: number;
-  deliveredGalleryCount: number;
-  pendingNotificationCount: number;
-};
+import type { AdminMetrics } from "@/types/admin";
 
 async function fetchMetrics(): Promise<AdminMetrics> {
   const response = await fetch("/api/admin/metrics");
