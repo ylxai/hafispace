@@ -1,7 +1,17 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+
+export const metadata: Metadata = {
+  title: {
+    template: "%s | Hafiportrait Admin",
+    default: "Dashboard | Hafiportrait Admin",
+  },
+  description: "Hafiportrait photography platform admin dashboard.",
+  robots: { index: false, follow: false },
+};
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
