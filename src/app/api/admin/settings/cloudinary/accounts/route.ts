@@ -177,7 +177,7 @@ export async function DELETE(request: NextRequest) {
     // Validate UUID format — prevents PostgreSQL error on invalid UUID
     const idParsed = z.string().uuid("Account ID must be a valid UUID").safeParse(id);
     if (!idParsed.success) {
-      return validationErrorResponse("Account ID must be a valid UUID");
+      return validationErrorResponse(idParsed.error.format());
     }
     const validatedId = idParsed.data;
 
