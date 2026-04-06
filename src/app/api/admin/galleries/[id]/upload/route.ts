@@ -84,7 +84,7 @@ export async function POST(
   try {
     const user = await requireAuth(request);
     // Verify that the gallery belongs to the current vendor
-    const gallery = await prisma.gallery.findUnique({
+    const gallery = await prisma.gallery.findFirst({
       where: {
         id: galleryId,
         vendorId: user.id,

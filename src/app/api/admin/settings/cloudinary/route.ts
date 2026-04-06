@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
     });
 
     const defaultAccount = await prisma.vendorCloudinary.findFirst({
-      where: { vendorId: user.id, isDefault: true },
+      where: { vendorId: user.id, isActive: true },
+      orderBy: { isDefault: "desc" },
       select: {
         id: true,
         name: true,
