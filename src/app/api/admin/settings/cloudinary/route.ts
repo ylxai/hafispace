@@ -1,116 +1,67 @@
-import { v2 as cloudinary } from "cloudinary";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { handleApiError } from "@/lib/api/error-handler";
-import { notFoundResponse, parseRequestBody, validationErrorResponse } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
-import logger from "@/lib/logger";
 
-interface CloudinaryConfig {
-  cloudName: string;
-  apiKey: string;
-  apiSecret: string;
-}
+/**
+ * DEPRECATED: These endpoints were for single Cloudinary account per vendor.
+ * Cloudinary credentials have been moved to VendorCloudinary table for multi-account support.
+ * Use /api/admin/settings/cloudinary/accounts instead.
+ */
 
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
-    const vendor = await prisma.vendor.findUnique({
-      where: { id: user.id },
-      select: {
-        cloudinaryCloudName: true,
-        cloudinaryApiKey: true,
-        cloudinaryApiSecret: true,
-      },
+
+    // Check if vendor has any cloudinary accounts (new multi-account system)
+    const accountCount = await prisma.vendorCloudinary.count({
+      where: { vendorId: user.id },
     });
 
-    if (!vendor) {
-      return notFoundResponse("Vendor not found");
-    }
-
-    // Return only public information (not the API secret)
-    const hasCloudinaryConfig = !!(vendor.cloudinaryCloudName && vendor.cloudinaryApiKey);
+    const defaultAccount = await prisma.vendorCloudinary.findFirst({
+      where: { vendorId: user.id, isActive: true },
+      orderBy: { isDefault: "desc" },
+      select: {
+        id: true,
+        name: true,
+        cloudName: true,
+        isActive: true,
+        isDefault: true,
+      },
+    });
 
     return NextResponse.json({
-      hasConfig: hasCloudinaryConfig,
-      cloudName: vendor.cloudinaryCloudName,
-      apiKey: vendor.cloudinaryApiKey ? `${vendor.cloudinaryApiKey.substring(0, 4)}...` : null, // Mask the API key
+      hasConfig: accountCount > 0,
+      accountCount,
+      defaultAccount: defaultAccount ?? null,
+      // Deprecated fields - kept for backward compatibility
+      cloudName: defaultAccount?.cloudName ?? null,
+      apiKey: null, // Never expose API key
+      _deprecated: "Use /api/admin/settings/cloudinary/accounts for full account management",
     });
   } catch (error) {
     return handleApiError(error);
   }
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const user = await requireAuth(request);
-    const bodyResult = await parseRequestBody(request);
-    if (!bodyResult.ok) return bodyResult.response;
-    const { cloudName, apiKey, apiSecret } = bodyResult.data as Partial<CloudinaryConfig>;
-
-    if (!cloudName || !apiKey || !apiSecret) {
-      return validationErrorResponse("Missing required fields: cloudName, apiKey, apiSecret");
-    }
-
-    // Test the Cloudinary connection with the NEW credentials (not from database)
-    let cloudinaryConnected = false;
-    try {
-      // Temporarily configure Cloudinary with the new credentials
-      cloudinary.config({
-        cloud_name: cloudName,
-        api_key: apiKey,
-        api_secret: apiSecret,
-      });
-      
-      const result = await cloudinary.api.ping();
-      cloudinaryConnected = result.status === 'ok';
-    } catch (cloudinaryError) {
-      logger.error({ err: cloudinaryError }, "Cloudinary connection test failed");
-      cloudinaryConnected = false;
-    }
-    
-    if (!cloudinaryConnected) {
-      return validationErrorResponse("Failed to connect to Cloudinary with provided credentials");
-    }
-
-    // Update vendor with Cloudinary credentials
-    await prisma.vendor.update({
-      where: { id: user.id },
-      data: {
-        cloudinaryCloudName: cloudName,
-        cloudinaryApiKey: apiKey,
-        cloudinaryApiSecret: apiSecret,
-      },
-    });
-
-    return NextResponse.json({ 
-      message: "Cloudinary configuration saved successfully",
-      hasConfig: true,
-    });
-  } catch (error) {
-    return handleApiError(error);
-  }
+// POST and DELETE are deprecated - use /accounts endpoint
+export async function POST(_request: NextRequest) {
+  return NextResponse.json(
+    {
+      error: "This endpoint is deprecated. Use POST /api/admin/settings/cloudinary/accounts instead.",
+      code: "DEPRECATED",
+    },
+    { status: 410 } // 410 Gone
+  );
 }
 
-export async function DELETE(request: NextRequest) {
-  try {
-    const user = await requireAuth(request);
-    // Remove Cloudinary credentials from vendor
-    await prisma.vendor.update({
-      where: { id: user.id },
-      data: {
-        cloudinaryCloudName: null,
-        cloudinaryApiKey: null,
-        cloudinaryApiSecret: null,
-      },
-    });
-
-    return NextResponse.json({ 
-      message: "Cloudinary configuration removed successfully",
-      hasConfig: false,
-    });
-  } catch (error) {
-    return handleApiError(error);
-  }
+export async function DELETE(_request: NextRequest) {
+  return NextResponse.json(
+    {
+      error: "This endpoint is deprecated. Use DELETE /api/admin/settings/cloudinary/accounts?id={accountId} instead.",
+      code: "DEPRECATED",
+    },
+    { status: 410 } // 410 Gone
+  );
 }

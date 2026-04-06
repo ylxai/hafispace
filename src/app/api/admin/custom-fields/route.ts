@@ -7,9 +7,9 @@ import { requireAuth } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
 
 const customFieldSchema = z.object({
-  label: z.string().min(1, "Label wajib diisi"),
+  namaField: z.string().min(1, "Nama field wajib diisi"),
   tipe: z.enum(["TEXT", "TEXTAREA", "DATE", "NUMBER", "SELECT"]).default("TEXT"),
-  isRequired: z.boolean().default(false),
+  wajib: z.boolean().default(false),
   options: z.array(z.string()).optional().nullable(),
 });
 
@@ -17,25 +17,23 @@ const customFieldSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth(request);
-  
 
-  const fields = await prisma.customField.findMany({
-    where: { vendorId: user.id },
-    orderBy: { urutan: "asc" },
-    select: {
-      id: true,
-      label: true,
-      namaField: true,
-      tipe: true,
-      isRequired: true,
-      isActive: true,
-      urutan: true,
-      options: true,
-      createdAt: true,
-    },
-  });
+    const fields = await prisma.customField.findMany({
+      where: { vendorId: user.id },
+      orderBy: { urutan: "asc" },
+      select: {
+        id: true,
+        namaField: true,
+        tipe: true,
+        wajib: true,
+        isActive: true,
+        urutan: true,
+        options: true,
+        createdAt: true,
+      },
+    });
 
-  return NextResponse.json({ fields });
+    return NextResponse.json({ fields });
   } catch (error) {
     return handleApiError(error);
   }
@@ -49,7 +47,7 @@ export async function POST(request: NextRequest) {
     const result = await parseAndValidate(request, customFieldSchema);
     if (!result.ok) return result.response;
 
-    const { label, tipe, isRequired, options } = result.data;
+    const { namaField, tipe, wajib, options } = result.data;
 
     // Hitung urutan berikutnya
     const lastField = await prisma.customField.findFirst({
@@ -62,11 +60,9 @@ export async function POST(request: NextRequest) {
     const field = await prisma.customField.create({
       data: {
         vendorId: user.id,
-        label,
-        namaField: label, // sama dengan label
+        namaField,
         tipe,
-        isRequired,
-        wajib: isRequired,
+        wajib,
         isActive: true,
         urutan,
         options: options ?? undefined,
@@ -79,7 +75,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH — update urutan / isActive
+// PATCH — update urutan / isActive / namaField
 export async function PATCH(request: NextRequest) {
   try {
     const user = await requireAuth(request);
@@ -88,7 +84,8 @@ export async function PATCH(request: NextRequest) {
       id: z.string().min(1, "Field ID required"),
       urutan: z.number().optional(),
       isActive: z.boolean().optional(),
-      label: z.string().optional(),
+      namaField: z.string().optional(),
+      wajib: z.boolean().optional(),
     });
     const result = await parseAndValidate(request, patchSchema);
     if (!result.ok) return result.response;
@@ -105,7 +102,8 @@ export async function PATCH(request: NextRequest) {
       data: {
         ...(body.urutan !== undefined && { urutan: body.urutan }),
         ...(body.isActive !== undefined && { isActive: body.isActive }),
-        ...(body.label !== undefined && { label: body.label, namaField: body.label }),
+        ...(body.namaField !== undefined && { namaField: body.namaField }),
+        ...(body.wajib !== undefined && { wajib: body.wajib }),
       },
     });
 
