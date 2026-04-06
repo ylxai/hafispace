@@ -17,9 +17,9 @@ async function createPhotoWithRetry(
     filename: string;
     url: string;
     thumbnailUrl: string;
-    width: number;
-    height: number;
-    size: number;
+    width: number | null;
+    height: number | null;
+    size: number | null;
     mimeType: string;
   },
   attempt = 0
@@ -36,14 +36,16 @@ async function createPhotoWithRetry(
       select: { id: true, storageKey: true, filename: true, url: true, thumbnailUrl: true, width: true, height: true, size: true, mimeType: true },
     });
   } catch (error: unknown) {
-    // Retry on unique constraint violation (P2002) — max 3 attempts
-    if (
+    // Retry hanya untuk urutan conflict (P2002 pada constraint gallery_id_urutan_key)
+    // Jika P2002 pada storageKey, tidak perlu retry (storageKey tidak berubah)
+    const isUrutanConflict =
       typeof error === "object" &&
       error !== null &&
       "code" in error &&
-      (error as { code: string }).code === "P2002" &&
-      attempt < 3
-    ) {
+      (error as { code: string; meta?: { target?: string[] } }).code === "P2002" &&
+      (error as { meta?: { target?: string[] } }).meta?.target?.includes("urutan") === true;
+
+    if (isUrutanConflict && attempt < 3) {
       logger.warn({ galleryId, attempt }, "Retrying photo create due to urutan conflict");
       return createPhotoWithRetry(galleryId, data, attempt + 1);
     }
@@ -96,9 +98,9 @@ export async function POST(
       filename: file.name,
       url: result.secureUrl,
       thumbnailUrl: result.secureUrl,
-      width: result.width ?? 0,
-      height: result.height ?? 0,
-      size: result.size ?? 0,
+      width: result.width ?? null,
+      height: result.height ?? null,
+      size: result.size ?? null,
       mimeType: file.type || `image/${result.format}`,
     });
 
@@ -149,30 +151,49 @@ export async function PUT(
     );
 
     if (newPhotos.length > 0) {
-      // Atomic transaction untuk hindari race condition urutan saat sync concurrent
-      await prisma.$transaction(async (tx) => {
-        const maxUrutan = await tx.photo.aggregate({
-          where: { galleryId: gallery.id },
-          _max: { urutan: true },
-        });
-        let nextUrutan = (maxUrutan._max.urutan ?? -1) + 1;
+      // Retry mechanism untuk race condition urutan saat sync concurrent
+      let retryCount = 0;
+      const maxRetries = 3;
+      while (retryCount <= maxRetries) {
+        try {
+          const maxUrutan = await prisma.photo.aggregate({
+            where: { galleryId: gallery.id },
+            _max: { urutan: true },
+          });
+          let nextUrutan = (maxUrutan._max.urutan ?? -1) + 1;
 
-        await tx.photo.createMany({
-          data: newPhotos.map((p) => ({
-            galleryId: gallery.id,
-            storageKey: p.publicId,
-            filename: p.originalFilename,
-            url: p.secureUrl,
-            thumbnailUrl: p.secureUrl,
-            width: p.width,
-            height: p.height,
-            size: p.size,
-            mimeType: `image/${p.format}`,
-            urutan: nextUrutan++,
-          })),
-          skipDuplicates: true,
-        });
-      });
+          await prisma.photo.createMany({
+            data: newPhotos.map((p) => ({
+              galleryId: gallery.id,
+              storageKey: p.publicId,
+              filename: p.originalFilename,
+              url: p.secureUrl,
+              thumbnailUrl: p.secureUrl,
+              width: p.width ?? null,
+              height: p.height ?? null,
+              size: p.size ?? null,
+              mimeType: `image/${p.format}`,
+              urutan: nextUrutan++,
+            })),
+            skipDuplicates: true,
+          });
+          break; // success — keluar dari loop
+        } catch (error: unknown) {
+          const isUrutanConflict =
+            typeof error === "object" &&
+            error !== null &&
+            "code" in error &&
+            (error as { code: string; meta?: { target?: string[] } }).code === "P2002" &&
+            (error as { meta?: { target?: string[] } }).meta?.target?.includes("urutan") === true;
+
+          if (isUrutanConflict && retryCount < maxRetries) {
+            retryCount++;
+            logger.warn({ galleryId, retryCount }, "Retrying photo sync due to urutan conflict");
+            continue;
+          }
+          throw error;
+        }
+      }
     }
 
     // Get updated photo count
