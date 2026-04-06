@@ -77,8 +77,11 @@ export async function sendBookingConfirmationEmail({
     const safeKode = escapeHtml(kodeBooking);
     const safeRekening = rekeningPembayaran ? escapeHtmlBody(rekeningPembayaran) : null; // escapeHtmlBody: preserve newline untuk format <pre>
 
-    // Sanitize invoiceUrl — case-insensitive https check + escape untuk prevent attribute injection
-    const safeInvoiceUrl = escapeHtml(/^https:\/\//i.test(invoiceUrl) ? invoiceUrl : "#");
+    // Sanitize invoiceUrl — izinkan https:// di production, http:// di development (localhost)
+    // case-insensitive check + escapeHtml untuk prevent HTML attribute injection
+    const isValidUrl = /^https:\/\//i.test(invoiceUrl) ||
+      (process.env.NODE_ENV === "development" && /^http:\/\//i.test(invoiceUrl));
+    const safeInvoiceUrl = escapeHtml(isValidUrl ? invoiceUrl : "#");
 
     await getResend().emails.send({
       from: `${safeStudio} <onboarding@resend.dev>`,
