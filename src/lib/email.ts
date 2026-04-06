@@ -6,12 +6,23 @@ import logger from '@/lib/logger';
 import { formatRupiah } from './format';
 
 /**
- * Escape HTML special characters — untuk header email fields (From, Subject, dll)
- * Menghapus newline untuk prevent email header injection
+ * Sanitize string untuk email header fields (From, Subject, dll).
+ * Email headers diproses sebagai plain text — hanya strip newline untuk
+ * prevent email header injection. JANGAN gunakan HTML escape di sini
+ * karena &amp; akan tampil literal di inbox penerima.
+ */
+function sanitizeEmailHeader(str: string): string {
+  return str.replace(/[\r\n\t]/g, ' ').trim();
+}
+
+/**
+ * Escape HTML special characters untuk body email (dalam <h2>, <p>, <strong>, dll).
+ * Menghapus newline karena body HTML tidak memerlukan literal newline
+ * (gunakan escapeHtmlBody() untuk konten dalam <pre>).
  */
 function escapeHtml(str: string): string {
   return str
-    .replace(/[\r\n]/g, '') // prevent email header injection
+    .replace(/[\r\n]/g, '') // strip newline di body HTML biasa
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -20,8 +31,8 @@ function escapeHtml(str: string): string {
 }
 
 /**
- * Escape HTML special characters — untuk body email (dalam <pre>, <div>, dll)
- * Mempertahankan newline agar format teks terjaga di dalam tag <pre>
+ * Escape HTML special characters untuk body email dengan format teks (dalam <pre>).
+ * Mempertahankan newline agar format multi-line terjaga (rekening bank, dll).
  */
 function escapeHtmlBody(str: string): string {
   return str
@@ -71,6 +82,11 @@ export async function sendBookingConfirmationEmail({
 
   try {
     const formatDate = (s: string) => new Date(s).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    // Header fields — sanitizeEmailHeader (strip newline only, no HTML escape)
+    const safeStudioHeader = sanitizeEmailHeader(namaStudio);
+    const safeKodeHeader = sanitizeEmailHeader(kodeBooking);
+
+    // Body HTML fields — escapeHtml (full HTML escape untuk XSS prevention)
     const safeClient = escapeHtml(namaClient);
     const safeStudio = escapeHtml(namaStudio);
     const safePaket = escapeHtml(namaPaket);
@@ -84,9 +100,9 @@ export async function sendBookingConfirmationEmail({
     const safeInvoiceUrl = escapeHtml(isValidUrl ? invoiceUrl : "#");
 
     await getResend().emails.send({
-      from: `${safeStudio} <onboarding@resend.dev>`,
+      from: `${safeStudioHeader} <onboarding@resend.dev>`,
       to,
-      subject: `Konfirmasi Booking ${safeKode} - ${safeStudio}`,
+      subject: `Konfirmasi Booking ${safeKodeHeader} - ${safeStudioHeader}`,
       html: `
         <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
           <h2 style="color: #0f172a;">Terima kasih, ${safeClient}! 🎉</h2>

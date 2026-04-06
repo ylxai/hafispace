@@ -66,12 +66,9 @@ export interface PrintItem {
   jumlah: number;   // Quantity
 }
 
-// Lowercase matches actual DB values and Zod schema in validation.ts
-export type PackageStatus = "active" | "inactive";
-
-// PackageKategori — alias dari PackageCategory di types/package.ts (single source of truth)
-// Nilai canonical: "PREWED" | "WEDDING" | "PERSONAL" | "EVENT" | "LAINNYA"
-import type { PackageCategory } from "@/types/package";
+// Package types — single source of truth ada di src/types/package.ts
+import type { PackageCategory, PackageStatus } from "@/types/package";
+export type { PackageStatus };
 export type PackageKategori = PackageCategory;
 
 export type AdminPackage = {

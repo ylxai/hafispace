@@ -9,3 +9,6 @@
  */
 
 export type PackageCategory = "PREWED" | "WEDDING" | "PERSONAL" | "EVENT" | "LAINNYA";
+
+// PackageStatus canonical values — lowercase matches actual DB values
+export type PackageStatus = "active" | "inactive";
