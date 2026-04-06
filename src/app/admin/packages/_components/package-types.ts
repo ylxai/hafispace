@@ -5,9 +5,9 @@
  * PackageCategory canonical definition ada di src/types/package.ts
  */
 
-import type { PackageCategory } from "@/types/package";
+import type { PackageCategory, PackageStatus } from "@/types/package";
 
-export type { PackageCategory };
+export type { PackageCategory, PackageStatus };
 
 export interface IncludeCetak {
   id?: string; // ID unik untuk key React — digenerate via crypto.randomUUID()
