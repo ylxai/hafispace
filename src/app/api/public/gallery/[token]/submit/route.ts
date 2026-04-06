@@ -1,7 +1,9 @@
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { ABLY_CHANNEL_SELECTION,getAblyRest } from "@/lib/ably";
+import { forbiddenResponse, notFoundResponse, validationErrorResponse } from "@/lib/api/response";
 import { DEFAULT_MAX_SELECTION, MAX_GLOBAL_SELECTION_LIMIT } from "@/lib/constants";
 import { RATE_LIMIT_SUBMIT_PER_MINUTE } from "@/lib/constants.server";
 import { prisma } from "@/lib/db";
@@ -16,7 +18,7 @@ const submitSchema = z.object({
 });
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
@@ -36,10 +38,7 @@ export async function POST(
     const parsed = submitSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { code: "VALIDATION_ERROR", message: "Invalid request", details: parsed.error.format() },
-        { status: 400 }
-      );
+      return validationErrorResponse(parsed.error.format());
     }
 
     const { photoIds } = parsed.data;
@@ -56,11 +55,11 @@ export async function POST(
     });
 
     if (!gallery) {
-      return NextResponse.json({ code: "NOT_FOUND", message: "Gallery not found" }, { status: 404 });
+      return notFoundResponse("Gallery not found");
     }
 
     if (gallery.status === "DRAFT") {
-      return NextResponse.json({ code: "FORBIDDEN", message: "Gallery is not published" }, { status: 403 });
+      return forbiddenResponse("Gallery is not published");
     }
 
     const maxSelection = gallery.booking?.maxSelection ?? DEFAULT_MAX_SELECTION;

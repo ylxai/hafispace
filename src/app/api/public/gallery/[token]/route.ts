@@ -1,9 +1,11 @@
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import { handleApiError } from "@/lib/api/error-handler";
 import { DEFAULT_MAX_SELECTION, GALLERY_VIEW_COOKIE_TTL_SECONDS } from "@/lib/constants";
-import { FINGERPRINT_TTL_SECONDS, GALLERY_MAX_PHOTOS } from "@/lib/constants.server";
+import { FINGERPRINT_TTL_SECONDS, GALLERY_MAX_PHOTOS, RATE_LIMIT_GALLERY_VIEW_PER_MINUTE } from "@/lib/constants.server";
 import { prisma } from "@/lib/db";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { redis } from "@/lib/redis";
 
 const PHOTOS_PER_PAGE = 50;
@@ -44,11 +46,24 @@ async function isAlreadyViewed(fingerprintHash: string): Promise<boolean> {
 }
 
 export async function GET(
-  _request: Request,
+  _request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
     const { token } = await params;
+
+    // Rate limit: lenient (120 req/min = 2 req/sec) - allows normal gallery browsing
+    const clientIp = getClientIp(_request);
+    const rl = await checkRateLimit(`gallery-view:${clientIp}`, {
+      limit: RATE_LIMIT_GALLERY_VIEW_PER_MINUTE,
+      windowMs: 60_000,
+    });
+    if (!rl.success) {
+      return NextResponse.json(
+        { code: "RATE_LIMITED", message: "Too many requests. Please slow down." },
+        { status: 429 }
+      );
+    }
 
   // Parse pagination params
   const url = new URL(_request.url);

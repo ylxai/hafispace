@@ -2,17 +2,9 @@
 import { useEffect,useState } from "react";
 
 import { useToast } from "@/components/ui/toast";
+import type { VendorCloudinaryAccount } from "@/types/cloudinary";
 
-type CloudinaryAccount = {
-  id: string;
-  name: string;
-  cloudName: string;
-  apiKey: string | null;
-  isActive: boolean;
-  isDefault: boolean;
-  storageUsed: number;
-  createdAt: string;
-};
+type CloudinaryAccount = VendorCloudinaryAccount;
 
 export function CloudinaryAccountsPanel({ embedded = false }: { embedded?: boolean } = {}) {
   const [accounts, setAccounts] = useState<CloudinaryAccount[]>([]);

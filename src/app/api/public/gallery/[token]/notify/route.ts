@@ -1,7 +1,9 @@
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { internalErrorResponse,notFoundResponse, validationErrorResponse } from "@/lib/api/response";
+import { handleApiError } from "@/lib/api/error-handler";
+import { notFoundResponse, validationErrorResponse } from "@/lib/api/response";
 import { RATE_LIMIT_NOTIFY_PER_HOUR } from "@/lib/constants.server";
 import { prisma } from "@/lib/db";
 import logger from "@/lib/logger";
@@ -14,7 +16,7 @@ const notifySchema = z.object({
 });
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
@@ -71,6 +73,6 @@ export async function POST(
     return validationErrorResponse("Invalid notification type");
   } catch (error) {
     logger.error({ err: error }, "Error sending notification");
-    return internalErrorResponse("Failed to send notification");
+    return handleApiError(error);
   }
 }

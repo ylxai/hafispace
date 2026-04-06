@@ -58,6 +58,8 @@ export const env = {
   RATE_LIMIT_NOTIFY_PER_HOUR: optionalEnvInt("RATE_LIMIT_NOTIFY_PER_HOUR", 20),
   RATE_LIMIT_BOOKING_PER_HOUR: optionalEnvInt("RATE_LIMIT_BOOKING_PER_HOUR", 20),
   RATE_LIMIT_SUBMIT_PER_MINUTE: optionalEnvInt("RATE_LIMIT_SUBMIT_PER_MINUTE", 10),
+  RATE_LIMIT_GALLERY_VIEW_PER_MINUTE: optionalEnvInt("RATE_LIMIT_GALLERY_VIEW_PER_MINUTE", 120), // Lenient: 2 req/sec for dev
+  RATE_LIMIT_GALLERY_COUNT_PER_MINUTE: optionalEnvInt("RATE_LIMIT_GALLERY_COUNT_PER_MINUTE", 300), // Very lenient: 5 req/sec
 
   // Security
   BCRYPT_COST_FACTOR: optionalEnvInt("BCRYPT_COST_FACTOR", process.env.NODE_ENV === "production" ? 12 : 8),

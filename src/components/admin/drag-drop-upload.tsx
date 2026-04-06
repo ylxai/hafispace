@@ -9,13 +9,9 @@ import { useToast } from "@/components/ui/toast";
 import { createUploadFunction, useResumableUpload } from "@/hooks/use-resumable-upload";
 import { getCompressionSummary, optimizeMultipleImages } from "@/lib/image-compression";
 import { createFileId } from "@/lib/upload-types";
+import type { CloudinaryAccountOption } from "@/types/cloudinary";
 
-interface CloudinaryAccount {
-  id: string;
-  name: string;
-  cloudName: string;
-  isDefault: boolean;
-}
+type CloudinaryAccount = CloudinaryAccountOption;
 
 interface UploadProgress {
   file: File;
