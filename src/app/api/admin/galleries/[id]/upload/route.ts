@@ -301,14 +301,14 @@ export async function POST(
           const match = dbError.message.match(/Current (\d+) \+ (\d+) exceeds limit (\d+)/);
           const [, current, requested, limit] = match ?? [];
           
-         // Rollback Cloudinary uploads
+          // Rollback Cloudinary uploads
           await Promise.allSettled(
             successfulUploads
               .filter(r => r.data?.publicId)
               .map(r => deletePhotoFromCloudinary(user.id, r.data?.publicId ?? ""))
           );
-           
-           return NextResponse.json(
+
+          return NextResponse.json(
             {
               code: "QUOTA_EXCEEDED",
               message: `Gallery quota exceeded. Current: ${current}, Limit: ${limit}. Cannot upload ${requested} more photos.`,
