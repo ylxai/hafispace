@@ -236,6 +236,7 @@ model Photo {
   gallery      Gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
 
   @@unique([galleryId, storageKey])
+  @@unique([galleryId, urutan])    // Untuk retry P2002 mechanism di createPhotoWithRetry
   @@index([galleryId, urutan])
   // @@index([storageKey]) — dihapus: redundant karena sudah ada @@unique([galleryId, storageKey])
   @@index([filename])    // Index untuk search/filter

@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { handleApiError } from "@/lib/api/error-handler";
+import { BusinessError, handleApiError } from "@/lib/api/error-handler";
 import { notFoundResponse, parseAndValidate, validationErrorResponse } from "@/lib/api/response";
 import { requireAuth } from "@/lib/auth/context";
 import { testCloudinaryConnectionWithCredentials } from "@/lib/cloudinary";
@@ -196,10 +196,11 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (accountCount <= 1) {
-      return NextResponse.json({
-        code: "CONFLICT",
-        error: "Cannot delete the only account. Add another account first.",
-      }, { status: 400 });
+      throw new BusinessError(
+        "Cannot delete the only account. Add another account first.",
+        "CONFLICT",
+        409
+      );
     }
 
     await prisma.vendorCloudinary.delete({

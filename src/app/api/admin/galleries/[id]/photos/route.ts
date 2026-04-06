@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { handleApiError } from "@/lib/api/error-handler";
@@ -75,7 +76,7 @@ export async function GET(
     const items = hasNextPage ? photos.slice(0, limit) : photos;
     const nextCursor = hasNextPage ? (items[items.length - 1]?.id ?? null) : null;
 
-    return Response.json({
+    return NextResponse.json({
       code: "OK",
       message: "Photos retrieved successfully",
       photos: items,
