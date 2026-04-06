@@ -147,6 +147,7 @@ describe("handleApiError", () => {
 
       expect(status).toBe(500);
       expect(body.code).toBe("INTERNAL_ERROR");
+      expect(body.message).toBe("Internal server error");
     });
 
     it("should return 500 for null", async () => {

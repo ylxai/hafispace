@@ -6,54 +6,16 @@
  * - escapeHtml: full HTML escape + newline → space untuk body HTML
  * - escapeHtmlBody: full HTML escape, preserve newline untuk <pre> content
  * - isValidInvoiceUrl: new URL() validation dengan protocol check
- *
- * Note: Functions ini private di email.ts, jadi kita test behavior via exported functions
- * atau dengan cara extract logic ke utility file yang testable.
- *
- * Untuk sekarang, kita test logic secara isolated dengan mengimport utils yang sama.
  */
 
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-// ============================================================
-// Inline implementations untuk test (mirror dari email.ts)
-// Ketika functions ini di-export dari email.ts, update imports ini
-// ============================================================
-
-function sanitizeEmailHeader(str: string): string {
-  return str.replace(/[\r\n\t<>]+/g, ' ').trim();
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/[\r\n]+/g, ' ')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-function escapeHtmlBody(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-function isValidInvoiceUrl(invoiceUrl: string, isDev = false): boolean {
-  try {
-    if (/[\r\n]/.test(invoiceUrl)) return false;
-    const url = new URL(invoiceUrl);
-    return url.protocol === "https:" || (isDev && url.protocol === "http:");
-  } catch {
-    return false;
-  }
-}
-
-// ============================================================
+import {
+  escapeHtml,
+  escapeHtmlBody,
+  isValidInvoiceUrl,
+  sanitizeEmailHeader,
+} from "@/lib/email";
 
 describe("sanitizeEmailHeader", () => {
   it("should pass through clean strings unchanged", () => {
@@ -62,13 +24,13 @@ describe("sanitizeEmailHeader", () => {
   });
 
   it("should strip newline characters (prevent header injection)", () => {
-    expect(sanitizeEmailHeader("Subject\r\nBcc: attacker@evil.com")).not.toContain("\r\n");
-    expect(sanitizeEmailHeader("Name\nInjected: header")).not.toContain("\n");
-    expect(sanitizeEmailHeader("Name\rInjected")).not.toContain("\r");
+    expect(sanitizeEmailHeader("Subject\r\nBcc: attacker@evil.com")).toBe("Subject Bcc: attacker@evil.com");
+    expect(sanitizeEmailHeader("Name\nInjected: header")).toBe("Name Injected: header");
+    expect(sanitizeEmailHeader("Name\rInjected")).toBe("Name Injected");
   });
 
   it("should strip tab characters", () => {
-    expect(sanitizeEmailHeader("Name\tTabbed")).not.toContain("\t");
+    expect(sanitizeEmailHeader("Name\tTabbed")).toBe("Name Tabbed");
   });
 
   it("should strip < and > to prevent header structure manipulation", () => {
@@ -91,7 +53,7 @@ describe("sanitizeEmailHeader", () => {
 
   it("should replace consecutive special chars with single space", () => {
     const result = sanitizeEmailHeader("Name\r\n\r\nInjected");
-    expect(result).not.toMatch(/\r|\n|\t/);
+    expect(result).toBe("Name Injected");
   });
 });
 
@@ -113,57 +75,58 @@ describe("escapeHtml", () => {
   });
 
   it("should escape ' to &#039;", () => {
-    expect(escapeHtml("it's")).toBe("it&#039;s");
+    expect(escapeHtml("it's fine")).toBe("it&#039;s fine");
   });
 
   it("should replace newlines with space (not remove)", () => {
-    const result = escapeHtml("line1\nline2");
-    expect(result).toBe("line1 line2");
-    expect(result).not.toContain("\n");
+    expect(escapeHtml("line1\nline2")).toBe("line1 line2");
+    expect(escapeHtml("line1\r\nline2")).toBe("line1 line2");
   });
 
   it("should collapse multiple consecutive newlines to single space", () => {
-    // [\r\n]+ with + quantifier — all consecutive newlines become ONE space
-    const result = escapeHtml("line1\r\n\r\nline3");
-    expect(result).toBe("line1 line3"); // \r\n\r\n → one space (+ quantifier)
+    expect(escapeHtml("line1\n\n\nline2")).toBe("line1 line2");
   });
 
   it("should escape HTML tags to prevent XSS (< > become entities)", () => {
-    const xss = '<img src="x" onerror="alert(1)">';
-    const result = escapeHtml(xss);
-    // < and > are escaped to &lt; and &gt;, making HTML non-executable
-    expect(result).not.toContain("<img");
+    const input = '<img src="x" onerror="alert(1)">';
+    const result = escapeHtml(input);
     expect(result).not.toContain("<");
     expect(result).not.toContain(">");
-    // onerror attribute still present as text but is harmless (tags escaped)
-    expect(result).toContain("&lt;img");
+    expect(result).toContain("&lt;");
     expect(result).toContain("&gt;");
   });
 });
 
 describe("escapeHtmlBody", () => {
   it("should escape HTML special characters", () => {
-    expect(escapeHtmlBody("Hafi & Co")).toBe("Hafi &amp; Co");
-    expect(escapeHtmlBody("<script>")).toBe("&lt;script&gt;");
+    expect(escapeHtmlBody("<b>Bold</b>")).toBe("&lt;b&gt;Bold&lt;/b&gt;");
+    expect(escapeHtmlBody("a & b")).toBe("a &amp; b");
   });
 
   it("should PRESERVE newlines (unlike escapeHtml)", () => {
-    const input = "BCA\n1234567890\nHafi Studio";
-    const result = escapeHtmlBody(input);
-    expect(result).toContain("\n");
-    expect(result).toBe("BCA\n1234567890\nHafi Studio");
+    expect(escapeHtmlBody("line1\nline2")).toBe("line1\nline2");
+    expect(escapeHtmlBody("line1\r\nline2")).toBe("line1\r\nline2");
   });
 
   it("should preserve multi-line rekening bank format", () => {
-    const rekening = "Bank BCA\nNo: 1234567890\nA/N: Hafi Studio";
+    const rekening = "BCA: 1234567890\nBNI: 9876543210";
     const result = escapeHtmlBody(rekening);
-    // Newlines preserved for <pre> tag formatting
-    expect(result.split("\n")).toHaveLength(3);
+    expect(result).toBe("BCA: 1234567890\nBNI: 9876543210");
   });
 });
 
 describe("isValidInvoiceUrl", () => {
   describe("production mode (https only)", () => {
+    const OLD_ENV = process.env.NODE_ENV;
+
+    beforeEach(() => {
+      process.env.NODE_ENV = "production";
+    });
+
+    afterEach(() => {
+      process.env.NODE_ENV = OLD_ENV;
+    });
+
     it("should accept valid https URL", () => {
       expect(isValidInvoiceUrl("https://hafiportrait.com/invoice/123")).toBe(true);
     });
@@ -202,20 +165,30 @@ describe("isValidInvoiceUrl", () => {
   });
 
   describe("development mode (http allowed)", () => {
+    const OLD_ENV = process.env.NODE_ENV;
+
+    beforeEach(() => {
+      process.env.NODE_ENV = "development";
+    });
+
+    afterEach(() => {
+      process.env.NODE_ENV = OLD_ENV;
+    });
+
     it("should accept http://localhost in dev mode", () => {
-      expect(isValidInvoiceUrl("http://localhost:3000/invoice/123", true)).toBe(true);
+      expect(isValidInvoiceUrl("http://localhost:3000/invoice/123")).toBe(true);
     });
 
     it("should accept https in dev mode too", () => {
-      expect(isValidInvoiceUrl("https://hafiportrait.com/invoice/123", true)).toBe(true);
+      expect(isValidInvoiceUrl("https://hafiportrait.com/invoice/123")).toBe(true);
     });
 
     it("should still reject javascript: in dev mode", () => {
-      expect(isValidInvoiceUrl("javascript:alert(1)", true)).toBe(false);
+      expect(isValidInvoiceUrl("javascript:alert(1)")).toBe(false);
     });
 
     it("should still reject newlines in dev mode", () => {
-      expect(isValidInvoiceUrl("http://localhost\r\nBcc: evil", true)).toBe(false);
+      expect(isValidInvoiceUrl("http://localhost\r\nBcc: evil")).toBe(false);
     });
   });
 });

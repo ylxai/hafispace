@@ -11,7 +11,7 @@ import { formatRupiah } from './format';
  * prevent email header injection. JANGAN gunakan HTML escape di sini
  * karena &amp; akan tampil literal di inbox penerima.
  */
-function sanitizeEmailHeader(str: string): string {
+export function sanitizeEmailHeader(str: string): string {
   // Strip newline (header injection), tab, dan < > (prevent header structure manipulation)
   return str.replace(/[\r\n\t<>]+/g, ' ').trim();
 }
@@ -21,7 +21,7 @@ function sanitizeEmailHeader(str: string): string {
  * Menghapus newline karena body HTML tidak memerlukan literal newline
  * (gunakan escapeHtmlBody() untuk konten dalam <pre>).
  */
-function escapeHtml(str: string): string {
+export function escapeHtml(str: string): string {
   return str
     .replace(/[\r\n]+/g, ' ') // replace newline dengan space di body HTML biasa (lebih safe dari hapus)
     .replace(/&/g, '&amp;')
@@ -35,13 +35,28 @@ function escapeHtml(str: string): string {
  * Escape HTML special characters untuk body email dengan format teks (dalam <pre>).
  * Mempertahankan newline agar format multi-line terjaga (rekening bank, dll).
  */
-function escapeHtmlBody(str: string): string {
+export function escapeHtmlBody(str: string): string {
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+/**
+ * Validate invoice URL untuk prevent email header injection via URL.
+ * Hanya menerima https:// di production, http:// di development (localhost).
+ */
+export function isValidInvoiceUrl(invoiceUrl: string): boolean {
+  try {
+    if (/[\r\n]/.test(invoiceUrl)) return false;
+    const url = new URL(invoiceUrl);
+    return url.protocol === "https:" ||
+      (process.env.NODE_ENV === "development" && url.protocol === "http:");
+  } catch (_err) {
+    return false;
+  }
 }
 
 let resend: Resend | null = null;
@@ -97,16 +112,7 @@ export async function sendBookingConfirmationEmail({
     // Sanitize invoiceUrl — gunakan new URL() untuk validasi robust
     // Cek newline untuk prevent email header injection via URL
     // https:// di production, http:// di development (localhost)
-    const isValidUrl = (() => {
-      try {
-        if (/[\r\n]/.test(invoiceUrl)) return false;
-        const url = new URL(invoiceUrl);
-        return url.protocol === "https:" ||
-          (process.env.NODE_ENV === "development" && url.protocol === "http:");
-      } catch (_err) {
-        return false;
-      }
-    })();
+    const isValidUrl = isValidInvoiceUrl(invoiceUrl);
     const safeInvoiceUrl = escapeHtml(isValidUrl ? invoiceUrl : "#");
 
     await getResend().emails.send({
