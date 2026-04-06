@@ -87,16 +87,13 @@ export async function POST(
     const gallery = await prisma.gallery.findUnique({
       where: {
         id: galleryId,
-          vendorId: user.id,
+        vendorId: user.id,
       },
-      include: {
-        vendor: {
-          select: {
-            cloudinaryCloudName: true,
-            cloudinaryApiKey: true,
-            cloudinaryApiSecret: true,
-          },
-        },
+      select: {
+        id: true,
+        vendorId: true,
+        cloudinaryFolderId: true,
+        storageProvider: true,
       },
     });
 

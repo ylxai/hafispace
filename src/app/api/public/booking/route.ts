@@ -62,9 +62,9 @@ export async function GET(request: NextRequest) {
         orderBy: { urutan: "asc" },
         select: {
           id: true,
-          label: true,
+          namaField: true,
           tipe: true,
-          isRequired: true,
+          wajib: true,
           urutan: true,
         },
       },
