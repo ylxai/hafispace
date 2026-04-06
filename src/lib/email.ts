@@ -12,7 +12,7 @@ import { formatRupiah } from './format';
  * karena &amp; akan tampil literal di inbox penerima.
  */
 function sanitizeEmailHeader(str: string): string {
-  return str.replace(/[\r\n\t]/g, ' ').trim();
+  return str.replace(/[\r\n\t]+/g, ' ').trim();
 }
 
 /**
