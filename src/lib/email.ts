@@ -22,7 +22,7 @@ function sanitizeEmailHeader(str: string): string {
  */
 function escapeHtml(str: string): string {
   return str
-    .replace(/[\r\n]/g, '') // strip newline di body HTML biasa
+    .replace(/[\r\n]+/g, ' ') // replace newline dengan space di body HTML biasa (lebih safe dari hapus)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
