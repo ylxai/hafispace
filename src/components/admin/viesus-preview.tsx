@@ -26,8 +26,8 @@ export default function ViesusPreview({ imageUrl, publicId, vendorId }: ViesusPr
         
         const viesusUrl = `https://res.cloudinary.com/${cloudName}/image/upload/e_viesus_correct,q_auto/${publicId}`;
         setViesusImageUrl(viesusUrl);
-      } catch (err) {
-        console.error('Error fetching VIESUS-enhanced image:', err);
+      } catch {
+        // VIESUS error — setError state sudah diset di bawah untuk UI feedback
         setError('Failed to load VIESUS-enhanced image');
       } finally {
         setLoading(false);

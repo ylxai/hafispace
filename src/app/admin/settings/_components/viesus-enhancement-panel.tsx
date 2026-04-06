@@ -21,9 +21,9 @@ export function ViesusEnhancementPanel({ embedded = false }: { embedded?: boolea
         const data = await res.json();
         setEnableViesus(data.enableViesusEnhancement ?? false);
       }
-    } catch (err) {
+    } catch {
       setError("Failed to load VIESUS configuration");
-      console.error(err);
+      // Error sudah ditampilkan via setError state
     } finally {
       setLoading(false);
     }
@@ -59,9 +59,9 @@ export function ViesusEnhancementPanel({ embedded = false }: { embedded?: boolea
       setEnableViesus(!enableViesus); // Toggle the state after successful save
       setSaved(true);
       setTimeout(() => setSaved(false), SAVED_FEEDBACK_DURATION_MS);
-    } catch (err) {
+    } catch {
       setError("Failed to save VIESUS enhancement settings");
-      console.error(err);
+      // Error sudah ditampilkan via setError state
     } finally {
       setIsSaving(false);
     }

@@ -40,8 +40,8 @@ export function CloudinaryAccountsPanel({ embedded = false }: { embedded?: boole
         const data = await res.json();
         setAccounts(data.accounts ?? []);
       }
-    } catch (error) {
-      console.error("Failed to fetch accounts:", error);
+    } catch {
+      // Fetch error — UI menampilkan empty state secara otomatis
     } finally {
       setIsLoading(false);
     }

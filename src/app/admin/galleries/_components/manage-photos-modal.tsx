@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect,useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 import { GalleryPhotosList } from "@/components/admin/gallery-photos-list";
 import { useToast } from "@/components/ui/toast";
@@ -12,43 +13,35 @@ type ManagePhotosModalProps = {
   onClose: () => void;
 };
 
+async function fetchGalleryPhotos(galleryId: string): Promise<Photo[]> {
+  const res = await fetch(`/api/admin/galleries/${galleryId}/photos`);
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.message ?? "Failed to load photos");
+  return result.photos ?? [];
+}
+
 export function ManagePhotosModal({ galleryId, onClose }: ManagePhotosModalProps) {
-  const [photos, setPhotos] = useState<Photo[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const toast = useToast();
+  const queryClient = useQueryClient();
 
-  // Extract fetchPhotos function so it can be reused in callback
-  const fetchPhotos = async () => {
-    try {
-      setIsLoading(true);
-      const res = await fetch(
-        `/api/admin/galleries/${galleryId}/photos`,
-        { method: "GET" }
-      );
+  const { data: photos = [], isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["gallery-photos", galleryId],
+    queryFn: () => fetchGalleryPhotos(galleryId),
+    staleTime: 0,              // Always fetch fresh saat modal dibuka
+    gcTime: 5 * 60 * 1000,    // Cache 5 menit — transisi UI lebih smooth jika modal dibuka ulang
+  });
 
-      const result = await res.json();
-
-      if (!res.ok) {
-        setError(result.message ?? "Failed to load photos");
-        toast.error(result.message ?? "Failed to load photos");
-        return;
-      }
-
-      setPhotos(result.photos ?? []);
-      setError(null);
-    } catch (err) {
-      console.error("Fetch photos error:", err);
-      setError("Failed to load photos");
-      toast.error("Failed to load photos");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Show toast saat error — di dalam useEffect agar tidak trigger di render phase
   useEffect(() => {
-    fetchPhotos();
-  }, [galleryId, toast]);
+    if (isError && error instanceof Error) {
+      toast.error(error.message);
+    }
+  }, [isError, error, toast]);
+
+  const handlePhotosChanged = () => {
+    void queryClient.invalidateQueries({ queryKey: ["gallery-photos", galleryId] });
+    void queryClient.invalidateQueries({ queryKey: ["admin-galleries"] });
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -74,22 +67,33 @@ export function ManagePhotosModal({ galleryId, onClose }: ManagePhotosModalProps
               <p className="text-sm text-slate-600">Loading photos...</p>
             </div>
           </div>
-        ) : error ? (
+        ) : isError ? (
           <div className="rounded-xl bg-red-50 p-4 text-center">
-            <p className="text-sm text-red-800">{error}</p>
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-4 rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600"
-            >
-              Close
-            </button>
+            <p className="text-sm text-red-800">
+              {error instanceof Error ? error.message : "Failed to load photos"}
+            </p>
+            <div className="mt-4 flex justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => void refetch()}
+                className="rounded-full bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600"
+              >
+                Retry
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600"
+              >
+                Close
+              </button>
+            </div>
           </div>
         ) : (
           <GalleryPhotosList
             galleryId={galleryId}
             photos={photos}
-            onPhotosChanged={fetchPhotos}
+            onPhotosChanged={handlePhotosChanged}
           />
         )}
       </div>

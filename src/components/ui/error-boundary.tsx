@@ -22,9 +22,10 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, message: error.message };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  componentDidCatch(_error: Error, _errorInfo: ErrorInfo) {
     // TODO: Once a logging library is chosen, integrate it here.
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    // ErrorBoundary: error sudah di-capture oleh React untuk display di UI
+    // Di production, ini bisa di-report ke Sentry via Sentry.captureException(error)
   }
 
   render() {

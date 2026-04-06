@@ -205,13 +205,7 @@ function AdminEventsContent() {
             `Cannot delete ${result.bookingsWithGalleries.length} booking(s) with galleries. Delete galleries first.`,
           );
           // Show specific bookings that can't be deleted
-          result.bookingsWithGalleries.forEach(
-            (b: { namaClient: string; galleryCount: number }) => {
-              console.warn(
-                `Booking "${b.namaClient}" has ${b.galleryCount} gallery(ies)`,
-              );
-            },
-          );
+          // Booking has galleries — UI sudah menampilkan warning ke user via toast di atas
         } else {
           toast.error(result.message ?? "Failed to delete bookings");
         }

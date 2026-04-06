@@ -80,9 +80,7 @@ function AdminGalleriesContent() {
         if (result.code === "HAS_PHOTOS") {
           toast.error(`Cannot delete ${result.galleriesWithPhotos.length} gallery(ies) with photos. Delete photos first.`);
           // Show specific galleries that can't be deleted
-          result.galleriesWithPhotos.forEach((g: { namaProject: string; photoCount: number }) => {
-            console.warn(`Gallery "${g.namaProject}" has ${g.photoCount} photo(s)`);
-          });
+          // Gallery has photos — UI sudah menampilkan warning ke user via toast di atas
         } else {
           toast.error(result.message ?? "Failed to delete galleries");
         }

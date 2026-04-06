@@ -307,8 +307,8 @@ export async function POST(
               .filter(r => r.data?.publicId)
               .map(r => deletePhotoFromCloudinary(user.id, r.data?.publicId ?? ""))
           );
-           
-           return NextResponse.json(
+
+          return NextResponse.json(
             {
               code: "QUOTA_EXCEEDED",
               message: `Gallery quota exceeded. Current: ${current}, Limit: ${limit}. Cannot upload ${requested} more photos.`,
