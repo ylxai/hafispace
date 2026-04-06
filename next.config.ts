@@ -56,7 +56,9 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+              // unsafe-eval dihapus — tidak diperlukan di Next.js production
+              // Next.js 15 menggunakan nonce-based CSP untuk inline scripts
+              "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://res.cloudinary.com",
               "media-src 'self' https://res.cloudinary.com",
