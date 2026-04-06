@@ -95,8 +95,8 @@ export async function sendBookingConfirmationEmail({
 
     // Sanitize invoiceUrl — izinkan https:// di production, http:// di development (localhost)
     // case-insensitive check + escapeHtml untuk prevent HTML attribute injection
-    const isValidUrl = /^https:\/\//i.test(invoiceUrl) ||
-      (process.env.NODE_ENV === "development" && /^http:\/\//i.test(invoiceUrl));
+    const isValidUrl = /^https:\/\/.+/i.test(invoiceUrl) ||
+      (process.env.NODE_ENV === "development" && /^http:\/\/.+/i.test(invoiceUrl));
     const safeInvoiceUrl = escapeHtml(isValidUrl ? invoiceUrl : "#");
 
     await getResend().emails.send({
