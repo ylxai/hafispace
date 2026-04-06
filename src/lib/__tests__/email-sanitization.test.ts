@@ -8,7 +8,7 @@
  * - isValidInvoiceUrl: new URL() validation dengan protocol check
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   escapeHtml,
@@ -117,14 +117,12 @@ describe("escapeHtmlBody", () => {
 
 describe("isValidInvoiceUrl", () => {
   describe("production mode (https only)", () => {
-    const OLD_ENV = process.env.NODE_ENV;
-
     beforeEach(() => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
     });
 
     afterEach(() => {
-      process.env.NODE_ENV = OLD_ENV;
+      vi.unstubAllEnvs();
     });
 
     it("should accept valid https URL", () => {
@@ -165,14 +163,12 @@ describe("isValidInvoiceUrl", () => {
   });
 
   describe("development mode (http allowed)", () => {
-    const OLD_ENV = process.env.NODE_ENV;
-
     beforeEach(() => {
-      process.env.NODE_ENV = "development";
+      vi.stubEnv("NODE_ENV", "development");
     });
 
     afterEach(() => {
-      process.env.NODE_ENV = OLD_ENV;
+      vi.unstubAllEnvs();
     });
 
     it("should accept http://localhost in dev mode", () => {
