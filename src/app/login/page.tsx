@@ -29,7 +29,8 @@ export default function LoginPage() {
       } else {
         router.push("/admin");
       }
-    } catch {
+    } catch (_err) {
+      // Login error captured for future monitoring integration (e.g. Sentry.captureException(_err))
       setError("Terjadi kesalahan. Silakan coba lagi.");
       setIsLoading(false);
     }
