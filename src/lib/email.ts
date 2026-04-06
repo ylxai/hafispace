@@ -94,10 +94,19 @@ export async function sendBookingConfirmationEmail({
     const safeKode = escapeHtml(kodeBooking);
     const safeRekening = rekeningPembayaran ? escapeHtmlBody(rekeningPembayaran) : null; // escapeHtmlBody: preserve newline untuk format <pre>
 
-    // Sanitize invoiceUrl — izinkan https:// di production, http:// di development (localhost)
-    // case-insensitive check + escapeHtml untuk prevent HTML attribute injection
-    const isValidUrl = /^https:\/\/.+/i.test(invoiceUrl) ||
-      (process.env.NODE_ENV === "development" && /^http:\/\/.+/i.test(invoiceUrl));
+    // Sanitize invoiceUrl — gunakan new URL() untuk validasi robust
+    // Cek newline untuk prevent email header injection via URL
+    // https:// di production, http:// di development (localhost)
+    const isValidUrl = (() => {
+      try {
+        if (/[\r\n]/.test(invoiceUrl)) return false;
+        const url = new URL(invoiceUrl);
+        return url.protocol === "https:" ||
+          (process.env.NODE_ENV === "development" && url.protocol === "http:");
+      } catch (_err) {
+        return false;
+      }
+    })();
     const safeInvoiceUrl = escapeHtml(isValidUrl ? invoiceUrl : "#");
 
     await getResend().emails.send({
