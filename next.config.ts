@@ -52,12 +52,12 @@ const nextConfig: NextConfig = {
           // Content Security Policy — prevent XSS
           // Note: 'unsafe-inline' diperlukan untuk Next.js inline scripts & styles
           // Future improvement: implementasi nonce-based CSP via middleware untuk keamanan lebih baik
-          // cdn.jsdelivr.net digunakan untuk chart library (recharts dependencies)
+          // recharts di-bundle via npm (tidak memerlukan CDN external)
           {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+              "script-src 'self' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://res.cloudinary.com",
               "media-src 'self' https://res.cloudinary.com",
