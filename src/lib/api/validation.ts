@@ -68,13 +68,9 @@ export const packageSchema = z.object({
   status: z.enum(["active", "inactive"]).default("active"),
 });
 
-export const cloudinaryAccountSchema = z.object({
-  cloudName: z.string().min(1, "Cloud name is required"),
-  apiKey: z.string().min(1, "API key is required"),
-  apiSecret: z.string().min(1, "API secret is required"),
-  label: z.string().min(1, "Label is required"),
-  isDefault: z.boolean().optional(),
-});
+// cloudinaryAccountSchema dihapus — schema canonical ada di:
+// src/app/api/admin/settings/cloudinary/accounts/route.ts (createAccountSchema, updateAccountSchema)
+// Gunakan schema di route file tersebut untuk validasi Cloudinary account operations.
 
 export const gallerySettingsSchema = z.object({
   enableDownload: z.boolean().optional(),

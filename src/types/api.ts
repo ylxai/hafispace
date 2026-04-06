@@ -19,7 +19,7 @@ export type { ApiErrorResponse } from "@/lib/api/response";
  * This type is used for endpoints that explicitly wrap in { data }.
  * For most endpoints, use the specific domain response types below.
  *
- * @note In feat/response-types branch, all endpoints will be standardized.
+ * @note Response standardization is ongoing — see types/api.ts for current patterns.
  */
 export type ApiSuccessResponse<T = unknown> = {
   data: T;
@@ -63,7 +63,7 @@ export type CursorPaginationMeta = {
  * - GET /admin/clients → { items: [], pagination: {} }
  * - GET /admin/events → { items: [], pagination: {} }
  *
- * @note In feat/response-types branch, these will be migrated to `data` key.
+ * @note Migration to `data` key is planned for future standardization.
  * @note This type does NOT include a `success` field (unlike ApiSuccessResponse).
  *       Paginated responses use a different structure pattern:
  *       { items: T[], pagination: PaginationMeta }

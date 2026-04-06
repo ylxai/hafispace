@@ -1,9 +1,13 @@
 /**
  * Shared types dan constants untuk packages feature.
  * Digunakan oleh PackageModal dan PackagesPage.
+ *
+ * PackageCategory canonical definition ada di src/types/package.ts
  */
 
-export type PackageCategory = "PREWED" | "WEDDING" | "PERSONAL" | "EVENT" | "LAINNYA";
+import type { PackageCategory, PackageStatus } from "@/types/package";
+
+export type { PackageCategory, PackageStatus };
 
 export interface IncludeCetak {
   id?: string; // ID unik untuk key React — digenerate via crypto.randomUUID()

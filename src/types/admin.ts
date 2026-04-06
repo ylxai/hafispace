@@ -66,8 +66,10 @@ export interface PrintItem {
   jumlah: number;   // Quantity
 }
 
-export type PackageStatus = "ACTIVE" | "INACTIVE";
-export type PackageKategori = "WEDDING" | "PREWEDDING" | "MATERNITY" | "BIRTHDAY" | "FAMILY" | "OTHER";
+// Package types — single source of truth ada di src/types/package.ts
+import type { PackageCategory, PackageStatus } from "@/types/package";
+export type { PackageStatus };
+export type PackageKategori = PackageCategory;
 
 export type AdminPackage = {
   id: string;
