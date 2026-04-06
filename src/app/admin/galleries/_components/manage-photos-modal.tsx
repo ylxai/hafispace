@@ -27,8 +27,8 @@ export function ManagePhotosModal({ galleryId, onClose }: ManagePhotosModalProps
   const { data: photos = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ["gallery-photos", galleryId],
     queryFn: () => fetchGalleryPhotos(galleryId),
-    staleTime: 0, // Always fresh — photos bisa berubah kapan saja
-    gcTime: 0,    // Jangan cache — modal bisa dibuka lagi dengan data berbeda
+    staleTime: 0,              // Always fetch fresh saat modal dibuka
+    gcTime: 5 * 60 * 1000,    // Cache 5 menit — transisi UI lebih smooth jika modal dibuka ulang
   });
 
   // Show toast saat error — di dalam useEffect agar tidak trigger di render phase
