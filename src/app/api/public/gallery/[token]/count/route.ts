@@ -15,8 +15,8 @@ export async function GET(
     const { token } = await params;
 
     // Rate limit: very lenient (300 req/min = 5 req/sec) - real-time counter polling
-    const ip = getClientIp(_request);
-    const rl = await checkRateLimit(`gallery-count:${ip}`, {
+    const clientIp = getClientIp(_request);
+    const rl = await checkRateLimit(`gallery-count:${clientIp}:${token}`, {
       limit: RATE_LIMIT_GALLERY_COUNT_PER_MINUTE,
       windowMs: 60_000,
     });

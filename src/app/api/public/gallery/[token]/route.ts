@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { handleApiError } from "@/lib/api/error-handler";
+import { BusinessError, handleApiError } from "@/lib/api/error-handler";
 import { DEFAULT_MAX_SELECTION, GALLERY_VIEW_COOKIE_TTL_SECONDS } from "@/lib/constants";
 import { FINGERPRINT_TTL_SECONDS, GALLERY_MAX_PHOTOS, RATE_LIMIT_GALLERY_VIEW_PER_MINUTE } from "@/lib/constants.server";
 import { prisma } from "@/lib/db";
@@ -54,15 +54,12 @@ export async function GET(
 
     // Rate limit: lenient (120 req/min = 2 req/sec) - allows normal gallery browsing
     const clientIp = getClientIp(_request);
-    const rl = await checkRateLimit(`gallery-view:${clientIp}`, {
+    const rl = await checkRateLimit(`gallery-view:${clientIp}:${token}`, {
       limit: RATE_LIMIT_GALLERY_VIEW_PER_MINUTE,
       windowMs: 60_000,
     });
     if (!rl.success) {
-      return NextResponse.json(
-        { code: "RATE_LIMITED", message: "Too many requests. Please slow down." },
-        { status: 429 }
-      );
+      throw new BusinessError("Too many requests. Please try again later.", "RATE_LIMITED", 429);
     }
 
   // Parse pagination params
@@ -154,9 +151,8 @@ export async function GET(
   const hasCookie = _request.headers.get("cookie")?.includes(viewedCookieKey) ?? false;
 
   // Buat fingerprint dari IP + User-Agent (non-PII, hanya hash)
-  const ip = _request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-    ?? _request.headers.get("x-real-ip")
-    ?? "unknown";
+  // Reuse clientIp from rate limit check above for consistency
+  const ip = clientIp;
   const ua = _request.headers.get("user-agent") ?? "unknown";
   const rawFingerprint = `${gallery.id}:${ip}:${ua.slice(0, 100)}`;
 
