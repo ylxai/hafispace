@@ -1,3 +1,28 @@
+// ─── Vendor Cloudinary Account ───────────────────────────────────────────────
+
+/**
+ * Vendor Cloudinary account as returned by /api/admin/settings/cloudinary/accounts
+ * Single source of truth - replaces local CloudinaryAccount definitions in components
+ */
+export interface VendorCloudinaryAccount {
+  id: string;
+  name: string;
+  cloudName: string;
+  apiKey: string | null;
+  isActive: boolean;
+  isDefault: boolean;
+  storageUsed: number;
+  createdAt: string;
+}
+
+/**
+ * Minimal CloudinaryAccount shape used for upload account selection.
+ * Subset of VendorCloudinaryAccount.
+ */
+export type CloudinaryAccountOption = Pick<VendorCloudinaryAccount, "id" | "name" | "cloudName" | "isDefault">;
+
+// ─── Cloudinary result types ──────────────────────────────────────────────────
+
 // Cloudinary result types
 
 // Resource response type (for API responses like list resources)
