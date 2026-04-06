@@ -1,31 +1,67 @@
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { internalErrorResponse,notFoundResponse, unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
-import { auth } from "@/lib/auth/options";
-import { listPhotosFromCloudinary,uploadPhotoToCloudinary } from "@/lib/cloudinary";
+import { handleApiError } from "@/lib/api/error-handler";
+import { notFoundResponse, validationErrorResponse } from "@/lib/api/response";
+import { requireAuth } from "@/lib/auth/context";
+import { listPhotosFromCloudinary, uploadPhotoToCloudinary } from "@/lib/cloudinary";
 import { CLOUDINARY_FOLDERS } from "@/lib/cloudinary/constants";
 import { prisma } from "@/lib/db";
 import logger from "@/lib/logger";
 
+// Retry mechanism untuk handle race condition pada urutan (P2002 unique constraint)
+async function createPhotoWithRetry(
+  galleryId: string,
+  data: {
+    storageKey: string;
+    filename: string;
+    url: string;
+    thumbnailUrl: string;
+    width: number;
+    height: number;
+    size: number;
+    mimeType: string;
+  },
+  attempt = 0
+) {
+  try {
+    const maxUrutan = await prisma.photo.aggregate({
+      where: { galleryId },
+      _max: { urutan: true },
+    });
+    const nextUrutan = (maxUrutan._max.urutan ?? -1) + 1;
+
+    return await prisma.photo.create({
+      data: { galleryId, ...data, urutan: nextUrutan },
+      select: { id: true, storageKey: true, filename: true, url: true, thumbnailUrl: true, width: true, height: true, size: true, mimeType: true },
+    });
+  } catch (error: unknown) {
+    // Retry on unique constraint violation (P2002) — max 3 attempts
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as { code: string }).code === "P2002" &&
+      attempt < 3
+    ) {
+      logger.warn({ galleryId, attempt }, "Retrying photo create due to urutan conflict");
+      return createPhotoWithRetry(galleryId, data, attempt + 1);
+    }
+    throw error;
+  }
+}
+
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
-  const { id: galleryId } = await params;
-
   try {
+    const user = await requireAuth(request);
+    const { id: galleryId } = await params;
+
     // Verify that the gallery belongs to the current vendor
     const gallery = await prisma.gallery.findUnique({
-      where: {
-        id: galleryId,
-        vendorId: session.user.id,
-      },
+      where: { id: galleryId, vendorId: user.id },
     });
 
     if (!gallery) {
@@ -49,81 +85,44 @@ export async function POST(
     const buffer = Buffer.from(await file.arrayBuffer());
 
     // Upload to Cloudinary
-    const result = await uploadPhotoToCloudinary(
-      session.user.id,
-      buffer,
-      file.name,
-      {
-        folder: `${CLOUDINARY_FOLDERS.GALLERIES}/${session.user.id}/${galleryId}`,
-        resourceType: 'image',
-      }
-    );
+    const result = await uploadPhotoToCloudinary(user.id, buffer, file.name, {
+      folder: `${CLOUDINARY_FOLDERS.GALLERIES}/${user.id}/${galleryId}`,
+      resourceType: "image",
+    });
 
-    // Save photo record to database — atomic transaction untuk hindari race condition urutan
-    // Tanpa transaction, dua upload bersamaan bisa mendapat urutan yang sama
-    const photo = await prisma.$transaction(async (tx) => {
-      const maxUrutan = await tx.photo.aggregate({
-        where: { galleryId: gallery.id },
-        _max: { urutan: true },
-      });
-      const nextUrutan = (maxUrutan._max.urutan ?? -1) + 1;
-
-      return tx.photo.create({
-        data: {
-          galleryId: gallery.id,
-          storageKey: result.publicId, // Cloudinary public ID
-          filename: file.name,
-          url: result.secureUrl,
-          thumbnailUrl: result.secureUrl,
-          width: result.width,
-          height: result.height,
-          size: result.size,
-          mimeType: file.type || `image/${result.format}`,
-          urutan: nextUrutan,
-        },
-      });
+    // Save photo record to database with retry on urutan conflict
+    const photo = await createPhotoWithRetry(gallery.id, {
+      storageKey: result.publicId,
+      filename: file.name,
+      url: result.secureUrl,
+      thumbnailUrl: result.secureUrl,
+      width: result.width ?? 0,
+      height: result.height ?? 0,
+      size: result.size ?? 0,
+      mimeType: file.type || `image/${result.format}`,
     });
 
     return NextResponse.json({
       message: "Photo uploaded successfully",
-      photo: {
-        id: photo.id,
-        storageKey: photo.storageKey,
-        filename: photo.filename,
-        url: photo.url,
-        thumbnailUrl: photo.thumbnailUrl,
-        width: photo.width,
-        height: photo.height,
-        size: photo.size,
-        mimeType: photo.mimeType,
-      },
+      photo,
     });
   } catch (error) {
-    logger.error({ err: error }, "Error uploading photo to Cloudinary");
-    return internalErrorResponse("Failed to upload photo to Cloudinary");
+    return handleApiError(error);
   }
 }
 
 // Endpoint to sync photos from Cloudinary folder to database
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
-  const { id: galleryId } = await params;
-
   try {
+    const user = await requireAuth(request);
+    const { id: galleryId } = await params;
+
     // Verify that the gallery belongs to the current vendor
     const gallery = await prisma.gallery.findUnique({
-      where: {
-        id: galleryId,
-        vendorId: session.user.id,
-      },
+      where: { id: galleryId, vendorId: user.id },
     });
 
     if (!gallery) {
@@ -131,19 +130,18 @@ export async function PUT(
     }
 
     // Fetch photos from Cloudinary folder
-    const cloudinaryResult = await listPhotosFromCloudinary(
-      session.user.id,
-      {
-        folder: `${CLOUDINARY_FOLDERS.GALLERIES}/${session.user.id}/${galleryId}`,
-      }
-    );
+    const cloudinaryResult = await listPhotosFromCloudinary(user.id, {
+      folder: `${CLOUDINARY_FOLDERS.GALLERIES}/${user.id}/${galleryId}`,
+    });
 
     // Sync photos to database
     const existingKeys = new Set(
-      (await prisma.photo.findMany({
-        where: { galleryId: gallery.id },
-        select: { storageKey: true },
-      })).map((p) => p.storageKey)
+      (
+        await prisma.photo.findMany({
+          where: { galleryId: gallery.id },
+          select: { storageKey: true },
+        })
+      ).map((p) => p.storageKey)
     );
 
     const newPhotos = cloudinaryResult.items.filter(
@@ -187,7 +185,6 @@ export async function PUT(
       photoCount,
     });
   } catch (error) {
-    logger.error({ err: error }, "Error syncing photos from Cloudinary");
-    return internalErrorResponse("Failed to sync photos from Cloudinary");
+    return handleApiError(error);
   }
 }

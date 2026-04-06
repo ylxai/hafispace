@@ -20,7 +20,7 @@ const createAccountSchema = z.object({
 
 const updateAccountSchema = z.object({
   id: z.string().uuid("Account ID must be a valid UUID"),
-  name: z.string().max(100).optional(), // min(1) dihapus — empty string tidak valid update tapi undefined (tidak kirim) OK
+  name: z.string().min(1, "Name cannot be empty").max(100).optional(), // min(1): jika name dikirim, tidak boleh empty string; undefined (tidak dikirim) tetap OK
   setAsDefault: z.boolean().optional(),
   isActive: z.boolean().optional(),
 });
@@ -147,7 +147,7 @@ export async function PUT(request: NextRequest) {
     const updated = await prisma.vendorCloudinary.update({
       where: { id },
       data: {
-        ...(name !== undefined && { name }),
+        ...(name && { name }),
         ...(setAsDefault !== undefined && { isDefault: setAsDefault }),
         ...(isActive !== undefined && { isActive }),
       },
