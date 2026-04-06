@@ -1,14 +1,15 @@
 import { randomBytes } from "node:crypto";
 
 import Ably from "ably";
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { auth } from "@/lib/auth/options";
+import { getAuthUser } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import logger from "@/lib/logger";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   // Get gallery token from query params (required for both admin and client)
   const { searchParams } = new URL(request.url);
   const galleryToken = searchParams.get("gallery");
@@ -45,15 +46,15 @@ export async function GET(request: Request) {
     );
   }
 
-  // Try to get session for admin authentication
-  const session = await auth();
+  // Try to get authenticated user for admin access (optional — public clients don't need auth)
+  const adminUser = await getAuthUser(request);
 
   let clientId: string;
 
-  if (session?.user?.id) {
+  if (adminUser) {
     // Admin/vendor access - verify they own this gallery
-    if (gallery.vendorId === session.user.id) {
-      clientId = `admin-${session.user.id}-${gallery.id}`;
+    if (gallery.vendorId === adminUser.id) {
+      clientId = `admin-${adminUser.id}-${gallery.id}`;
     } else {
       // Admin trying to access another vendor's gallery
       return NextResponse.json(

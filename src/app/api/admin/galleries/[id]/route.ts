@@ -1,25 +1,30 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-import { handleApiError } from "@/lib/api/error-handler";
-import { notFoundResponse, validationErrorResponse } from "@/lib/api/response";
-import { requireAuth } from "@/lib/auth/context";
+import { internalErrorResponse,notFoundResponse, unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
+import { auth } from "@/lib/auth/options";
 import { listPhotosFromCloudinary,uploadPhotoToCloudinary } from "@/lib/cloudinary";
 import { CLOUDINARY_FOLDERS } from "@/lib/cloudinary/constants";
 import { prisma } from "@/lib/db";
+import logger from "@/lib/logger";
 
 export async function POST(
-  request: NextRequest,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return unauthorizedResponse();
+  }
+
   const { id: galleryId } = await params;
 
   try {
-    const user = await requireAuth(request);
     // Verify that the gallery belongs to the current vendor
     const gallery = await prisma.gallery.findUnique({
       where: {
         id: galleryId,
-        vendorId: user.id,
+        vendorId: session.user.id,
       },
     });
 
@@ -45,36 +50,38 @@ export async function POST(
 
     // Upload to Cloudinary
     const result = await uploadPhotoToCloudinary(
-      user.id,
+      session.user.id,
       buffer,
       file.name,
       {
-        folder: `${CLOUDINARY_FOLDERS.GALLERIES}/${user.id}/${galleryId}`,
+        folder: `${CLOUDINARY_FOLDERS.GALLERIES}/${session.user.id}/${galleryId}`,
         resourceType: 'image',
       }
     );
 
-    // Calculate proper ordering for new photo
-    const maxUrutan = await prisma.photo.aggregate({
-      where: { galleryId: gallery.id },
-      _max: { urutan: true },
-    });
-    const nextUrutan = (maxUrutan._max.urutan ?? -1) + 1;
+    // Save photo record to database — atomic transaction untuk hindari race condition urutan
+    // Tanpa transaction, dua upload bersamaan bisa mendapat urutan yang sama
+    const photo = await prisma.$transaction(async (tx) => {
+      const maxUrutan = await tx.photo.aggregate({
+        where: { galleryId: gallery.id },
+        _max: { urutan: true },
+      });
+      const nextUrutan = (maxUrutan._max.urutan ?? -1) + 1;
 
-    // Save photo record to database
-    const photo = await prisma.photo.create({
-      data: {
-        galleryId: gallery.id,
-        storageKey: result.publicId, // Cloudinary public ID
-        filename: file.name,
-        url: result.secureUrl,
-        thumbnailUrl: result.secureUrl, // Could be a different thumbnail URL if needed
-        width: result.width,
-        height: result.height,
-        size: result.size,
-        mimeType: file.type || `image/${result.format}`,
-        urutan: nextUrutan, // ✅ Proper ordering based on existing photos
-      },
+      return tx.photo.create({
+        data: {
+          galleryId: gallery.id,
+          storageKey: result.publicId, // Cloudinary public ID
+          filename: file.name,
+          url: result.secureUrl,
+          thumbnailUrl: result.secureUrl,
+          width: result.width,
+          height: result.height,
+          size: result.size,
+          mimeType: file.type || `image/${result.format}`,
+          urutan: nextUrutan,
+        },
+      });
     });
 
     return NextResponse.json({
@@ -91,26 +98,31 @@ export async function POST(
         mimeType: photo.mimeType,
       },
     });
-    } catch (error) {
-      return handleApiError(error);
-    }
+  } catch (error) {
+    logger.error({ err: error }, "Error uploading photo to Cloudinary");
+    return internalErrorResponse("Failed to upload photo to Cloudinary");
+  }
 }
 
 // Endpoint to sync photos from Cloudinary folder to database
 export async function PUT(
-  request: NextRequest,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return unauthorizedResponse();
+  }
+
   const { id: galleryId } = await params;
 
   try {
-    const user = await requireAuth(request);
-
     // Verify that the gallery belongs to the current vendor
     const gallery = await prisma.gallery.findUnique({
       where: {
         id: galleryId,
-        vendorId: user.id,
+        vendorId: session.user.id,
       },
     });
 
@@ -120,9 +132,9 @@ export async function PUT(
 
     // Fetch photos from Cloudinary folder
     const cloudinaryResult = await listPhotosFromCloudinary(
-      user.id,
+      session.user.id,
       {
-        folder: `${CLOUDINARY_FOLDERS.GALLERIES}/${user.id}/${galleryId}`,
+        folder: `${CLOUDINARY_FOLDERS.GALLERIES}/${session.user.id}/${galleryId}`,
       }
     );
 
@@ -139,26 +151,29 @@ export async function PUT(
     );
 
     if (newPhotos.length > 0) {
-      const maxUrutan = await prisma.photo.aggregate({
-        where: { galleryId: gallery.id },
-        _max: { urutan: true },
-      });
-      let nextUrutan = (maxUrutan._max.urutan ?? -1) + 1;
+      // Atomic transaction untuk hindari race condition urutan saat sync concurrent
+      await prisma.$transaction(async (tx) => {
+        const maxUrutan = await tx.photo.aggregate({
+          where: { galleryId: gallery.id },
+          _max: { urutan: true },
+        });
+        let nextUrutan = (maxUrutan._max.urutan ?? -1) + 1;
 
-      await prisma.photo.createMany({
-        data: newPhotos.map((p) => ({
-          galleryId: gallery.id,
-          storageKey: p.publicId,
-          filename: p.originalFilename,
-          url: p.secureUrl,
-          thumbnailUrl: p.secureUrl,
-          width: p.width,
-          height: p.height,
-          size: p.size,
-          mimeType: `image/${p.format}`,
-          urutan: nextUrutan++,
-        })),
-        skipDuplicates: true,
+        await tx.photo.createMany({
+          data: newPhotos.map((p) => ({
+            galleryId: gallery.id,
+            storageKey: p.publicId,
+            filename: p.originalFilename,
+            url: p.secureUrl,
+            thumbnailUrl: p.secureUrl,
+            width: p.width,
+            height: p.height,
+            size: p.size,
+            mimeType: `image/${p.format}`,
+            urutan: nextUrutan++,
+          })),
+          skipDuplicates: true,
+        });
       });
     }
 
@@ -172,6 +187,7 @@ export async function PUT(
       photoCount,
     });
   } catch (error) {
-    return handleApiError(error);
+    logger.error({ err: error }, "Error syncing photos from Cloudinary");
+    return internalErrorResponse("Failed to sync photos from Cloudinary");
   }
 }
