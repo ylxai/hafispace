@@ -5,9 +5,26 @@ import logger from '@/lib/logger';
 
 import { formatRupiah } from './format';
 
+/**
+ * Escape HTML special characters — untuk header email fields (From, Subject, dll)
+ * Menghapus newline untuk prevent email header injection
+ */
 function escapeHtml(str: string): string {
   return str
     .replace(/[\r\n]/g, '') // prevent email header injection
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Escape HTML special characters — untuk body email (dalam <pre>, <div>, dll)
+ * Mempertahankan newline agar format teks terjaga di dalam tag <pre>
+ */
+function escapeHtmlBody(str: string): string {
+  return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -58,7 +75,7 @@ export async function sendBookingConfirmationEmail({
     const safeStudio = escapeHtml(namaStudio);
     const safePaket = escapeHtml(namaPaket);
     const safeKode = escapeHtml(kodeBooking);
-    const safeRekening = rekeningPembayaran ? escapeHtml(rekeningPembayaran) : null;
+    const safeRekening = rekeningPembayaran ? escapeHtmlBody(rekeningPembayaran) : null; // escapeHtmlBody: preserve newline untuk format <pre>
 
     // Sanitize invoiceUrl — case-insensitive https check + escape untuk prevent attribute injection
     const safeInvoiceUrl = escapeHtml(/^https:\/\//i.test(invoiceUrl) ? invoiceUrl : "#");

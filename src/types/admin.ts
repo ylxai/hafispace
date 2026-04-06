@@ -69,9 +69,10 @@ export interface PrintItem {
 // Lowercase matches actual DB values and Zod schema in validation.ts
 export type PackageStatus = "active" | "inactive";
 
-// PackageKategori canonical values — matches DB, validation.ts, and package-types.ts
-// Previously: "WEDDING" | "PREWEDDING" | "MATERNITY" | "BIRTHDAY" | "FAMILY" | "OTHER" (stale)
-export type PackageKategori = "PREWED" | "WEDDING" | "PERSONAL" | "EVENT" | "LAINNYA";
+// PackageKategori — alias dari PackageCategory di package-types.ts (single source of truth)
+// Nilai canonical: "PREWED" | "WEDDING" | "PERSONAL" | "EVENT" | "LAINNYA"
+import type { PackageCategory } from "@/app/admin/packages/_components/package-types";
+export type PackageKategori = PackageCategory;
 
 export type AdminPackage = {
   id: string;

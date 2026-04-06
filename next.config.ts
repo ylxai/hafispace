@@ -50,14 +50,13 @@ const nextConfig: NextConfig = {
           // HSTS — force HTTPS for 1 year (includeSubDomains)
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
           // Content Security Policy — prevent XSS
-          // unsafe-inline diizinkan untuk Next.js inline scripts & styles
-          // Cloudinary sebagai media source, Sentry sebagai connect-src
+          // Note: 'unsafe-inline' diperlukan untuk Next.js inline scripts & styles
+          // Future improvement: implementasi nonce-based CSP via middleware untuk keamanan lebih baik
+          // cdn.jsdelivr.net digunakan untuk chart library (recharts dependencies)
           {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              // unsafe-eval dihapus — tidak diperlukan di Next.js production
-              // Next.js 15 menggunakan nonce-based CSP untuk inline scripts
               "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://res.cloudinary.com",
