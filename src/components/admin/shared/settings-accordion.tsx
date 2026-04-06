@@ -35,8 +35,8 @@ export function SettingsAccordion({
     try {
       const stored = localStorage.getItem(storageKey);
       if (stored !== null) setIsOpen(stored === "true");
-    } catch (error) {
-      console.warn(`Gagal membaca state accordion '${id}' dari localStorage:`, error);
+    } catch {
+      // localStorage read error — gunakan default state (non-critical)
     }
   }, [storageKey, id]);
 
@@ -45,8 +45,8 @@ export function SettingsAccordion({
     setIsOpen(next);
     try {
       localStorage.setItem(storageKey, String(next));
-    } catch (error) {
-      console.warn(`Gagal menyimpan state accordion '${id}' ke localStorage:`, error);
+    } catch {
+      // localStorage write error — non-critical, state tetap di memory
     }
   }
 

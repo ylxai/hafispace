@@ -27,7 +27,7 @@ export function UploadPhotosModal({ gallery, onClose }: { gallery: AdminGallery;
   const toast = useToast();
   const [showEditor, setShowEditor] = useState<{ file: File; index: number } | null>(null);
   const [uploadStats, setUploadStats] = useState<{ successful: number; failed: number } | null>(null);
-  const [editedFiles, setEditedFiles] = useState<Map<number, File>>(new Map());
+  const [_editedFiles, setEditedFiles] = useState<Map<number, File>>(new Map());
 
   const handleUploadComplete = (stats: { successful: number; failed: number }) => {
     setUploadStats(stats);
@@ -49,7 +49,6 @@ export function UploadPhotosModal({ gallery, onClose }: { gallery: AdminGallery;
     toast.success("Image edited — siap di-upload!");
   };
 
-  void editedFiles; // akan digunakan di DragDropUpload ketika mendukung file replacement
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">

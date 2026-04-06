@@ -1,23 +1,17 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { unauthorizedResponse } from "@/lib/api/response";
-import { auth } from "@/lib/auth/options";
+import { handleApiError } from "@/lib/api/error-handler";
+import { requireAuth } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
-import logger from "@/lib/logger";
 
 const bulkDeleteSchema = z.object({
   clientIds: z.array(z.string().uuid()),
 });
 
-export async function POST(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function POST(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
     const body = await request.json();
     const { action, ...data } = body;
 
@@ -28,7 +22,7 @@ export async function POST(request: Request) {
       const clientsWithBookings = await prisma.client.findMany({
         where: {
           id: { in: clientIds },
-          vendorId: session.user.id,
+          vendorId: user.id,
         },
         include: {
           _count: {
@@ -60,7 +54,7 @@ export async function POST(request: Request) {
       const deletedCount = await prisma.client.deleteMany({
         where: {
           id: { in: clientIds },
-          vendorId: session.user.id,
+          vendorId: user.id,
         },
       });
 
@@ -84,10 +78,6 @@ export async function POST(request: Request) {
       );
     }
     
-    logger.error({ err: error }, "Bulk client operation error");
-    return NextResponse.json(
-      { code: "INTERNAL_ERROR", message: "Failed to perform bulk operation" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

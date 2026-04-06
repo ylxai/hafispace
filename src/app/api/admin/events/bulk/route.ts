@@ -1,10 +1,9 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { unauthorizedResponse } from "@/lib/api/response";
-import { auth } from "@/lib/auth/options";
+import { handleApiError } from "@/lib/api/error-handler";
+import { requireAuth } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
-import logger from "@/lib/logger";
 
 const bulkUpdateSchema = z.object({
   bookingIds: z.array(z.string().uuid()),
@@ -15,14 +14,9 @@ const bulkDeleteSchema = z.object({
   bookingIds: z.array(z.string().uuid()),
 });
 
-export async function POST(request: Request) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
+export async function POST(request: NextRequest) {
   try {
+    const user = await requireAuth(request);
     const body = await request.json();
     const { action, ...data } = body;
 
@@ -40,7 +34,7 @@ export async function POST(request: Request) {
       const updatedCount = await prisma.booking.updateMany({
         where: {
           id: { in: bookingIds },
-          vendorId: session.user.id,
+          vendorId: user.id,
         },
         data: { status },
       });
@@ -57,7 +51,7 @@ export async function POST(request: Request) {
       const bookingsWithGalleries = await prisma.booking.findMany({
         where: {
           id: { in: bookingIds },
-          vendorId: session.user.id,
+          vendorId: user.id,
         },
         include: {
           _count: {
@@ -89,7 +83,7 @@ export async function POST(request: Request) {
       const deletedCount = await prisma.booking.deleteMany({
         where: {
           id: { in: bookingIds },
-          vendorId: session.user.id,
+          vendorId: user.id,
         },
       });
 
@@ -113,10 +107,6 @@ export async function POST(request: Request) {
       );
     }
     
-    logger.error({ err: error }, "Bulk booking operation error");
-    return NextResponse.json(
-      { code: "INTERNAL_ERROR", message: "Failed to perform bulk operation" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

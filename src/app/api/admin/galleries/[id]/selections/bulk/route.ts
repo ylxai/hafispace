@@ -1,10 +1,9 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { unauthorizedResponse } from "@/lib/api/response";
-import { auth } from "@/lib/auth/options";
+import { handleApiError } from "@/lib/api/error-handler";
+import { requireAuth } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
-import logger from "@/lib/logger";
 
 const bulkUpdateSchema = z.object({
   selectionIds: z.array(z.string().uuid()),
@@ -17,18 +16,13 @@ const bulkDeleteSchema = z.object({
 });
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
   const { id: galleryId } = await params;
 
   try {
+    const user = await requireAuth(request);
     const body = await request.json();
     const { action, ...data } = body;
 
@@ -36,7 +30,7 @@ export async function POST(
     const gallery = await prisma.gallery.findFirst({
       where: {
         id: galleryId,
-        vendorId: session.user.id,
+        vendorId: user.id,
       },
     });
 
@@ -79,7 +73,7 @@ export async function POST(
       if (isLocked !== undefined) {
         await prisma.activityLog.create({
           data: {
-            vendorId: session.user.id,
+            vendorId: user.id,
             galleryId,
             action: isLocked ? "SELECTIONS_LOCKED_BULK" : "SELECTIONS_UNLOCKED_BULK",
             details: `${updatedCount.count} selection(s) ${isLocked ? 'locked' : 'unlocked'} in bulk`,
@@ -107,7 +101,7 @@ export async function POST(
       // Add activity log
       await prisma.activityLog.create({
         data: {
-          vendorId: session.user.id,
+          vendorId: user.id,
           galleryId,
           action: "SELECTIONS_DELETED_BULK",
           details: `${deletedCount.count} selection(s) deleted in bulk`,
@@ -134,10 +128,6 @@ export async function POST(
       );
     }
     
-    logger.error({ err: error }, "Bulk selection operation error");
-    return NextResponse.json(
-      { code: "INTERNAL_ERROR", message: "Failed to perform bulk operation" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

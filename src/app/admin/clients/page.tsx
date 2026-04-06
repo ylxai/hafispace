@@ -144,9 +144,7 @@ export default function AdminClientsPage() {
         if (result.code === "HAS_BOOKINGS") {
           toast.error(`Cannot delete ${result.clientsWithBookings.length} client(s) with bookings. Delete bookings first.`);
           // Show specific clients that can't be deleted
-          result.clientsWithBookings.forEach((c: { name: string; bookingCount: number }) => {
-            console.warn(`Client "${c.name}" has ${c.bookingCount} booking(s)`);
-          });
+          // Client has bookings — UI sudah menampilkan warning ke user via toast di atas
         } else {
           toast.error(result.message ?? "Failed to delete clients");
         }

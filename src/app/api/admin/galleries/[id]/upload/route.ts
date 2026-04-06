@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
-import { internalErrorResponse,notFoundResponse, unauthorizedResponse, validationErrorResponse } from "@/lib/api/response";
-import { auth } from "@/lib/auth/options";
+import { handleApiError } from "@/lib/api/error-handler";
+import { internalErrorResponse,notFoundResponse, validationErrorResponse } from "@/lib/api/response";
+import { requireAuth } from "@/lib/auth/context";
 import { deletePhotoFromCloudinary,getCloudinaryAccount } from "@/lib/cloudinary";
 import { CLOUDINARY_FOLDERS } from "@/lib/cloudinary/constants";
 import {
@@ -75,23 +76,18 @@ async function verifyImageMagicBytes(file: File): Promise<boolean> {
 
 // Upload multiple photos to Cloudinary and save to database
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
   const { id: galleryId } = await params;
 
   try {
+    const user = await requireAuth(request);
     // Verify that the gallery belongs to the current vendor
     const gallery = await prisma.gallery.findUnique({
       where: {
         id: galleryId,
-        vendorId: session.user.id,
+          vendorId: user.id,
       },
       include: {
         vendor: {
@@ -115,7 +111,7 @@ export async function POST(
 
     // Check if vendor has any Cloudinary account configured
     try {
-      await getCloudinaryAccount(session.user.id, accountId ?? undefined);
+      await getCloudinaryAccount(user.id, accountId ?? undefined);
     } catch {
       return NextResponse.json(
         { 
@@ -181,7 +177,7 @@ export async function POST(
     }
 
     // Prepare Cloudinary folder path
-    const folderPath = `${CLOUDINARY_FOLDERS.GALLERIES}/${session.user.id}/${galleryId}`;
+    const folderPath = `${CLOUDINARY_FOLDERS.GALLERIES}/${user.id}/${galleryId}`;
     const uploadedAt = new Date().toISOString();
 
     // Upload dalam batch kecil (5 files per batch) untuk hindari OOM
@@ -203,20 +199,20 @@ export async function POST(
         });
       }
 
-      const batchResults = await uploadMultipleImages(
-        session.user.id,
-        batchFiles,
-        {
-          accountId: accountId ?? undefined,
-          folder: folderPath,
-          tags: ['gallery', galleryId, session.user.id],
-          context: {
-            gallery_id: galleryId,
-            vendor_id: session.user.id,
-            uploaded_at: uploadedAt,
-          },
-        }
-      );
+       const batchResults = await uploadMultipleImages(
+         user.id,
+         batchFiles,
+         {
+           accountId: accountId ?? undefined,
+           folder: folderPath,
+           tags: ['gallery', galleryId, user.id],
+           context: {
+             gallery_id: galleryId,
+             vendor_id: user.id,
+             uploaded_at: uploadedAt,
+           },
+         }
+       );
 
       uploadResults.push(...batchResults);
     }
@@ -305,13 +301,13 @@ export async function POST(
           const match = dbError.message.match(/Current (\d+) \+ (\d+) exceeds limit (\d+)/);
           const [, current, requested, limit] = match ?? [];
           
-          // Rollback Cloudinary uploads
+         // Rollback Cloudinary uploads
           await Promise.allSettled(
             successfulUploads
               .filter(r => r.data?.publicId)
-              .map(r => deletePhotoFromCloudinary(session.user.id, r.data?.publicId ?? ""))
+              .map(r => deletePhotoFromCloudinary(user.id, r.data?.publicId ?? ""))
           );
-          
+
           return NextResponse.json(
             {
               code: "QUOTA_EXCEEDED",
@@ -329,7 +325,7 @@ export async function POST(
         const rollbackResults = await Promise.allSettled(
           successfulUploads
             .filter(r => r.data?.publicId)
-            .map(r => deletePhotoFromCloudinary(session.user.id, r.data?.publicId ?? ""))
+            .map(r => deletePhotoFromCloudinary(user.id, r.data?.publicId ?? ""))
         );
         rollbackResults.forEach((r, i) => {
           if (r.status === "rejected") {
@@ -364,22 +360,17 @@ export async function POST(
 
 // Sync photos from Cloudinary (optional feature)
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return unauthorizedResponse();
-  }
-
   const { id: galleryId } = await params;
 
   try {
+    const user = await requireAuth(request);
     const gallery = await prisma.gallery.findUnique({
       where: {
         id: galleryId,
-        vendorId: session.user.id,
+          vendorId: user.id,
       },
     });
 
@@ -392,7 +383,6 @@ export async function PUT(
       message: "Sync feature available",
     });
   } catch (error) {
-    logger.error({ err: error }, "Error syncing photos");
-    return internalErrorResponse("Failed to sync photos");
+    return handleApiError(error);
   }
 }
