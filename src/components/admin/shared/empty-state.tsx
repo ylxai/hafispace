@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Consistent empty state untuk semua admin list views.
  */

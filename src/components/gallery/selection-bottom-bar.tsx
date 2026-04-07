@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Send,X } from "lucide-react";
+import { Check, Send, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 

@@ -1,7 +1,7 @@
-import { type NextRequest,NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { forbiddenResponse, internalErrorResponse,notFoundResponse, validationErrorResponse } from "@/lib/api/response";
+import { forbiddenResponse, internalErrorResponse, notFoundResponse, validationErrorResponse } from "@/lib/api/response";
 import { generateUniqueKodeBooking } from "@/lib/booking-utils";
 import { RATE_LIMIT_BOOKING_PER_HOUR } from "@/lib/constants.server";
 import { prisma } from "@/lib/db";
@@ -92,120 +92,120 @@ export async function POST(request: NextRequest) {
       );
     }
 
-  const body = await request.json() as { vendorId?: string } & Record<string, unknown>;
-  const { vendorId } = body;
+    const body = await request.json() as { vendorId?: string } & Record<string, unknown>;
+    const { vendorId } = body;
 
-  if (!vendorId || typeof vendorId !== "string") {
-    return validationErrorResponse("Vendor ID required");
-  }
+    if (!vendorId || typeof vendorId !== "string") {
+      return validationErrorResponse("Vendor ID required");
+    }
 
-  // Validasi vendor aktif dan form aktif
-  const vendor = await prisma.vendor.findUnique({
-    where: { id: vendorId, status: "ACTIVE" },
-    select: { 
-      id: true, 
-      bookingFormActive: true, 
-      dpPercentage: true,
-      namaStudio: true,
-      rekeningPembayaran: true,
-    },
-  });
-
-  if (!vendor) return notFoundResponse("Vendor not found");
-  if (!vendor.bookingFormActive) {
-    return forbiddenResponse("Booking form is not active");
-  }
-
-  const parsed = bookingSchema.safeParse(body);
-  if (!parsed.success) {
-    return validationErrorResponse(parsed.error.format());
-  }
-
-  const { namaClient, hpClient, emailClient, tanggalSesi, lokasiSesi, paketId, catatan } = parsed.data;
-
-  // Validasi paket milik vendor
-  const paket = await prisma.package.findFirst({
-    where: { id: paketId, vendorId, status: "active" },
-    select: { id: true, namaPaket: true, harga: true },
-  });
-  if (!paket) return notFoundResponse("Paket tidak ditemukan");
-
-  // Cari atau buat client berdasarkan phone
-  let client = await prisma.client.findFirst({
-    where: { vendorId, phone: hpClient },
-    select: { id: true },
-  });
-
-  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-  if (!client) {
-    client = await prisma.client.create({
-      data: {
-        vendorId,
-        name: namaClient,
-        phone: hpClient,
-        email: emailClient ?? undefined,
-      },
-      select: { id: true },
-    });
-  }
-
-  // Hitung harga DP
-  const hargaPaket = Number(paket.harga);
-  const dpAmount = Math.ceil((hargaPaket * vendor.dpPercentage) / 100);
-
-  // Buat booking dengan retry on unique constraint violation
-  const booking = await generateUniqueKodeBooking((kodeBooking) => {
-    return prisma.booking.create({
-      data: {
-        vendorId,
-        clientId: client.id,
-        paketId,
-        kodeBooking,
-        namaClient,
-        hpClient,
-        emailClient,
-        tanggalSesi: new Date(tanggalSesi),
-        lokasiSesi,
-        notes: catatan,
-        hargaPaket,
-        dpStatus: "UNPAID",
-        status: "PENDING",
-      },
+    // Validasi vendor aktif dan form aktif
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: vendorId, status: "ACTIVE" },
       select: {
         id: true,
-        kodeBooking: true,
-        namaClient: true,
-        tanggalSesi: true,
-        status: true,
-        hargaPaket: true,
+        bookingFormActive: true,
+        dpPercentage: true,
+        namaStudio: true,
+        rekeningPembayaran: true,
       },
     });
-  });
 
-  // Kirim email konfirmasi jika emailClient ada
-  // Gunakan await agar email pasti terkirim sebelum serverless function selesai
-  // (fire-and-forget tidak aman di serverless — function bisa terminate sebelum email terkirim)
-  if (emailClient) {
-    const invoiceUrl = `${env.NEXTAUTH_URL}/invoice/${booking.kodeBooking}`;
-    try {
-      await sendBookingConfirmationEmail({
-        to: emailClient,
-        namaClient,
-        kodeBooking: booking.kodeBooking,
-        tanggalSesi,
-        namaPaket: paket.namaPaket,
-        hargaPaket,
-        dpAmount,
-        dpPercentage: vendor.dpPercentage,
-        namaStudio: vendor.namaStudio ?? 'Studio',
-        rekeningPembayaran: vendor.rekeningPembayaran,
-        invoiceUrl,
-      });
-    } catch (emailError) {
-      // Email gagal tidak boleh batalkan booking yang sudah berhasil dibuat
-      logger.error({ err: emailError }, "Gagal mengirim email konfirmasi booking");
+    if (!vendor) return notFoundResponse("Vendor not found");
+    if (!vendor.bookingFormActive) {
+      return forbiddenResponse("Booking form is not active");
     }
-  }
+
+    const parsed = bookingSchema.safeParse(body);
+    if (!parsed.success) {
+      return validationErrorResponse(parsed.error.format());
+    }
+
+    const { namaClient, hpClient, emailClient, tanggalSesi, lokasiSesi, paketId, catatan } = parsed.data;
+
+    // Validasi paket milik vendor
+    const paket = await prisma.package.findFirst({
+      where: { id: paketId, vendorId, status: "active" },
+      select: { id: true, namaPaket: true, harga: true },
+    });
+    if (!paket) return notFoundResponse("Paket tidak ditemukan");
+
+    // Cari atau buat client berdasarkan phone
+    let client = await prisma.client.findFirst({
+      where: { vendorId, phone: hpClient },
+      select: { id: true },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+    if (!client) {
+      client = await prisma.client.create({
+        data: {
+          vendorId,
+          name: namaClient,
+          phone: hpClient,
+          email: emailClient ?? undefined,
+        },
+        select: { id: true },
+      });
+    }
+
+    // Hitung harga DP
+    const hargaPaket = Number(paket.harga);
+    const dpAmount = Math.ceil((hargaPaket * vendor.dpPercentage) / 100);
+
+    // Buat booking dengan retry on unique constraint violation
+    const booking = await generateUniqueKodeBooking((kodeBooking) => {
+      return prisma.booking.create({
+        data: {
+          vendorId,
+          clientId: client.id,
+          paketId,
+          kodeBooking,
+          namaClient,
+          hpClient,
+          emailClient,
+          tanggalSesi: new Date(tanggalSesi),
+          lokasiSesi,
+          notes: catatan,
+          hargaPaket,
+          dpStatus: "UNPAID",
+          status: "PENDING",
+        },
+        select: {
+          id: true,
+          kodeBooking: true,
+          namaClient: true,
+          tanggalSesi: true,
+          status: true,
+          hargaPaket: true,
+        },
+      });
+    });
+
+    // Kirim email konfirmasi jika emailClient ada
+    // Gunakan await agar email pasti terkirim sebelum serverless function selesai
+    // (fire-and-forget tidak aman di serverless — function bisa terminate sebelum email terkirim)
+    if (emailClient) {
+      const invoiceUrl = `${env.NEXTAUTH_URL}/invoice/${booking.kodeBooking}`;
+      try {
+        await sendBookingConfirmationEmail({
+          to: emailClient,
+          namaClient,
+          kodeBooking: booking.kodeBooking,
+          tanggalSesi,
+          namaPaket: paket.namaPaket,
+          hargaPaket,
+          dpAmount,
+          dpPercentage: vendor.dpPercentage,
+          namaStudio: vendor.namaStudio ?? 'Studio',
+          rekeningPembayaran: vendor.rekeningPembayaran,
+          invoiceUrl,
+        });
+      } catch (emailError) {
+        // Email gagal tidak boleh batalkan booking yang sudah berhasil dibuat
+        logger.error({ err: emailError }, "Gagal mengirim email konfirmasi booking");
+      }
+    }
 
     // ✅ FIX #5: Wrap response in convertDecimalToNumber to handle hargaPaket Decimal
     return NextResponse.json(

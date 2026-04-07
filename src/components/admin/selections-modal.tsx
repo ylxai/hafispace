@@ -17,13 +17,20 @@ const PLACEHOLDER_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000
  */
 function SelectionThumbnail({ src, alt }: { src: string; alt: string }) {
   const [imgSrc, setImgSrc] = useState(src);
+  const isSvg = imgSrc.startsWith("data:image/svg");
+
+  if (isSvg) {
+    return (
+      <div className="absolute inset-0 bg-slate-200" aria-label={alt} />
+    );
+  }
+
   return (
     <Image
       src={imgSrc}
       alt={alt}
       fill
       className="object-cover"
-      unoptimized
       onError={() => setImgSrc(PLACEHOLDER_SVG)}
     />
   );
@@ -547,7 +554,7 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement("a");
                   a.href = url;
-                  a.download = `seleksi-foto.txt`;
+                  a.download = `seleksi-foto-${new Date().toISOString().slice(0, 10)}.txt`;
                   document.body.appendChild(a);
                   a.click();
                   document.body.removeChild(a);

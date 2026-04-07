@@ -1,4 +1,4 @@
-import { type NextRequest,NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { handleApiError } from '@/lib/api/error-handler';
@@ -10,39 +10,39 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request);
 
-  const bodyResult = await parseRequestBody(request);
-  if (!bodyResult.ok) return bodyResult.response;
-  const reminderSchema = z.object({ bookingId: z.string().min(1, 'bookingId required') });
-  const reminderParsed = reminderSchema.safeParse(bodyResult.data);
-  if (!reminderParsed.success) return validationErrorResponse(reminderParsed.error.format());
-  const { bookingId } = reminderParsed.data;
+    const bodyResult = await parseRequestBody(request);
+    if (!bodyResult.ok) return bodyResult.response;
+    const reminderSchema = z.object({ bookingId: z.string().min(1, 'bookingId required') });
+    const reminderParsed = reminderSchema.safeParse(bodyResult.data);
+    if (!reminderParsed.success) return validationErrorResponse(reminderParsed.error.format());
+    const { bookingId } = reminderParsed.data;
 
-  const booking = await prisma.booking.findFirst({
-    where: { id: bookingId, vendorId: user.id },
-    select: {
-      namaClient: true,
-      hpClient: true,
-      tanggalSesi: true,
-      kodeBooking: true,
-      paket: { select: { namaPaket: true } },
-      vendor: { select: { namaStudio: true, waAdmin: true } },
-    },
-  });
+    const booking = await prisma.booking.findFirst({
+      where: { id: bookingId, vendorId: user.id },
+      select: {
+        namaClient: true,
+        hpClient: true,
+        tanggalSesi: true,
+        kodeBooking: true,
+        paket: { select: { namaPaket: true } },
+        vendor: { select: { namaStudio: true, waAdmin: true } },
+      },
+    });
 
-  if (!booking) return notFoundResponse('Booking not found');
+    if (!booking) return notFoundResponse('Booking not found');
 
-  const tanggal = booking.tanggalSesi
-    ? new Date(booking.tanggalSesi).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-    : '-';
+    const tanggal = booking.tanggalSesi
+      ? new Date(booking.tanggalSesi).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+      : '-';
 
-  const message = encodeURIComponent(
-    `Halo ${booking.namaClient} 👋\n\nIni adalah pengingat bahwa sesi foto Anda bersama *${booking.vendor.namaStudio ?? 'kami'}* akan dilaksanakan *besok, ${tanggal}*.\n\nKode Booking: *${booking.kodeBooking}*\nPaket: ${booking.paket?.namaPaket ?? '-'}\n\nMohon hadir tepat waktu. Sampai jumpa! 📸`
-  );
+    const message = encodeURIComponent(
+      `Halo ${booking.namaClient} 👋\n\nIni adalah pengingat bahwa sesi foto Anda bersama *${booking.vendor.namaStudio ?? 'kami'}* akan dilaksanakan *besok, ${tanggal}*.\n\nKode Booking: *${booking.kodeBooking}*\nPaket: ${booking.paket?.namaPaket ?? '-'}\n\nMohon hadir tepat waktu. Sampai jumpa! 📸`
+    );
 
-  const waNumber = booking.hpClient.replace(/\D/g, '');
-  const waUrl = `https://wa.me/${waNumber.startsWith('0') ? '62' + waNumber.slice(1) : waNumber}?text=${message}`;
+    const waNumber = booking.hpClient.replace(/\D/g, '');
+    const waUrl = `https://wa.me/${waNumber.startsWith('0') ? '62' + waNumber.slice(1) : waNumber}?text=${message}`;
 
-  return NextResponse.json({ success: true, waUrl });
+    return NextResponse.json({ success: true, waUrl });
   } catch (error) {
     return handleApiError(error);
   }

@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { DeleteConfirmationModal } from "@/components/admin/delete-confirmation-modal";
 import { useToast } from "@/components/ui/toast";
+import cloudinaryLoader from "@/lib/image-loader";
 import type { ApiPhoto } from "@/types/gallery";
 type Photo = ApiPhoto; // Single source of truth
 
@@ -233,7 +234,7 @@ export function GalleryPhotosList({
               alt={photo.filename}
               fill
               className="object-cover transition-transform group-hover:scale-105"
-              unoptimized
+              loader={cloudinaryLoader}
             />
 
             {/* Delete button (hover overlay) */}

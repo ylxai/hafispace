@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Generic bulk action bar — muncul fixed di atas saat ada items yang dipilih.
  * Reusable untuk Events, Galleries, Clients, Packages pages.
@@ -11,7 +9,6 @@ type BulkActionBarProps = {
   itemLabel?: string;
   onClear: () => void;
   children: React.ReactNode; // action buttons/selects
-  isProcessing?: boolean;
 };
 
 export function BulkActionBar({

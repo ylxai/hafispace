@@ -1,5 +1,3 @@
-"use client";
-
 interface BrandProps {
   variant?: "hafispace" | "hafiview" | "hafiselect";
   size?: "sm" | "md" | "lg" | "xl";
