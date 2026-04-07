@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { getServerSession } from "next-auth";
 import { Suspense } from "react";
 
-import { authOptions } from "@/lib/auth/options";
+import { auth } from "@/lib/auth/options";
 import { prisma } from "@/lib/db";
 
 import { MetricsCards } from "./metrics-cards";
@@ -178,7 +177,7 @@ function ChartsSkeleton() {
 }
 
 export async function DashboardContent() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   if (!session?.user?.id) {
     return (

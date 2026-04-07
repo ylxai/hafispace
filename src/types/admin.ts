@@ -84,6 +84,21 @@ export type AdminPackage = {
   status: PackageStatus;
 };
 
+// ─── Metrics ─────────────────────────────────────────────────────────────────
+
+/**
+ * Vendor metrics as returned by /api/admin/metrics
+ * Cached via Redis (METRICS_CACHE_TTL_SECONDS)
+ */
+export type AdminMetrics = {
+  clientCount: number;
+  bookingCount: number;
+  activeBookingCount: number;
+  galleryCount: number;
+  deliveredGalleryCount: number;
+  pendingNotificationCount: number;
+};
+
 // ─── Pagination ───────────────────────────────────────────────────────────────
 
 export type PaginationMeta = {
