@@ -1,10 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback,useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useToast } from "@/components/ui/toast";
 import { generateThumbnailUrlFromUrl } from "@/lib/cloudinary/utils";
+import cloudinaryLoader from "@/lib/image-loader";
 
 // SVG placeholder data URI — dipakai saat thumbnailUrl tidak ada atau gagal load
 // Tidak butuh API endpoint eksternal, tidak ada 404
@@ -31,6 +32,7 @@ function SelectionThumbnail({ src, alt }: { src: string; alt: string }) {
       alt={alt}
       fill
       className="object-cover"
+      loader={cloudinaryLoader}
       onError={() => setImgSrc(PLACEHOLDER_SVG)}
     />
   );
@@ -554,7 +556,8 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement("a");
                   a.href = url;
-                  a.download = `seleksi-foto-${new Date().toISOString().slice(0, 10)}.txt`;
+                  const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+                  a.download = `seleksi-foto-${timestamp}.txt`;
                   document.body.appendChild(a);
                   a.click();
                   document.body.removeChild(a);
