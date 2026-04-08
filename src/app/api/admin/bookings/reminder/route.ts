@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { handleApiError } from '@/lib/api/error-handler';
-import { notFoundResponse, parseRequestBody, validationErrorResponse } from '@/lib/api/response';
+import { BusinessError, handleApiError } from '@/lib/api/error-handler';
+import { parseRequestBody, validationErrorResponse } from '@/lib/api/response';
 import { requireAuth } from '@/lib/auth/context';
 import { prisma } from '@/lib/db';
 
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (!booking) return notFoundResponse('Booking not found');
+    if (!booking) throw new BusinessError("Booking not found", "NOT_FOUND", 404);
 
     const tanggal = booking.tanggalSesi
       ? new Date(booking.tanggalSesi).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
