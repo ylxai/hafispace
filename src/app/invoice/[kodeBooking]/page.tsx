@@ -83,7 +83,7 @@ const TIPE_LABELS: Record<string, string> = {
 // ─── Data Fetching ───────────────────────────────────────────────────────────
 
 async function getInvoice(kodeBooking: string): Promise<InvoiceData | null> {
-  const baseUrl = env.NEXT_PUBLIC_APP_URL;
+  const baseUrl = env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
   try {
     const res = await fetch(`${baseUrl}/api/public/invoice/${kodeBooking}`, {
       cache: "no-store",
