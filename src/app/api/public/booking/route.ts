@@ -95,8 +95,8 @@ export async function POST(request: NextRequest) {
 
     const bodyResult = await parseRequestBody(request);
     if (!bodyResult.ok) return bodyResult.response;
-    const body = bodyResult.data as { vendorId?: string } & Record<string, unknown>;
-    const { vendorId } = body;
+    const body = bodyResult.data as Record<string, unknown> | null;
+    const vendorId = body?.vendorId as string | undefined;
 
     if (!vendorId || typeof vendorId !== "string") {
       return validationErrorResponse("Vendor ID required");
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
     // Gunakan await agar email pasti terkirim sebelum serverless function selesai
     // (fire-and-forget tidak aman di serverless — function bisa terminate sebelum email terkirim)
     if (emailClient) {
-      const baseUrl = env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+      const baseUrl = (env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
       const invoiceUrl = `${baseUrl}/invoice/${booking.kodeBooking}`;
       try {
         await sendBookingConfirmationEmail({

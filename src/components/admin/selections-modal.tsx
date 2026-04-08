@@ -22,7 +22,7 @@ function SelectionThumbnail({ src, alt }: { src: string; alt: string }) {
 
   if (isSvg) {
     return (
-      <div className="absolute inset-0 bg-slate-200" aria-label={alt} />
+      <div className="absolute inset-0 bg-slate-200" role="img" aria-label={alt} />
     );
   }
 
