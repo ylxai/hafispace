@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
     // (fire-and-forget tidak aman di serverless — function bisa terminate sebelum email terkirim)
     if (emailClient) {
       const baseUrl = env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
-      const invoiceUrl = baseUrl + "/invoice/" + booking.kodeBooking;
+      const invoiceUrl = `${baseUrl}/invoice/${booking.kodeBooking}`;
       try {
         await sendBookingConfirmationEmail({
           to: emailClient,
