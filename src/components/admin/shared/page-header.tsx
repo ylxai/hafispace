@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Consistent page header untuk semua admin pages.
  * Menampilkan title, subtitle opsional, dan slot untuk CTA buttons.

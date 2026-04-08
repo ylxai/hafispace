@@ -260,7 +260,6 @@ model PhotoSelection {
   @@index([fileId])
   @@index([selectionType])
   @@index([selectedAt])
-  @@index([galleryId])
   @@map("photo_selections")
 }
 

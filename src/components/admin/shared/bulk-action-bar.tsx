@@ -11,7 +11,6 @@ type BulkActionBarProps = {
   itemLabel?: string;
   onClear: () => void;
   children: React.ReactNode; // action buttons/selects
-  isProcessing?: boolean;
 };
 
 export function BulkActionBar({

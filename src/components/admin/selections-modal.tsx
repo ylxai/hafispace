@@ -1,10 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback,useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useToast } from "@/components/ui/toast";
 import { generateThumbnailUrlFromUrl } from "@/lib/cloudinary/utils";
+import cloudinaryLoader from "@/lib/image-loader";
 
 // SVG placeholder data URI — dipakai saat thumbnailUrl tidak ada atau gagal load
 // Tidak butuh API endpoint eksternal, tidak ada 404
@@ -17,13 +18,26 @@ const PLACEHOLDER_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000
  */
 function SelectionThumbnail({ src, alt }: { src: string; alt: string }) {
   const [imgSrc, setImgSrc] = useState(src);
+  const isSvg = imgSrc.startsWith("data:image/svg");
+
+  if (isSvg) {
+    return (
+      <div
+        className="absolute inset-0 bg-slate-200"
+        role="img"
+        aria-label={alt}
+        style={{ backgroundImage: `url("${imgSrc}")`, backgroundSize: "cover", backgroundPosition: "center" }}
+      />
+    );
+  }
+
   return (
     <Image
       src={imgSrc}
       alt={alt}
       fill
       className="object-cover"
-      unoptimized
+      loader={cloudinaryLoader}
       onError={() => setImgSrc(PLACEHOLDER_SVG)}
     />
   );
@@ -205,12 +219,13 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
 
       if (!res.ok) throw new Error("Failed to delete selection");
 
+      const deleted = selections.find((s) => s.id === selectionId);
       setSelections((prev) => prev.filter((s) => s.id !== selectionId));
       setStats((prev) => ({
         total: prev.total - 1,
-        edit: selections.find((s) => s.id === selectionId)?.selectionType === "EDIT" ? prev.edit - 1 : prev.edit,
-        print: selections.find((s) => s.id === selectionId)?.selectionType === "PRINT" ? prev.print - 1 : prev.print,
-        locked: selections.find((s) => s.id === selectionId)?.isLocked ? prev.locked - 1 : prev.locked,
+        edit: deleted?.selectionType === "EDIT" ? prev.edit - 1 : prev.edit,
+        print: deleted?.selectionType === "PRINT" ? prev.print - 1 : prev.print,
+        locked: deleted?.isLocked ? prev.locked - 1 : prev.locked,
       }));
       toast.success("Selection removed");
     } catch {
@@ -547,7 +562,8 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement("a");
                   a.href = url;
-                  a.download = `seleksi-foto.txt`;
+                  const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+                  a.download = `seleksi-foto-${timestamp}.txt`;
                   document.body.appendChild(a);
                   a.click();
                   document.body.removeChild(a);

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import { getBaseUrl } from "@/lib/env";
 import { formatDate, formatRupiah } from "@/lib/format";
 
 import { PrintButton } from "./print-button";
@@ -82,7 +83,7 @@ const TIPE_LABELS: Record<string, string> = {
 // ─── Data Fetching ───────────────────────────────────────────────────────────
 
 async function getInvoice(kodeBooking: string): Promise<InvoiceData | null> {
-  const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+  const baseUrl = getBaseUrl();
   try {
     const res = await fetch(`${baseUrl}/api/public/invoice/${kodeBooking}`, {
       cache: "no-store",

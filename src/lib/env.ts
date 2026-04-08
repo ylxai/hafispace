@@ -69,3 +69,11 @@ export const env = {
   METRICS_CACHE_TTL_SECONDS: optionalEnvInt("METRICS_CACHE_TTL_SECONDS", 300),
   BODY_SIZE_LIMIT_MB: optionalEnvInt("BODY_SIZE_LIMIT_MB", 5),
 } as const;
+
+/**
+ * Get the application base URL with trailing slash normalization.
+ * Falls back to localhost:3000 if not configured.
+ */
+export function getBaseUrl(): string {
+  return (env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
+}
