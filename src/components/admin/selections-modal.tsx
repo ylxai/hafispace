@@ -22,10 +22,12 @@ function SelectionThumbnail({ src, alt }: { src: string; alt: string }) {
 
   if (isSvg) {
     return (
-      <div className="absolute inset-0 bg-slate-200" role="img" aria-label={alt}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imgSrc} alt="" className="w-full h-full object-cover opacity-50" />
-      </div>
+      <div
+        className="absolute inset-0 bg-slate-200"
+        role="img"
+        aria-label={alt}
+        style={{ backgroundImage: `url("${imgSrc}")`, backgroundSize: "cover", backgroundPosition: "center" }}
+      />
     );
   }
 
