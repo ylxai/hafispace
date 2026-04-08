@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { forbiddenResponse, internalErrorResponse, notFoundResponse, validationErrorResponse } from "@/lib/api/response";
+import { handleApiError } from "@/lib/api/error-handler";
+import { forbiddenResponse, notFoundResponse, parseRequestBody, validationErrorResponse } from "@/lib/api/response";
 import { generateUniqueKodeBooking } from "@/lib/booking-utils";
 import { RATE_LIMIT_BOOKING_PER_HOUR } from "@/lib/constants.server";
 import { prisma } from "@/lib/db";
@@ -92,7 +93,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json() as { vendorId?: string } & Record<string, unknown>;
+    const bodyResult = await parseRequestBody(request);
+    if (!bodyResult.ok) return bodyResult.response;
+    const body = bodyResult.data as { vendorId?: string } & Record<string, unknown>;
     const { vendorId } = body;
 
     if (!vendorId || typeof vendorId !== "string") {
@@ -221,7 +224,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    logger.error({ err: error }, "Error creating booking");
-    return internalErrorResponse("Failed to create booking");
+    return handleApiError(error);
   }
 }
