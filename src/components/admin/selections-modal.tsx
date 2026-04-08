@@ -219,12 +219,13 @@ export function SelectionsModal({ galleryId, onClose }: SelectionsModalProps) {
 
       if (!res.ok) throw new Error("Failed to delete selection");
 
+      const deleted = selections.find((s) => s.id === selectionId);
       setSelections((prev) => prev.filter((s) => s.id !== selectionId));
       setStats((prev) => ({
         total: prev.total - 1,
-        edit: selections.find((s) => s.id === selectionId)?.selectionType === "EDIT" ? prev.edit - 1 : prev.edit,
-        print: selections.find((s) => s.id === selectionId)?.selectionType === "PRINT" ? prev.print - 1 : prev.print,
-        locked: selections.find((s) => s.id === selectionId)?.isLocked ? prev.locked - 1 : prev.locked,
+        edit: deleted?.selectionType === "EDIT" ? prev.edit - 1 : prev.edit,
+        print: deleted?.selectionType === "PRINT" ? prev.print - 1 : prev.print,
+        locked: deleted?.isLocked ? prev.locked - 1 : prev.locked,
       }));
       toast.success("Selection removed");
     } catch {
